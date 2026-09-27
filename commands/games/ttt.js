@@ -1,0 +1,582 @@
+'use strict';
+
+/**
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║  ❌⭕ TIC TAC TOE v3.0 — اكس او احترافي بالأزرار                       ║
+ * ║  زر دعوة | تمييز الفائز | ضد البوت | انتهاء تلقائي                    ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ */
+
+const {
+    ActionRowBuilder, ButtonBuilder, ButtonStyle,
+    EmbedBuilder, MessageFlags
+} = require('discord.js');
+const db = require('../../utils/database');
+const config = require('../../config');
+
+// ─── مخزن الألعاب النشطة ─────────────────────────────────────────────────────
+const tttGames = new Map(); // channelId → GameState
+
+// ─── خوارزمية الفوز ──────────────────────────────────────────────────────────
+const WIN_LINES = [
+    [0,1,2],[3,4,5],[6,7,8], // أفقي
+    [0,3,6],[1,4,7],[2,5,8], // عمودي
+    [0,4,8],[2,4,6]           // قطري
+];
+
+function checkWinner(board) {
+    for (const [a,b,c] of WIN_LINES) {
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+            return { winner: board[a], line: [a,b,c] };
+        }
+    }
+    return null;
+}
+
+// ─── بناء لوحة الأزرار ────────────────────────────────────────────────────────
+function buildBoard(game) {
+    const rows = [];
+    const winResult = checkWinner(game.board);
+    const winLine = winResult ? winResult.line : [];
+
+    for (let i = 0; i < 3; i++) {
+        const row = new ActionRowBuilder();
+        for (let j = 0; j < 3; j++) {
+            const idx = i * 3 + j;
+            const cell = game.board[idx];
+            const isWinCell = winLine.includes(idx);
+
+            let style = ButtonStyle.Secondary;
+            let label = '\u200b';
+            let emoji;
+
+            if (cell === 'X') {
+                label = '❌';
+                style = isWinCell ? ButtonStyle.Success : ButtonStyle.Danger;
+            } else if (cell === 'O') {
+                label = '⭕';
+                style = isWinCell ? ButtonStyle.Success : ButtonStyle.Primary;
+            }
+
+            row.addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`ttt_move_${game.id}_${idx}`)
+                    .setLabel(label)
+                    .setStyle(style)
+                    .setDisabled(!!cell || !!winResult || game.ended)
+            );
+        }
+        rows.push(row);
+    }
+    return rows;
+}
+
+// ─── Embed اللعبة ─────────────────────────────────────────────────────────────
+function buildGameEmbed(game, status = null) {
+    const p1Name = game.player1.username;
+    const p2Name = game.vsBot ? '🤖 البوت' : game.player2?.username || '...';
+    const current = game.currentTurn === 'X' ? p1Name : p2Name;
+
+    const winResult = checkWinner(game.board);
+    const isDraw = !winResult && !game.board.includes(null);
+
+    let color = '#5865F2';
+    let title = '❌⭕ اكس او';
+    let desc = status || `🎮 **الدور على:** ${current}\n\n❌ ${p1Name}  vs  ⭕ ${p2Name}`;
+
+    if (winResult) {
+        const winnerName = winResult.winner === 'X' ? p1Name : p2Name;
+        color = '#57F287';
+        title = '🏆 انتهت اللعبة!';
+        desc = `🎉 **الفائز: ${winnerName}!**\n\n❌ ${p1Name}  vs  ⭕ ${p2Name}`;
+    } else if (isDraw) {
+        color = '#FEE75C';
+        title = '🤝 تعادل!';
+        desc = `**انتهت اللعبة بالتعادل!**\n\n❌ ${p1Name}  vs  ⭕ ${p2Name}`;
+    }
+
+    return new EmbedBuilder()
+        .setColor(color)
+        .setTitle(title)
+        .setDescription(desc)
+        .setFooter({ text: `${config.prefix}اكس_او لبدء لعبة جديدة` })
+        .setTimestamp();
+}
+
+// ─── Minimax AI للبوت (لا يُهزَم!) ──────────────────────────────────────────
+function _minimax(board, isMaximizing, depth = 0) {
+    const result = checkWinner(board);
+    if (result?.winner === 'O') return  10 - depth;
+    if (result?.winner === 'X') return -10 + depth;
+    const empty = board.filter(v => !v);
+    if (empty.length === 0) return 0;
+
+    if (isMaximizing) {
+        let best = -Infinity;
+        for (let i = 0; i < 9; i++) {
+            if (board[i]) continue;
+            board[i] = 'O';
+            best = Math.max(best, _minimax(board, false, depth + 1));
+            board[i] = null;
+        }
+        return best;
+    } else {
+        let best = Infinity;
+        for (let i = 0; i < 9; i++) {
+            if (board[i]) continue;
+            board[i] = 'X';
+            best = Math.min(best, _minimax(board, true, depth + 1));
+            board[i] = null;
+        }
+        return best;
+    }
+}
+
+function getBotMove(board, difficulty = 'hard') {
+    // صعوبة سهلة: يختار عشوائياً أحياناً
+    if (difficulty === 'easy') {
+        const empty = board.map((v,i) => v ? null : i).filter(i => i !== null);
+        if (Math.random() < 0.6) return empty[Math.floor(Math.random() * empty.length)];
+    }
+    // صعوبة متوسطة: يستخدم الاستراتيجية الأساسية
+    if (difficulty === 'medium') {
+        // 1. فوز مباشر؟
+        for (const [a,b,c] of WIN_LINES) {
+            const line = [board[a], board[b], board[c]];
+            if (line.filter(x => x === 'O').length === 2 && line.includes(null)) {
+                return [a,b,c][line.indexOf(null)];
+            }
+        }
+        // 2. إيقاف الخصم؟
+        for (const [a,b,c] of WIN_LINES) {
+            const line = [board[a], board[b], board[c]];
+            if (line.filter(x => x === 'X').length === 2 && line.includes(null)) {
+                return [a,b,c][line.indexOf(null)];
+            }
+        }
+        if (!board[4]) return 4;
+        const empty = board.map((v,i) => v ? null : i).filter(i => i !== null);
+        return empty[Math.floor(Math.random() * empty.length)];
+    }
+
+    // صعوبة صعبة (افتراضي): Minimax كامل — لا يُهزَم
+    let bestVal = -Infinity;
+    let bestMove = -1;
+    for (let i = 0; i < 9; i++) {
+        if (board[i]) continue;
+        board[i] = 'O';
+        const val = _minimax(board, false);
+        board[i] = null;
+        if (val > bestVal) { bestVal = val; bestMove = i; }
+    }
+    return bestMove;
+}
+
+// ─── تحديث رسالة اللعبة ──────────────────────────────────────────────────────
+async function updateGame(game, interaction = null) {
+    const embed = buildGameEmbed(game);
+    const components = buildBoard(game);
+
+    try {
+        if (interaction && !interaction.replied && !interaction.deferred) {
+            await interaction.update({ embeds: [embed], components });
+        } else if (game.message) {
+            await game.message.edit({ embeds: [embed], components });
+        }
+    } catch { /* رسالة محذوفة */ }
+}
+
+// ─── انتهاء اللعبة ────────────────────────────────────────────────────────────
+async function endGame(game, interaction = null) {
+    game.ended = true;
+    tttGames.delete(game.channelId);
+
+    const embed = buildGameEmbed(game);
+    const components = buildBoard(game); // أزرار معطلة
+
+    // منح جوائز
+    const winResult = checkWinner(game.board);
+    if (winResult) {
+        if (game.vsBot) {
+            if (winResult.winner === 'X') {
+                const prize = 150;
+                db.addMoney(game.player1.id, prize);
+                db.addTransaction(game.player1.id, 'ttt_win', prize, 'TTT Win vs Bot');
+                const pData = db.getUserData(game.player1.id);
+                db.updateFields(game.player1.id, {
+                    'stats.gamesPlayed': (pData.stats?.gamesPlayed || 0) + 1,
+                    'stats.gamesWon': (pData.stats?.gamesWon || 0) + 1,
+                });
+            } else {
+                const pData = db.getUserData(game.player1.id);
+                db.updateFields(game.player1.id, {
+                    'stats.gamesPlayed': (pData.stats?.gamesPlayed || 0) + 1,
+                });
+            }
+        } else {
+            const winnerId = winResult.winner === 'X' ? game.player1.id : game.player2.id;
+            const loserId  = winResult.winner === 'X' ? game.player2.id : game.player1.id;
+            const prize = 300;
+            db.addMoney(winnerId, prize);
+            db.addTransaction(winnerId, 'ttt_win', prize, 'TTT Win');
+
+            // إحصائيات
+            const wData = db.getUserData(winnerId);
+            db.updateFields(winnerId, {
+                'stats.gamesPlayed': (wData.stats?.gamesPlayed || 0) + 1,
+                'stats.gamesWon': (wData.stats?.gamesWon || 0) + 1,
+            });
+            const lData = db.getUserData(loserId);
+            db.updateFields(loserId, {
+                'stats.gamesPlayed': (lData.stats?.gamesPlayed || 0) + 1,
+            });
+        }
+    }
+
+    try {
+        if (interaction && !interaction.replied && !interaction.deferred) {
+            await interaction.update({ embeds: [embed], components });
+        } else if (game.message) {
+            await game.message.edit({ embeds: [embed], components });
+        }
+    } catch {}
+}
+
+// ─── الأمر الرئيسي ────────────────────────────────────────────────────────────
+module.exports = {
+    name: 'ttt',
+    aliases: ['اكس_او', 'اكساو', 'او_اكس', 'tictactoe', 'xo'],
+    description: 'لعبة اكس او الشهيرة بالأزرار',
+    usage: 'اكس_او [@مستخدم | بوت]',
+
+    async execute(message, args) {
+        // منع تعدد الألعاب في نفس القناة
+        if (tttGames.has(message.channel.id)) {
+            return message.reply({ content: '⚠️ هناك لعبة **اكس او** نشطة في هذه القناة! أنهها أولاً.' });
+        }
+
+        const vsBot = args[0]?.toLowerCase() === 'بوت' || args[0]?.toLowerCase() === 'bot';
+        const challenger = message.mentions.users.first();
+
+        if (!vsBot && !challenger) {
+            // عرض خيار البدء
+            const embed = new EmbedBuilder()
+                .setColor('#5865F2')
+                .setTitle('❌⭕ اكس او')
+                .setDescription([
+                    '> اختر طريقة اللعب:',
+                    '',
+                    '**🤖 ضد البوت** — العب وحدك ضد الذكاء الاصطناعي',
+                    '**👥 ضد لاعب** — تحدّ لاعباً آخر في القناة',
+                ].join('\n'))
+                .setFooter({ text: 'ستنتهي هذه الرسالة خلال 30 ثانية' });
+
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId(`ttt_start_bot_${message.author.id}`).setLabel('🤖 ضد البوت').setStyle(ButtonStyle.Primary),
+                new ButtonBuilder().setCustomId(`ttt_start_pvp_${message.author.id}`).setLabel('👥 ضد لاعب').setStyle(ButtonStyle.Secondary),
+            );
+
+            return message.reply({ embeds: [embed], components: [row] });
+        }
+
+        if (vsBot) {
+            await startBotGame(message, message.author);
+        } else {
+            await sendInvitation(message, message.author, challenger);
+        }
+    },
+
+    // ─── معالج التفاعلات ────────────────────────────────────────────────
+    async handleTicTacToeInteraction(interaction) {
+        const id = interaction.customId;
+
+        // ── خيار البدء
+        if (id.startsWith('ttt_start_')) {
+            const parts = id.split('_');
+            const mode = parts[2]; // bot أو pvp
+            const ownerId = parts[3];
+
+            if (interaction.user.id !== ownerId) {
+                return interaction.reply({ content: '❌ هذه الأزرار لصاحب الأمر فقط!', flags: MessageFlags.Ephemeral });
+            }
+
+            await interaction.deferUpdate();
+
+            if (mode === 'bot') {
+                await startBotGame(interaction.message, interaction.user);
+            } else {
+                // وضع PvP — إرسال دعوة
+                const embed = new EmbedBuilder()
+                    .setColor('#5865F2')
+                    .setTitle('❌⭕ دعوة لعبة اكس او')
+                    .setDescription(`> 🎮 ${interaction.user} يتحدى أي شخص!\n> اضغط **قبول** للعب معه!\n\n⏰ تنتهي الدعوة بعد دقيقة واحدة`)
+                    .setFooter({ text: `المتحدي: ${interaction.user.username}` });
+
+                const row = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`ttt_accept_${interaction.user.id}`)
+                        .setLabel('✅ قبول التحدي!')
+                        .setStyle(ButtonStyle.Success),
+                    new ButtonBuilder()
+                        .setCustomId(`ttt_decline_${interaction.user.id}`)
+                        .setLabel('❌ إلغاء')
+                        .setStyle(ButtonStyle.Danger),
+                );
+
+                await interaction.message.edit({ embeds: [embed], components: [row] });
+
+                // انتهاء الدعوة بعد دقيقة
+                setTimeout(async () => {
+                    if (!tttGames.has(interaction.channelId)) {
+                        embed.setDescription(`> ❌ انتهت الدعوة — لم ينضم أحد.`).setColor('#ED4245');
+                        interaction.message.edit({ embeds: [embed], components: [] }).catch(() => {});
+                    }
+                }, 60000);
+            }
+            return;
+        }
+
+        // ── قبول الدعوة
+        if (id.startsWith('ttt_accept_')) {
+            const parts = id.split('_');
+            const challengerId = parts[2];
+            const targetId = parts[3];
+
+            if (interaction.user.id === challengerId) {
+                return interaction.reply({ content: '❌ لا يمكنك قبول تحديك الخاص!', flags: MessageFlags.Ephemeral });
+            }
+
+            if (targetId && interaction.user.id !== targetId) {
+                return interaction.reply({ content: '❌ هذه الدعوة موجهة لشخص محدد!', flags: MessageFlags.Ephemeral });
+            }
+
+            const channelId = interaction.channelId || interaction.channel?.id;
+            if (tttGames.has(channelId)) {
+                return interaction.reply({ content: '⚠️ اللعبة بدأت بالفعل أو توجد لعبة نشطة في هذه القناة!', flags: MessageFlags.Ephemeral });
+            }
+
+            const guild = interaction.guild;
+            const challenger = await guild?.members.fetch(challengerId).catch(() => null);
+            if (!challenger) return interaction.reply({ content: '❌ لم يتم إيجاد المتحدي!', flags: MessageFlags.Ephemeral });
+
+            await interaction.deferUpdate();
+            await startPvPGame(interaction, challenger.user, interaction.user);
+            return;
+        }
+
+        // ── رفض أو إلغاء الدعوة
+        if (id.startsWith('ttt_decline_')) {
+            const parts = id.split('_');
+            const challengerId = parts[2];
+            const targetId = parts[3];
+
+            if (interaction.user.id !== challengerId && (!targetId || interaction.user.id !== targetId)) {
+                return interaction.reply({ content: '❌ فقط أصحاب الدعوة يستطيعون إلغاءها أو رفضها!', flags: MessageFlags.Ephemeral });
+            }
+
+            const isChallenger = interaction.user.id === challengerId;
+            await interaction.update({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor('#ED4245')
+                        .setTitle('❌ تم إلغاء الدعوة')
+                        .setDescription(isChallenger ? '> ألغى صاحب الدعوة اللعبة.' : `> رفض ${interaction.user} التحدي.`)
+                ],
+                components: []
+            });
+            return;
+        }
+
+        // ── حركة اللعبة
+        if (id.startsWith('ttt_move_')) {
+            const parts = id.split('_');
+            const cellIdx = parseInt(parts[parts.length - 1], 10);
+            const gameId = parts.slice(2, -1).join('_');
+
+            const channelId = interaction.channelId || interaction.channel?.id;
+            const game = tttGames.get(channelId);
+            if (!game || game.id !== gameId || game.ended) {
+                return interaction.reply({ content: '❌ هذه اللعبة انتهت أو غير موجودة.', flags: MessageFlags.Ephemeral });
+            }
+
+            if (interaction.message) {
+                game.message = interaction.message;
+            }
+
+            // تحقق من الدور
+            const expectedPlayer = game.currentTurn === 'X' ? game.player1 : game.player2;
+            if (!expectedPlayer || interaction.user.id !== expectedPlayer.id) {
+                return interaction.reply({ content: `❌ ليس دورك! دور **${expectedPlayer?.username || 'اللاعب الآخر'}**`, flags: MessageFlags.Ephemeral });
+            }
+
+            // تحقق من الخلية
+            if (game.board[cellIdx]) {
+                return interaction.reply({ content: '❌ هذه الخلية محجوزة!', flags: MessageFlags.Ephemeral });
+            }
+
+            // تنفيذ الحركة
+            game.board[cellIdx] = game.currentTurn;
+
+            // فحص الفوز/التعادل
+            const winResult = checkWinner(game.board);
+            const isDraw = !winResult && !game.board.includes(null);
+
+            if (winResult || isDraw) {
+                await endGame(game, interaction);
+            } else {
+                // تبديل الدور
+                game.currentTurn = game.currentTurn === 'X' ? 'O' : 'X';
+                await updateGame(game, interaction);
+
+                // دور البوت
+                if (game.vsBot && game.currentTurn === 'O' && !game.ended) {
+                    await playBotTurn(game);
+                }
+            }
+        }
+    }
+};
+
+// ─── بدء لعبة ضد البوت ───────────────────────────────────────────────────────
+async function startBotGame(msgOrInteraction, player) {
+    const channelId = msgOrInteraction.channelId || msgOrInteraction.channel?.id;
+    const gameId = `${Date.now()}`;
+
+    const game = {
+        id: gameId,
+        channelId,
+        player1: player,   // X
+        player2: null,     // O = البوت
+        vsBot: true,
+        board: Array(9).fill(null),
+        currentTurn: 'X',
+        ended: false,
+        message: null
+    };
+
+    tttGames.set(channelId, game);
+
+    const embed = buildGameEmbed(game);
+    const components = buildBoard(game);
+
+    let msg;
+    if (msgOrInteraction.isMessageComponent?.() || msgOrInteraction.isButton?.()) {
+        msg = await msgOrInteraction.message.edit({ embeds: [embed], components });
+    } else if (msgOrInteraction.edit && msgOrInteraction.author?.id === msgOrInteraction.client?.user?.id) {
+        msg = await msgOrInteraction.edit({ embeds: [embed], components }).catch(
+            () => msgOrInteraction.channel?.send({ embeds: [embed], components })
+        );
+    } else {
+        msg = await msgOrInteraction.reply({ embeds: [embed], components });
+    }
+
+    game.message = msg;
+
+    // انتهاء اللعبة بعد 5 دقائق
+    setTimeout(() => {
+        if (tttGames.get(channelId)?.id === gameId) {
+            game.ended = true;
+            tttGames.delete(channelId);
+            msg?.edit({ content: '⏰ انتهت اللعبة بسبب عدم النشاط.', embeds: [], components: [] }).catch(() => {});
+        }
+    }, 5 * 60 * 1000);
+}
+
+// ─── بدء لعبة PvP ────────────────────────────────────────────────────────────
+async function startPvPGame(interaction, player1, player2) {
+    const channelId = interaction.channelId || interaction.channel?.id;
+    const gameId = `${Date.now()}`;
+
+    // عشوائية من يبدأ
+    const first = Math.random() < 0.5;
+    const xPlayer = first ? player1 : player2;
+    const oPlayer = first ? player2 : player1;
+
+    const game = {
+        id: gameId,
+        channelId,
+        player1: xPlayer,  // X
+        player2: oPlayer,  // O
+        vsBot: false,
+        board: Array(9).fill(null),
+        currentTurn: 'X',
+        ended: false,
+        message: null
+    };
+
+    tttGames.set(channelId, game);
+
+    const embed = buildGameEmbed(game, `✅ ${player2.username} قبل التحدي!\n\n🎮 **الدور على:** ${xPlayer.username} (❌)`);
+    const components = buildBoard(game);
+
+    let msg;
+    try {
+        msg = await interaction.message.edit({ embeds: [embed], components });
+    } catch {
+        msg = await interaction.channel?.send({ embeds: [embed], components });
+    }
+    game.message = msg;
+
+    // انتهاء اللعبة بعد 10 دقائق
+    setTimeout(() => {
+        if (tttGames.get(channelId)?.id === gameId) {
+            game.ended = true;
+            tttGames.delete(channelId);
+            msg?.edit({ content: '⏰ انتهت اللعبة بسبب عدم النشاط.', embeds: [], components: [] }).catch(() => {});
+        }
+    }, 10 * 60 * 1000);
+}
+
+// ─── إرسال دعوة PvP ──────────────────────────────────────────────────────────
+async function sendInvitation(message, challenger, target) {
+    if (target.bot) return message.reply('❌ لا يمكنك تحدي بوت!');
+    if (target.id === challenger.id) return message.reply('❌ لا يمكنك تحدي نفسك!');
+
+    const embed = new EmbedBuilder()
+        .setColor('#5865F2')
+        .setTitle('❌⭕ دعوة لعبة اكس او')
+        .setDescription(`> 🎮 ${challenger} يتحدى ${target}!\n> اضغط **قبول** للموافقة\n\n⏰ تنتهي الدعوة بعد دقيقة`)
+        .setFooter({ text: `المتحدي: ${challenger.username}` });
+
+    const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId(`ttt_accept_${challenger.id}_${target.id}`)
+            .setLabel('✅ قبول التحدي!')
+            .setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+            .setCustomId(`ttt_decline_${challenger.id}_${target.id}`)
+            .setLabel('❌ رفض')
+            .setStyle(ButtonStyle.Danger),
+    );
+
+    const msg = await message.reply({ content: `${target}`, embeds: [embed], components: [row] });
+
+    setTimeout(async () => {
+        if (!tttGames.has(message.channel.id)) {
+            embed.setDescription(`> ❌ ${target.username} لم يرد على الدعوة.`).setColor('#ED4245');
+            msg.edit({ embeds: [embed], components: [] }).catch(() => {});
+        }
+    }, 60000);
+}
+
+// ─── حركة البوت بتأخير ───────────────────────────────────────────────────────
+async function playBotTurn(game) {
+    if (game.ended) return;
+    await new Promise(r => setTimeout(r, 800)); // تأخير واقعي
+    if (game.ended) return;
+
+    const idx = getBotMove(game.board);
+    if (idx === undefined || idx === null) return;
+
+    game.board[idx] = 'O';
+
+    const winResult = checkWinner(game.board);
+    const isDraw = !winResult && !game.board.includes(null);
+
+    if (winResult || isDraw) {
+        await endGame(game);
+    } else {
+        game.currentTurn = 'X';
+        await updateGame(game);
+    }
+}

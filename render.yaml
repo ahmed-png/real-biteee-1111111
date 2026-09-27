@@ -1,0 +1,27 @@
+# ════════════════════════════════════════════════════
+#  render.yaml — إعداد نشر البوت على Render تلقائياً
+# ════════════════════════════════════════════════════
+services:
+  - type: web
+    name: my-real-bot
+    env: node
+    plan: free
+    buildCommand: npm install && cd dashboard-ui && npm install && npm run build
+    startCommand: node index.js
+    healthCheckPath: /health
+
+    # ─── المتغيرات البيئية ─────────────────────────────
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # هذه المتغيرات يجب إضافتها يدوياً في Render Dashboard:
+      # MONGODB_URI      — رابط قاعدة بيانات MongoDB (مهم جداً!)
+      # DISCORD_TOKEN    — توكن البوت
+      # OWNER_ID         — معرف المالك
+      # JWT_SECRET       — مفتاح JWT ثابت، 32 حرفاً على الأقل
+      # DASHBOARD_KEY    — مفتاح دخول لوحة التحكم، 16 حرفاً على الأقل
+      # DASHBOARD_ORIGIN — رابط لوحة التحكم المسموح به في CORS
+      # GEMINI_API_KEY   — مفتاح Gemini
+      # YOUTUBE_API_KEY  — مفتاح YouTube
+      # HF_TOKEN         — مفتاح HuggingFace
+      # DASHBOARD_KEY    — مفتاح الداشبورد (اختياري)
