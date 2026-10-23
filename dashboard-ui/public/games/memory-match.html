@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🃏 Memory Match — تطابق البطاقات</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Cairo:wght@400;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#030710;--card:#0d1525;--card2:#111d30;--border:rgba(0,170,255,0.12);
+  --accent:#00aaff;--gold:#ffd700;--green:#00ff88;--red:#ff3355;--purple:#aa55ff;
+  --text:#e2e8f0;--muted:rgba(226,232,240,0.4);
+  --font:'Cairo',sans-serif;--mono:'Orbitron',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden;
+  display:flex;flex-direction:column;align-items:center;gap:16px;padding:16px;
+  background-image:radial-gradient(ellipse at 30% 20%,rgba(0,100,255,0.06) 0%,transparent 50%),radial-gradient(ellipse at 70% 80%,rgba(170,0,255,0.05) 0%,transparent 50%);}
+
+.title{font-family:var(--mono);font-size:clamp(20px,5vw,34px);font-weight:900;
+  background:linear-gradient(135deg,var(--accent),var(--purple));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  letter-spacing:2px;text-align:center;}
+.subtitle{font-size:12px;color:var(--muted);text-align:center;letter-spacing:1px;margin-top:-8px;}
+
+/* LOBBY */
+#lobby{width:min(95vw,440px);display:flex;flex-direction:column;gap:14px;}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.mode-btn{padding:14px 6px;background:rgba(0,170,255,0.04);border:1px solid var(--border);border-radius:10px;
+  cursor:pointer;text-align:center;transition:all 0.2s;color:var(--text);}
+.mode-btn:hover,.mode-btn.sel{background:rgba(0,170,255,0.1);border-color:var(--accent);}
+.mode-btn span{font-size:24px;display:block;margin-bottom:5px;}
+.mode-btn b{font-size:12px;font-weight:700;}
+.mode-btn small{font-size:10px;color:var(--muted);}
+.inp{width:100%;padding:11px 14px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:14px;outline:none;transition:all 0.2s;}
+.inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,170,255,0.08);}
+.inp::placeholder{color:var(--muted);}
+.btn-row{display:flex;gap:8px;width:100%;}
+.btn{padding:12px 18px;border:none;border-radius:8px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;flex:1;transition:all 0.2s;}
+.btn-blue{background:linear-gradient(135deg,var(--accent),#0077bb);color:#fff;box-shadow:0 4px 20px rgba(0,170,255,0.3);}
+.btn-blue:hover{box-shadow:0 6px 30px rgba(0,170,255,0.5);}
+.btn-ghost{background:rgba(255,255,255,0.04);color:var(--text);border:1px solid rgba(255,255,255,0.08);}
+.btn:active{transform:scale(0.96);}
+.diff-row{display:flex;gap:8px;width:100%;}
+.diff-btn{flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text);cursor:pointer;font-size:12px;transition:all 0.2s;font-family:var(--font);}
+.diff-btn.sel,.diff-btn:hover{background:rgba(0,170,255,0.1);border-color:var(--accent);color:var(--accent);}
+.room-code{font-family:var(--mono);font-size:22px;letter-spacing:6px;color:var(--gold);text-align:center;padding:10px;background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.2);border-radius:8px;}
+.p-list{display:flex;flex-direction:column;gap:6px;}
+.p-item{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;font-size:12px;}
+.p-dot{width:8px;height:8px;border-radius:50%;}
+.err{color:var(--red);font-size:12px;text-align:center;}
+.sec-lbl{font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:2px;display:flex;align-items:center;gap:8px;}
+.sec-lbl::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* GAME */
+#gameArea{display:none;width:min(95vw,560px);flex-direction:column;align-items:center;gap:12px;}
+.hud-bar{display:flex;gap:12px;width:100%;justify-content:space-between;padding:8px 14px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;}
+.hud-v{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent);}
+.hud-l{font-size:10px;color:var(--muted);letter-spacing:1px;}
+
+/* Card grid */
+.card-grid{display:grid;gap:8px;width:100%;}
+.card-grid.g4{grid-template-columns:repeat(4,1fr);}
+.card-grid.g5{grid-template-columns:repeat(5,1fr);}
+.card-grid.g6{grid-template-columns:repeat(6,1fr);}
+.mem-card{
+  aspect-ratio:1;border-radius:10px;cursor:pointer;position:relative;
+  perspective:600px;user-select:none;-webkit-user-select:none;
+  transition:transform 0.1s;
+}
+.mem-card:hover:not(.flipped):not(.matched){transform:translateY(-3px) scale(1.05);}
+.mem-card:active:not(.flipped):not(.matched){transform:scale(0.95);}
+.card-inner{
+  width:100%;height:100%;position:relative;
+  transform-style:preserve-3d;transition:transform 0.45s cubic-bezier(0.4,0,0.2,1);
+  border-radius:10px;
+}
+.mem-card.flipped .card-inner{transform:rotateY(180deg);}
+.mem-card.matched .card-inner{transform:rotateY(180deg);}
+.card-front,.card-back{
+  position:absolute;inset:0;border-radius:10px;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  display:flex;align-items:center;justify-content:center;
+  font-size:clamp(18px,4vw,32px);
+}
+.card-back{
+  background:linear-gradient(135deg,var(--card),var(--card2));
+  border:1px solid var(--border);
+  box-shadow:inset 0 0 20px rgba(0,0,0,0.3);
+}
+.card-back::before{
+  content:'🔮';font-size:clamp(14px,3vw,24px);opacity:0.6;
+}
+.card-front{
+  background:linear-gradient(135deg,#0a1840,#111d35);
+  border:1px solid rgba(0,170,255,0.3);
+  transform:rotateY(180deg);
+  box-shadow:0 0 15px rgba(0,170,255,0.15);
+}
+.mem-card.matched .card-front{
+  background:linear-gradient(135deg,rgba(0,255,136,0.08),rgba(0,170,255,0.08));
+  border-color:rgba(0,255,136,0.4);
+  box-shadow:0 0 20px rgba(0,255,136,0.2);
+  animation:matchPop 0.4s ease;
+}
+@keyframes matchPop{0%{transform:rotateY(180deg) scale(1.15)}100%{transform:rotateY(180deg) scale(1)}}
+.mem-card.wrong .card-inner{animation:wrongShake 0.4s ease;}
+@keyframes wrongShake{0%,100%{transform:rotateY(180deg)}25%{transform:rotateY(180deg) translateX(-5px)}75%{transform:rotateY(180deg) translateX(5px)}}
+
+.multi-scores{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:100%;}
+.score-chip{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);font-size:12px;font-weight:700;}
+.current-turn{border-color:rgba(0,170,255,0.4);background:rgba(0,170,255,0.06);}
+
+/* Overlay */
+.overlay{position:fixed;inset:0;background:rgba(3,7,16,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:50;backdrop-filter:blur(8px);}
+.ov-title{font-family:var(--mono);font-size:clamp(20px,5vw,36px);font-weight:900;text-align:center;}
+.ov-info{font-size:13px;color:var(--muted);text-align:center;line-height:1.8;}
+.sb{display:flex;flex-direction:column;gap:8px;width:min(90%,340px);}
+.sb-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card2);border-radius:10px;border:1px solid var(--border);}
+.sb-rank{font-family:var(--mono);font-weight:700;width:24px;}
+.sb-name{flex:1;font-weight:700;font-size:13px;}
+.sb-matches{color:var(--accent);font-weight:700;font-size:13px;}
+</style>
+</head>
+<body>
+<div class="title">🃏 MEMORY MATCH</div>
+<div class="subtitle">تطابق البطاقات • سرعة في التفكير • تحدى أصدقاءك</div>
+
+<!-- LOBBY -->
+<div id="lobby">
+  <div class="sec-lbl">وضع اللعب</div>
+  <div class="modes">
+    <div class="mode-btn sel" data-m="solo" onclick="pickMode(this,'solo')">
+      <span>🎮</span><b>منفرد</b><br><small>تدرب</small>
+    </div>
+    <div class="mode-btn" data-m="bot" onclick="pickMode(this,'bot')">
+      <span>🤖</span><b>ضد Bot</b><br><small>ذكاء اصطناعي</small>
+    </div>
+    <div class="mode-btn" data-m="multi" onclick="pickMode(this,'multi')">
+      <span>🌐</span><b>مولتي</b><br><small>2 لاعبين</small>
+    </div>
+  </div>
+
+  <div class="sec-lbl">الصعوبة</div>
+  <div class="diff-row">
+    <button class="diff-btn sel" data-d="8" onclick="pickDiff(this)">سهل (4×4)</button>
+    <button class="diff-btn" data-d="10" onclick="pickDiff(this)">متوسط (5×4)</button>
+    <button class="diff-btn" data-d="18" onclick="pickDiff(this)">صعب (6×6)</button>
+  </div>
+
+  <input class="inp" id="nameInp" placeholder="اسمك في اللعبة..." maxlength="12">
+
+  <div id="multiOpts" style="display:none;flex-direction:column;gap:8px;">
+    <div class="btn-row">
+      <button class="btn btn-blue" onclick="doCreate()">➕ إنشاء غرفة</button>
+      <input class="inp" id="codeInp" placeholder="كود الغرفة..." style="flex:1;text-align:center;letter-spacing:2px;text-transform:uppercase;" maxlength="6">
+      <button class="btn btn-ghost" onclick="doJoin()">دخول</button>
+    </div>
+  </div>
+  <div id="waitRoom" style="display:none;flex-direction:column;gap:10px;">
+    <div class="room-code" id="rCode">——</div>
+    <div style="font-size:12px;color:var(--muted);text-align:center;">شارك الكود مع صديقك!</div>
+    <div class="p-list" id="pList"></div>
+    <div class="btn-row">
+      <button class="btn btn-blue" id="hostStartBtn" style="display:none" onclick="hostStart()">🎮 ابدأ!</button>
+      <button class="btn btn-ghost" onclick="()=>navigator.clipboard?.writeText(myRoomId||'')">📋 نسخ</button>
+    </div>
+  </div>
+
+  <button class="btn btn-blue" id="soloBtn" onclick="startLocal()">▶ ابدأ اللعبة</button>
+  <div class="err" id="errMsg"></div>
+</div>
+
+<!-- GAME -->
+<div id="gameArea">
+  <div class="multi-scores" id="scoresRow" style="display:none"></div>
+  <div class="hud-bar">
+    <div><div class="hud-v" id="hMoves">0</div><div class="hud-l">المحاولات</div></div>
+    <div><div class="hud-v" id="hMatches">0</div><div class="hud-l">التطابقات</div></div>
+    <div><div class="hud-v" id="hTime">0</div><div class="hud-l">الثانية</div></div>
+    <div><div class="hud-v" id="hTurn" style="color:var(--green)">أنت</div><div class="hud-l">الدور</div></div>
+  </div>
+  <div class="card-grid" id="cardGrid"></div>
+</div>
+
+<!-- Win Overlay -->
+<div class="overlay" id="winOverlay" style="display:none">
+  <div class="ov-title" id="winTitle" style="color:var(--gold)"></div>
+  <div class="ov-info" id="winInfo"></div>
+  <div class="sb" id="winSb"></div>
+  <div class="btn-row" style="width:min(90%,300px)">
+    <button class="btn btn-blue" onclick="restartGame()">▶ مجدداً</button>
+    <button class="btn btn-ghost" onclick="goLobby()">🏠 اللوبي</button>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+'use strict';
+
+// ── Symbol sets ────────────────────────────────────────────────
+const SYMBOLS_EASY = ['🦊','🐯','🦁','🐸','🦋','🐬','🦄','🎸'];
+const SYMBOLS_MED  = ['🚀','⚡','💎','🔥','🌊','🎯','👾','🤖','🏆','🌙'];
+const SYMBOLS_HARD = ['🦅','🦋','🐠','🦑','🦊','🐯','🌈','⭐','🔮','🎪','🎨','🎭','🦩','🐉','🌺','🦚','🎲','🦜'];
+
+// ── State ──────────────────────────────────────────────────────
+let myMode='solo', myDiff=8, myRoomId=null, myId=null, socket=null, isHost=false;
+let cards=[], flipped=[], matched=[], moves=0, pairs=0, timeStart=0, timerInt=null, locked=false;
+let myTurn=true, myMatches=0, botMatches=0;
+let botMemory={}, botFlippedLast=null;
+// Multiplayer
+let multiCards=[], multiPlayers=[], multiTurn=null, multiScores={};
+
+function getName(){ return (document.getElementById('nameInp').value||'').trim()||'لاعب'; }
+function setErr(m){ document.getElementById('errMsg').textContent=m; }
+
+// ── Mode / Diff ────────────────────────────────────────────────
+function pickMode(el,m){
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel'); myMode=m;
+  document.getElementById('multiOpts').style.display=m==='multi'?'flex':'none';
+  document.getElementById('soloBtn').style.display=m==='multi'?'none':'flex';
+  document.getElementById('waitRoom').style.display='none';
+}
+function pickDiff(el){
+  document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel'); myDiff=parseInt(el.dataset.d);
+}
+
+// ── Local Game (Solo / Bot) ─────────────────────────────────────
+function startLocal(){
+  document.getElementById('lobby').style.display='none';
+  document.getElementById('gameArea').style.display='flex';
+  document.getElementById('winOverlay').style.display='none';
+  initLocalGame(myDiff);
+}
+
+function initLocalGame(n){
+  cards=[]; flipped=[]; matched=[]; moves=0; pairs=0; locked=false;
+  myMatches=0; botMatches=0; myTurn=true; botMemory={};
+  document.getElementById('hTurn').textContent = myMode==='bot'?'أنت':'—';
+  document.getElementById('hTurn').style.color = 'var(--green)';
+
+  // Generate pairs
+  const syms = n<=8?SYMBOLS_EASY:n<=10?SYMBOLS_MED:SYMBOLS_HARD;
+  const chosen = shuffle([...syms]).slice(0,n);
+  const deck = shuffle([...chosen,...chosen]);
+  cards = deck.map((s,i)=>({id:i,sym:s,flipped:false,matched:false}));
+
+  // Grid columns
+  const cols = n===8?'g4':n===10?'g5':'g6';
+  const grid = document.getElementById('cardGrid');
+  grid.className = `card-grid ${cols}`;
+  renderCards();
+
+  clearInterval(timerInt);
+  timeStart = Date.now();
+  timerInt = setInterval(()=>{
+    document.getElementById('hTime').textContent=Math.floor((Date.now()-timeStart)/1000);
+  },1000);
+}
+
+function renderCards(){
+  const grid=document.getElementById('cardGrid');
+  grid.innerHTML='';
+  cards.forEach(c=>{
+    const el=document.createElement('div');
+    el.className='mem-card'+(c.flipped||c.matched?' flipped':'')+(c.matched?' matched':'');
+    el.dataset.id=c.id;
+    el.innerHTML=`<div class="card-inner"><div class="card-back"></div><div class="card-front">${c.sym}</div></div>`;
+    el.addEventListener('click',()=>clickCard(c.id));
+    grid.appendChild(el);
+  });
+}
+
+function clickCard(id){
+  if(locked) return;
+  if(!myTurn && myMode==='bot') return;
+  const c=cards[id];
+  if(c.flipped||c.matched) return;
+  flipCard(id, true);
+  if(myMode==='bot') botMemory[id]=c.sym;
+}
+
+function flipCard(id, isPlayer){
+  const c=cards[id]; c.flipped=true;
+  const el=document.querySelector(`.mem-card[data-id="${id}"]`);
+  if(el) el.classList.add('flipped');
+  flipped.push(id);
+
+  if(flipped.length===2){
+    locked=true; moves++;
+    document.getElementById('hMoves').textContent=moves;
+    setTimeout(()=>checkMatch(isPlayer), 600);
+  }
+}
+
+function checkMatch(isPlayer){
+  const [a,b]=flipped;
+  const match=cards[a].sym===cards[b].sym;
+  if(match){
+    cards[a].matched=cards[b].matched=true;
+    document.querySelector(`.mem-card[data-id="${a}"]`)?.classList.add('matched');
+    document.querySelector(`.mem-card[data-id="${b}"]`)?.classList.add('matched');
+    pairs++;
+    if(isPlayer) myMatches++; else botMatches++;
+    document.getElementById('hMatches').textContent=pairs;
+    flipped=[]; locked=false;
+    if(pairs===cards.length/2){ endLocal(); return; }
+    if(!isPlayer && myMode==='bot') schedBotTurn(); // bot gets another turn
+    else if(myMode==='bot' && !isPlayer) schedBotTurn();
+    // player matched → player plays again
+  } else {
+    // Wrong
+    [a,b].forEach(id=>{
+      const el=document.querySelector(`.mem-card[data-id="${id}"]`);
+      if(el){el.classList.add('wrong');setTimeout(()=>el.classList.remove('wrong'),400);}
+    });
+    setTimeout(()=>{
+      cards[a].flipped=cards[b].flipped=false;
+      document.querySelector(`.mem-card[data-id="${a}"]`)?.classList.remove('flipped');
+      document.querySelector(`.mem-card[data-id="${b}"]`)?.classList.remove('flipped');
+      flipped=[]; locked=false;
+      if(myMode==='bot'){
+        myTurn=!myTurn;
+        document.getElementById('hTurn').textContent=myTurn?'أنت':'🤖 Bot';
+        document.getElementById('hTurn').style.color=myTurn?'var(--green)':'var(--purple)';
+        if(!myTurn) schedBotTurn();
+      }
+    },700);
+  }
+}
+
+function schedBotTurn(){
+  setTimeout(()=>botTurn(),900);
+}
+
+function botTurn(){
+  if(myTurn||locked) return;
+  locked=false;
+  // Try to find a match from memory
+  const unmatched=cards.filter(c=>!c.matched);
+  const memKeys=Object.keys(botMemory).map(Number).filter(k=>!cards[k].matched);
+
+  // Look for known pair
+  let found=false;
+  for(let i=0;i<memKeys.length&&!found;i++){
+    for(let j=i+1;j<memKeys.length&&!found;j++){
+      const ki=memKeys[i],kj=memKeys[j];
+      if(botMemory[ki]===botMemory[kj]&&ki!==kj){
+        // Bot found a match!
+        flipCard(ki,false);
+        setTimeout(()=>{ if(!cards[kj].matched) flipCard(kj,false); },400);
+        found=true;
+      }
+    }
+  }
+
+  if(!found){
+    // Random flip 2 unknown
+    const unknown=unmatched.filter(c=>botMemory[c.id]===undefined);
+    const random1=unknown.length>0?unknown[Math.floor(Math.random()*unknown.length)]:unmatched[Math.floor(Math.random()*unmatched.length)];
+    flipCard(random1.id,false);
+    botMemory[random1.id]=random1.sym;
+    setTimeout(()=>{
+      const unknown2=unmatched.filter(c=>!c.flipped&&c.id!==random1.id);
+      if(!unknown2.length) return;
+      // Check if any memory card matches random1
+      const matchKey=memKeys.find(k=>botMemory[k]===random1.sym&&k!==random1.id&&!cards[k].matched);
+      const pick2=matchKey!==undefined?cards[matchKey]:unknown2[Math.floor(Math.random()*unknown2.length)];
+      flipCard(pick2.id,false);
+      botMemory[pick2.id]=pick2.sym;
+    },500);
+  }
+}
+
+function endLocal(){
+  clearInterval(timerInt);
+  const time=Math.floor((Date.now()-timeStart)/1000);
+  const winOverlay=document.getElementById('winOverlay');
+  winOverlay.style.display='flex';
+  if(myMode==='solo'){
+    document.getElementById('winTitle').textContent='🏆 أحسنت!';
+    document.getElementById('winInfo').textContent=`أتممت اللعبة في ${time} ثانية بـ ${moves} محاولة!`;
+    document.getElementById('winSb').innerHTML='';
+  } else {
+    const iWon=myMatches>=botMatches;
+    document.getElementById('winTitle').textContent=iWon?'🏆 فزت!':'🤖 فاز الروبوت!';
+    document.getElementById('winInfo').textContent='';
+    document.getElementById('winSb').innerHTML=`
+      <div class="sb-row"><div class="sb-rank">🥇</div><div class="sb-name">${iWon?getName():'Bot 🤖'}</div><div class="sb-matches">${iWon?myMatches:botMatches} أزواج</div></div>
+      <div class="sb-row"><div class="sb-rank">🥈</div><div class="sb-name">${iWon?'Bot 🤖':getName()}</div><div class="sb-matches">${iWon?botMatches:myMatches} أزواج</div></div>
+    `;
+  }
+}
+
+function restartGame(){
+  document.getElementById('winOverlay').style.display='none';
+  initLocalGame(myDiff);
+}
+
+function goLobby(){
+  clearInterval(timerInt);
+  document.getElementById('winOverlay').style.display='none';
+  document.getElementById('gameArea').style.display='none';
+  document.getElementById('lobby').style.display='flex';
+}
+
+// ── MULTIPLAYER ─────────────────────────────────────────────────
+function initSocket(){
+  if(socket&&socket.connected) return Promise.resolve();
+  return new Promise((res,rej)=>{
+    socket=io(window.location.origin,{path:'/game-ws',transports:['websocket','polling']});
+    socket.on('connect',res); socket.on('connect_error',rej);
+    setupMultiListeners();
+  });
+}
+function doCreate(){
+  setErr('');
+  initSocket().then(()=>{
+    socket.emit('createRoom',{gameType:'memory',mode:'multi',username:getName(),avatar:null});
+  }).catch(()=>setErr('❌ فشل الاتصال'));
+}
+function doJoin(){
+  const code=(document.getElementById('codeInp').value||'').trim().toUpperCase();
+  if(code.length!==6) return setErr('❌ الكود 6 أحرف');
+  setErr('');
+  initSocket().then(()=>{
+    socket.emit('joinRoom',{roomId:code,username:getName(),avatar:null});
+  }).catch(()=>setErr('❌ فشل الاتصال'));
+}
+function hostStart(){if(socket&&myRoomId) socket.emit('startGame',{roomId:myRoomId});}
+
+function setupMultiListeners(){
+  socket.on('roomCreated',d=>{myId=d.playerId;myRoomId=d.roomId;isHost=true;showWait(d);document.getElementById('hostStartBtn').style.display='flex';});
+  socket.on('roomJoined',d=>{myId=d.playerId;myRoomId=d.roomId;isHost=false;showWait(d);});
+  socket.on('playerJoined',d=>updatePList(d.players));
+  socket.on('gameStarted',()=>{startLocal();document.getElementById('scoresRow').style.display='flex';});
+  socket.on('error',d=>setErr(d.msg||'خطأ'));
+}
+
+function showWait(d){
+  document.getElementById('multiOpts').style.display='none';
+  document.getElementById('waitRoom').style.display='flex';
+  document.getElementById('rCode').textContent=d.roomId;
+  updatePList(d.players);
+}
+function updatePList(pls){
+  document.getElementById('pList').innerHTML=(pls||[]).map(p=>`
+    <div class="p-item">
+      <div class="p-dot" style="background:${p.color||'#00aaff'}"></div>
+      <span style="flex:1;font-weight:700">${p.username}${p.id===myId?' (أنت)':''}</span>
+      <span style="color:var(--green);font-size:11px">✅</span>
+    </div>`).join('');
+}
+
+// ── Utils ──────────────────────────────────────────────────────
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+// URL params
+window.addEventListener('DOMContentLoaded',()=>{
+  const p=new URLSearchParams(window.location.search);
+  if(p.get('name')) document.getElementById('nameInp').value=decodeURIComponent(p.get('name'));
+});
+</script>
+</body>
+</html>

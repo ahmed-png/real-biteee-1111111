@@ -4,8 +4,8 @@ require('dotenv').config();
 
 /**
  * ╔══════════════════════════════════════════════════════════════════╗
- * ║         🎛️  لوحة تحكم البوت الاحترافية — Dashboard Server       ║
- * ║  React (Vite) + Express API Backend                              ║
+ * ║     🎛️  لوحة تحكم البوت الاحترافية — Dashboard + Game Server   ║
+ * ║  React (Vite) + Express API + Socket.io Real-time Game Engine   ║
  * ╚══════════════════════════════════════════════════════════════════╝
  */
 
@@ -23,6 +23,9 @@ function getDashboardUrl() {
 }
 module.exports.getDashboardUrl = getDashboardUrl;
 
+/**
+ * Generate a short-lived JWT for dashboard access
+ */
 function generateWebToken(user) {
     let avatar;
     try {
@@ -42,18 +45,32 @@ function generateWebToken(user) {
 }
 module.exports.generateWebToken = generateWebToken;
 
-// Set bot client instance
+// Set bot client instance on express app
 module.exports.setClient = (c) => {
     app.set('client', c);
 };
 
-// Start Express Server
+// ─── HTTP Server ────────────────────────────────────────────────
 const server = http.createServer(app);
+
+// ─── Socket.io Game Engine ──────────────────────────────────────
+let gameServerMounted = false;
+try {
+    const { mountGameServer } = require('./src/game-server');
+    mountGameServer(server);
+    gameServerMounted = true;
+} catch (err) {
+    console.warn('[GameServer] ⚠️ Socket.io game server not mounted:', err.message);
+    console.warn('[GameServer] Run: npm install socket.io');
+}
 
 module.exports.start = () => {
     server.listen(PORT, '0.0.0.0', () => {
         console.log(`[Dashboard] 🌐 Server running on port ${PORT}`);
         console.log(`[Dashboard] 🔗 Internal URL: http://localhost:${PORT}`);
         if (RENDER_URL) console.log(`[Dashboard] ☁️ Public URL: ${RENDER_URL}`);
+        if (gameServerMounted) {
+            console.log(`[GameServer] 🎮 Real-time multiplayer active on /game-ws`);
+        }
     });
 };

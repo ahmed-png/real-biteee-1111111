@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>🚀 Space Defender 2.0 — حرب المجرة</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Cairo:wght@400;600;700;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --bg:#02050f;--panel:#081022;--card:#0f1d38;
+  --border:rgba(0,180,255,0.18);--border-glow:rgba(0,180,255,0.4);
+  --accent:#00c8ff;--accent2:#0077ff;--purple:#a855f7;--red:#ff2d55;
+  --green:#10b981;--gold:#facc15;--text:#e2e8f0;--muted:rgba(226,232,240,0.45);
+  --font:'Cairo',sans-serif;--mono:'Orbitron',monospace;
+}
+
+body{
+  background:var(--bg);color:var(--text);font-family:var(--font);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;overflow:hidden;
+  background-image:
+    radial-gradient(ellipse at 50% 0%,rgba(0,120,255,0.12) 0%,transparent 70%),
+    radial-gradient(ellipse at 50% 100%,rgba(168,85,247,0.08) 0%,transparent 70%);
+}
+
+.game-container{
+  position:relative;z-index:2;display:flex;flex-direction:column;
+  align-items:center;gap:10px;width:min(95vw,600px);
+}
+
+/* ─── LOBBY ─────────────────────────────────────── */
+#lobby{
+  width:100%;display:flex;flex-direction:column;gap:14px;
+  background:rgba(8,16,34,0.85);border:1px solid var(--border);
+  border-radius:16px;padding:24px;backdrop-filter:blur(10px);
+  box-shadow:0 10px 40px rgba(0,0,0,0.5);
+}
+
+.logo{
+  font-family:var(--mono);font-size:clamp(20px,5vw,32px);font-weight:900;
+  background:linear-gradient(135deg,#00c8ff,#a855f7,#ff2d55);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  letter-spacing:2px;text-align:center;
+}
+.logo-sub{font-size:12px;color:var(--muted);text-align:center;margin-top:-6px;}
+
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px;}
+.mode-card{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:16px 10px;text-align:center;cursor:pointer;transition:all 0.2s ease;
+}
+.mode-card:hover,.mode-card.sel{
+  border-color:var(--accent);background:rgba(0,200,255,0.08);
+  box-shadow:0 0 20px rgba(0,200,255,0.2);transform:translateY(-2px);
+}
+.mode-card .icon{font-size:26px;display:block;margin-bottom:6px;}
+.mode-card .title{font-size:13px;font-weight:700;color:var(--text);}
+.mode-card .desc{font-size:10px;color:var(--muted);margin-top:3px;}
+
+.inp{
+  width:100%;padding:11px 14px;background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);border-radius:10px;color:var(--text);
+  font-family:var(--font);font-size:13px;outline:none;transition:all 0.2s;
+}
+.inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,200,255,0.15);}
+
+.btn{
+  padding:12px 20px;border:none;border-radius:10px;font-family:var(--font);
+  font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;
+  align-items:center;justify-content:center;gap:8px;transition:all 0.2s;
+}
+.btn:active{transform:scale(0.97);}
+.btn-primary{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#02050f;box-shadow:0 4px 20px rgba(0,200,255,0.3);width:100%;
+}
+.btn-primary:hover{box-shadow:0 6px 28px rgba(0,200,255,0.5);transform:translateY(-1px);}
+.btn-secondary{background:rgba(255,255,255,0.06);color:var(--text);border:1px solid var(--border);}
+.btn-secondary:hover{background:rgba(255,255,255,0.12);}
+
+.multi-opts{display:none;flex-direction:column;gap:10px;}
+.row-btns{display:flex;gap:8px;width:100%;}
+.room-badge{
+  font-family:var(--mono);font-size:20px;font-weight:700;letter-spacing:4px;
+  color:var(--gold);text-align:center;padding:10px;background:rgba(250,204,21,0.06);
+  border:1px solid rgba(250,204,21,0.25);border-radius:10px;
+}
+
+/* ─── HUD ───────────────────────────────────────── */
+#gameArea{display:none;width:100%;flex-direction:column;align-items:center;gap:8px;}
+.hud{
+  display:flex;gap:8px;width:100%;justify-content:space-between;
+  padding:8px 14px;background:rgba(8,16,34,0.85);border:1px solid var(--border);
+  border-radius:10px;backdrop-filter:blur(8px);
+}
+.hud-item{text-align:center;}
+.hud-val{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent);}
+.hud-lbl{font-size:10px;color:var(--muted);letter-spacing:1px;}
+.canvas-wrap{position:relative;width:100%;}
+#canvas{
+  border:1px solid var(--border);border-radius:12px;background:#030713;
+  display:block;max-width:100%;box-shadow:0 0 35px rgba(0,180,255,0.12);
+}
+
+.overlay{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;background:rgba(3,7,19,0.92);
+  border-radius:12px;gap:14px;backdrop-filter:blur(5px);
+}
+.ov-title{font-family:var(--mono);font-size:clamp(18px,4vw,28px);font-weight:900;}
+.ov-blue{color:var(--accent);} .ov-red{color:var(--red);} .ov-gold{color:var(--gold);}
+.ov-info{font-size:13px;color:rgba(226,232,240,0.65);text-align:center;line-height:1.7;}
+
+.mobile-ctrls{
+  display:flex;gap:10px;align-items:center;justify-content:center;
+  width:100%;margin-top:2px;
+}
+.ctrl-btn{
+  flex:1;max-width:90px;height:46px;border:1px solid var(--border);border-radius:10px;
+  background:rgba(0,200,255,0.06);color:var(--accent);font-size:18px;
+  display:flex;align-items:center;justify-content:center;user-select:none;cursor:pointer;
+}
+.ctrl-btn:active{background:rgba(0,200,255,0.2);transform:scale(0.93);}
+.fire-btn{
+  flex:1.4;height:46px;border:1px solid rgba(255,45,85,0.3);border-radius:10px;
+  background:rgba(255,45,85,0.1);color:var(--red);font-size:16px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;user-select:none;cursor:pointer;
+}
+.fire-btn:active{background:rgba(255,45,85,0.3);transform:scale(0.93);}
+
+.w-badge{
+  display:inline-flex;align-items:center;gap:5px;padding:3px 8px;
+  background:rgba(0,200,255,0.1);border:1px solid var(--border);border-radius:6px;
+  font-size:11px;color:var(--accent);font-family:var(--mono);
+}
+</style>
+</head>
+<body>
+
+<div class="game-container">
+  <!-- LOBBY -->
+  <div id="lobby">
+    <div class="logo">🚀 SPACE DEFENDER 2.0</div>
+    <div class="logo-sub">حرب الفضاء النيون — أسلحة عشوائية ومولتي بلاير أونلاين</div>
+
+    <div class="modes">
+      <div class="mode-card sel" data-mode="solo" onclick="pickMode(this,'solo')">
+        <span class="icon">🛸</span>
+        <div class="title">حملة فردية</div>
+        <div class="desc">موجات فضائية + ترقيات</div>
+      </div>
+      <div class="mode-card" data-mode="bot" onclick="pickMode(this,'bot')">
+        <span class="icon">🤖</span>
+        <div class="title">معركة الذكاء</div>
+        <div class="desc">ضد أسطول الروبوت الذكي</div>
+      </div>
+      <div class="mode-card" data-mode="multi" onclick="pickMode(this,'multi')">
+        <span class="icon">🌐</span>
+        <div class="title">مولتي بلاير</div>
+        <div class="desc">تعاوني مع أصدقائك بكود</div>
+      </div>
+    </div>
+
+    <div>
+      <input type="text" id="nameInp" class="inp" placeholder="اسمك داخل المعركة..." maxlength="16">
+    </div>
+
+    <div class="multi-opts" id="multiOpts">
+      <div class="row-btns">
+        <button class="btn btn-primary" onclick="startMultiRoom()">🌐 إنشاء غرفة جديدة</button>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="joinCodeInp" class="inp" placeholder="أدخل كود الغرفة (6 أحرف)" maxlength="6" style="text-transform:uppercase;text-align:center;letter-spacing:3px;font-family:var(--mono);">
+        <button class="btn btn-secondary" onclick="joinMultiRoom()">دخول</button>
+      </div>
+    </div>
+
+    <div id="waitRoom" style="display:none;flex-direction:column;gap:10px;text-align:center;">
+      <div style="font-size:12px;color:var(--muted);">شارك كود الغرفة مع صديقك:</div>
+      <div class="room-badge" id="roomCodeDisplay">------</div>
+      <div id="pList" style="display:flex;flex-direction:column;gap:6px;width:100%;"></div>
+      <div style="display:flex;gap:8px;width:100%;">
+        <button class="btn btn-primary" id="hostStartBtn" style="flex:1;" onclick="hostStart()">🚀 بدء المعركة الآن</button>
+        <button class="btn btn-secondary" onclick="copyCode()">📋 نسخ الكود</button>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="launchSoloBtn" onclick="launchGame()">▶ انطلق إلى الفضاء</button>
+    <div id="errMsg" style="font-size:12px;color:var(--red);text-align:center;"></div>
+  </div>
+
+  <!-- GAME AREA -->
+  <div id="gameArea">
+    <div class="hud">
+      <div class="hud-item"><div class="hud-val" id="scoreVal">0</div><div class="hud-lbl">النقاط</div></div>
+      <div class="hud-item"><div class="hud-val" id="waveVal">1</div><div class="hud-lbl">الموجة</div></div>
+      <div class="hud-item">
+        <div class="hud-val" id="livesVal">❤️❤️❤️</div>
+        <div class="hud-lbl">الأرواح</div>
+      </div>
+      <div class="hud-item">
+        <div class="hud-val" id="weaponVal">⚡ ليزر</div>
+        <div class="hud-lbl">السلاح</div>
+      </div>
+      <div class="hud-item"><div class="hud-val" id="highVal">0</div><div class="hud-lbl">الأعلى</div></div>
+    </div>
+
+    <div class="canvas-wrap">
+      <canvas id="canvas" width="540" height="600"></canvas>
+      <div class="overlay" id="overlay" style="display:none;">
+        <div class="ov-title ov-blue" id="ovTitle">🚀 انتهت المعركة!</div>
+        <div class="ov-info" id="ovInfo">سجلت نتيجة أسطورية في الدفاع عن المجرة</div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-primary" onclick="restart()">▶ العب مجدداً</button>
+          <button class="btn btn-secondary" onclick="toLobby()">🏠 اللوبي</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mobile-ctrls">
+      <button class="ctrl-btn" id="leftBtn">◀</button>
+      <button class="fire-btn" id="fireBtn">🔥 إطلاق</button>
+      <button class="ctrl-btn" id="rightBtn">▶</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+'use strict';
+
+// ── Web Audio Synthesizer (Zero external dependencies) ─────────
+let audioCtx = null;
+function playSfx(type) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+
+    if (type === 'laser') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(800, t);
+      osc.frequency.exponentialRampToValueAtTime(120, t + 0.12);
+      gain.gain.setValueAtTime(0.15, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+      osc.start(t); osc.stop(t + 0.12);
+    } else if (type === 'hit') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(220, t);
+      osc.frequency.linearRampToValueAtTime(60, t + 0.08);
+      gain.gain.setValueAtTime(0.2, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.08);
+      osc.start(t); osc.stop(t + 0.08);
+    } else if (type === 'powerup') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(350, t);
+      osc.frequency.exponentialRampToValueAtTime(900, t + 0.2);
+      gain.gain.setValueAtTime(0.2, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+      osc.start(t); osc.stop(t + 0.2);
+    } else if (type === 'explode') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(140, t);
+      osc.frequency.exponentialRampToValueAtTime(30, t + 0.3);
+      gain.gain.setValueAtTime(0.3, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+      osc.start(t); osc.stop(t + 0.3);
+    }
+  } catch(e) {}
+}
+
+// ── Game State ─────────────────────────────────────────────────
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+let mode = 'solo', running = false, frameCount = 0;
+let score = 0, wave = 1, lives = 3, highScore = 0;
+let roomId = null, socket = null, myId = null, isHost = false;
+
+function setErr(msg) {
+  document.getElementById('errMsg').textContent = msg;
+}
+
+// ── Socket.io Multiplayer Support ─────────────────────────────
+function initSocket() {
+  if (socket && socket.connected) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    socket = io(window.location.origin, { path: '/game-ws', transports: ['websocket', 'polling'] });
+    socket.on('connect', resolve);
+    socket.on('connect_error', reject);
+    setupMultiListeners();
+  });
+}
+
+function setupMultiListeners() {
+  socket.on('roomCreated', d => {
+    myId = d.playerId; roomId = d.roomId; isHost = true;
+    showWait(d);
+    document.getElementById('hostStartBtn').style.display = 'flex';
+  });
+  socket.on('roomJoined', d => {
+    myId = d.playerId; roomId = d.roomId; isHost = false;
+    showWait(d);
+    document.getElementById('hostStartBtn').style.display = 'none';
+  });
+  socket.on('playerJoined', d => updatePList(d.players));
+  socket.on('gameStarted', () => {
+    launchGame();
+  });
+  socket.on('spaceState', d => {
+    if (mode === 'multi' && d.players) {
+      const other = d.players.find(p => p.id !== myId);
+      if (other && p2) {
+        p2.x = other.x;
+      }
+      if (typeof d.score === 'number' && !isHost) score = d.score;
+      if (typeof d.wave === 'number' && !isHost) wave = d.wave;
+      if (typeof d.lives === 'number' && !isHost) lives = d.lives;
+      updateHUD();
+    }
+  });
+  socket.on('gameOver', w => {
+    gameOver();
+  });
+  socket.on('error', d => setErr(d.msg || 'خطأ'));
+}
+
+function showWait(d) {
+  document.getElementById('multiOpts').style.display = 'none';
+  document.getElementById('waitRoom').style.display = 'flex';
+  document.getElementById('roomCodeDisplay').textContent = d.roomId;
+  updatePList(d.players);
+}
+
+function updatePList(players) {
+  const pList = document.getElementById('pList');
+  if (!pList) return;
+  pList.innerHTML = (players || []).map(p => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;background:rgba(255,255,255,0.05);border-radius:8px;">
+      <div style="width:10px;height:10px;border-radius:50%;background:${p.color || '#00c8ff'};"></div>
+      <span style="flex:1;font-size:12px;font-weight:700;text-align:right;">${p.username || p.name}${p.id === myId ? ' (أنت)' : ''}</span>
+      <span style="font-size:11px;color:var(--accent);">✅ جاهز</span>
+    </div>
+  `).join('');
+}
+
+function hostStart() {
+  if (socket && roomId) socket.emit('startGame', { roomId });
+}
+
+function copyCode() {
+  if (roomId) {
+    navigator.clipboard?.writeText(roomId).then(() => setErr('✅ تم نسخ كود الغرفة!'));
+  }
+}
+
+// Stars
+const stars = [];
+for (let i = 0; i < 90; i++) {
+  stars.push({
+    x: Math.random() * W, y: Math.random() * H,
+    size: Math.random() * 2 + 0.5, speed: Math.random() * 2 + 0.5,
+    bright: Math.random()
+  });
+}
+
+// Players (Supports Solo, P1 + P2 in co-op, and AI Bot Companion)
+let p1 = {
+  x: W / 2, y: H - 55, w: 42, h: 28, speed: 5,
+  color: '#00c8ff', weapon: 'laser', ammo: -1, shield: 0
+};
+let p2 = null; // Co-op friend or AI Companion
+
+// Drops & Projectiles
+let bullets = [], enemyBullets = [], enemies = [], drops = [], particles = [];
+let enemyDir = 1, enemySpeed = 1, bossObj = null;
+
+// Weapons definitions
+const WEAPONS = {
+  laser:   { name: '⚡ ليزر', color: '#00c8ff', count: 1, spread: 0 },
+  triple:  { name: '🔱 ثلاثي', color: '#facc15', count: 3, spread: 0.18 },
+  plasma:  { name: '💥 بلازما', color: '#a855f7', count: 2, spread: 0.1 },
+  missile: { name: '🚀 صواريخ', color: '#ff2d55', count: 2, spread: 0.25 },
+  shield:  { name: '🛡️ درع', color: '#10b981', count: 1, spread: 0 }
+};
+
+// Controls
+const keys = { left: false, right: false, fire: false };
+window.addEventListener('keydown', e => {
+  if (['ArrowLeft','KeyA'].includes(e.code)) keys.left = true;
+  if (['ArrowRight','KeyD'].includes(e.code)) keys.right = true;
+  if (['Space','KeyW','ArrowUp'].includes(e.code)) { keys.fire = true; e.preventDefault(); }
+  if (mode === 'multi' && socket && roomId && running) {
+    socket.emit('input', { roomId, keys });
+  }
+});
+window.addEventListener('keyup', e => {
+  if (['ArrowLeft','KeyA'].includes(e.code)) keys.left = false;
+  if (['ArrowRight','KeyD'].includes(e.code)) keys.right = false;
+  if (['Space','KeyW','ArrowUp'].includes(e.code)) keys.fire = false;
+  if (mode === 'multi' && socket && roomId && running) {
+    socket.emit('input', { roomId, keys });
+  }
+});
+
+// Mobile button listeners
+const bindTouch = (id, k) => {
+  const el = document.getElementById(id);
+  el.addEventListener('touchstart', e => {
+    e.preventDefault(); keys[k] = true;
+    if (mode === 'multi' && socket && roomId && running) socket.emit('input', { roomId, keys });
+  });
+  el.addEventListener('touchend', e => {
+    e.preventDefault(); keys[k] = false;
+    if (mode === 'multi' && socket && roomId && running) socket.emit('input', { roomId, keys });
+  });
+  el.addEventListener('mousedown', () => {
+    keys[k] = true;
+    if (mode === 'multi' && socket && roomId && running) socket.emit('input', { roomId, keys });
+  });
+  el.addEventListener('mouseup', () => {
+    keys[k] = false;
+    if (mode === 'multi' && socket && roomId && running) socket.emit('input', { roomId, keys });
+  });
+};
+bindTouch('leftBtn', 'left');
+bindTouch('rightBtn', 'right');
+bindTouch('fireBtn', 'fire');
+
+// ── Lobby UI ───────────────────────────────────────────────────
+function pickMode(el, m) {
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel'); mode = m;
+  document.getElementById('multiOpts').style.display = m === 'multi' ? 'flex' : 'none';
+  document.getElementById('launchSoloBtn').style.display = m === 'multi' ? 'none' : 'flex';
+  document.getElementById('waitRoom').style.display = 'none';
+}
+
+function startMultiRoom() {
+  setErr('');
+  mode = 'multi';
+  initSocket().then(() => {
+    socket.emit('createRoom', { gameType: 'space', mode: 'multi', username: getName() });
+  }).catch(() => setErr('❌ فشل الاتصال بالسيرفر'));
+}
+
+function joinMultiRoom() {
+  const code = (document.getElementById('joinCodeInp').value || '').trim().toUpperCase();
+  if (code.length !== 6) return setErr('❌ كود الغرفة 6 أحرف');
+  setErr('');
+  mode = 'multi';
+  initSocket().then(() => {
+    socket.emit('joinRoom', { roomId: code, username: getName() });
+  }).catch(() => setErr('❌ فشل الاتصال بالسيرفر'));
+}
+
+function getName() {
+  return (document.getElementById('nameInp').value || '').trim() || 'كابتن الفضاء';
+}
+
+// ── Launch Game ────────────────────────────────────────────────
+function launchGame() {
+  document.getElementById('lobby').style.display = 'none';
+  document.getElementById('gameArea').style.display = 'flex';
+  document.getElementById('overlay').style.display = 'none';
+
+  score = 0; wave = 1; lives = 3;
+  bullets = []; enemyBullets = []; drops = []; particles = [];
+  p1.x = W / 2; p1.weapon = 'laser'; p1.shield = 0;
+
+  if (mode === 'bot') {
+    // Companion AI drone aiding player
+    p2 = { x: W / 2 - 60, y: H - 55, w: 32, h: 22, color: '#a855f7', name: 'AI Companion', shield: 0 };
+  } else if (mode === 'multi') {
+    // Co-op 2nd fighter
+    p2 = { x: W / 2 + 60, y: H - 55, w: 40, h: 26, color: '#facc15', name: 'الطيار الزميل', shield: 0 };
+  } else {
+    p2 = null;
+  }
+
+  createWave(wave);
+  running = true;
+  requestAnimationFrame(gameLoop);
+}
+
+function createWave(n) {
+  enemies = [];
+  const isBossWave = n % 5 === 0;
+
+  if (isBossWave) {
+    bossObj = {
+      x: W / 2, y: 90, w: 100, h: 50,
+      hp: 25 + n * 5, maxHp: 25 + n * 5,
+      color: '#ff2d55', vx: 2, shootCooldown: 40
+    };
+  } else {
+    bossObj = null;
+    const rows = Math.min(5, 2 + Math.floor(n / 2));
+    const cols = Math.min(8, 5 + Math.floor(n / 3));
+    const spacingX = (W - 100) / cols;
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const type = r === 0 ? 'elite' : r === 1 ? 'scout' : 'grunt';
+        enemies.push({
+          x: 60 + c * spacingX, y: 50 + r * 38,
+          w: 30, h: 22, alive: true, type,
+          hp: type === 'elite' ? 3 : type === 'scout' ? 2 : 1,
+          color: type === 'elite' ? '#ff2d55' : type === 'scout' ? '#a855f7' : '#00c8ff'
+        });
+      }
+    }
+  }
+  enemySpeed = 0.8 + n * 0.15;
+  enemyDir = 1;
+}
+
+// ── Particle & Drops ───────────────────────────────────────────
+function spawnParticles(x, y, color, count = 10) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const spd = Math.random() * 3 + 1;
+    particles.push({
+      x, y, vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd,
+      life: 1, color, size: Math.random() * 3 + 2
+    });
+  }
+}
+
+function maybeDropWeapon(x, y) {
+  if (Math.random() > 0.35) return;
+  const list = ['triple', 'plasma', 'missile', 'shield'];
+  const wKey = list[Math.floor(Math.random() * list.length)];
+  drops.push({ x, y, vy: 1.8, weapon: wKey, timer: 0 });
+}
+
+// ── Game Loop ──────────────────────────────────────────────────
+let shootCooldown = 0;
+
+function gameLoop() {
+  if (!running) return;
+  frameCount++;
+
+  update();
+  render();
+
+  requestAnimationFrame(gameLoop);
+}
+
+function update() {
+  // P1 Movement
+  if (keys.left && p1.x > 30) p1.x -= p1.speed;
+  if (keys.right && p1.x < W - 30) p1.x += p1.speed;
+
+  // P1 Shooting
+  shootCooldown--;
+  if (keys.fire && shootCooldown <= 0) {
+    fireWeapon(p1);
+    shootCooldown = p1.weapon === 'triple' ? 14 : p1.weapon === 'plasma' ? 10 : 16;
+  }
+
+  // P2 / AI Companion Logic
+  if (p2) {
+    if (mode === 'bot') {
+      // AI tracks nearest enemy
+      const target = enemies.find(e => e.alive) || bossObj;
+      if (target) {
+        if (p2.x < target.x - 5) p2.x += 3.5;
+        else if (p2.x > target.x + 5) p2.x -= 3.5;
+        if (frameCount % 24 === 0) {
+          bullets.push({ x: p2.x, y: p2.y - 12, vx: 0, vy: -7, color: p2.color, dmg: 1 });
+          playSfx('laser');
+        }
+      }
+    } else {
+      // Co-op mirror / sync
+      p2.x += Math.sin(frameCount * 0.05) * 2;
+      if (frameCount % 26 === 0) {
+        bullets.push({ x: p2.x, y: p2.y - 12, vx: 0, vy: -7, color: p2.color, dmg: 1 });
+      }
+    }
+  }
+
+  // Update Bullets
+  bullets.forEach((b, i) => {
+    b.x += b.vx || 0; b.y += b.vy;
+    if (b.y < -10) bullets.splice(i, 1);
+  });
+
+  enemyBullets.forEach((eb, i) => {
+    eb.y += eb.vy;
+    // Check hit on P1
+    if (Math.hypot(eb.x - p1.x, eb.y - p1.y) < 22) {
+      enemyBullets.splice(i, 1);
+      if (p1.shield > 0) {
+        p1.shield--;
+        playSfx('hit');
+      } else {
+        lives--;
+        playSfx('explode');
+        spawnParticles(p1.x, p1.y, '#ff2d55', 20);
+        updateHUD();
+        if (lives <= 0) gameOver();
+      }
+    } else if (eb.y > H + 10) enemyBullets.splice(i, 1);
+  });
+
+  // Update Drops
+  drops.forEach((d, i) => {
+    d.y += d.vy;
+    d.timer++;
+    // Collision with P1
+    if (Math.hypot(d.x - p1.x, d.y - p1.y) < 26) {
+      playSfx('powerup');
+      if (d.weapon === 'shield') p1.shield = Math.min(3, p1.shield + 1);
+      else p1.weapon = d.weapon;
+      spawnParticles(d.x, d.y, WEAPONS[d.weapon]?.color || '#fff', 12);
+      drops.splice(i, 1);
+      updateHUD();
+    } else if (d.y > H + 20) drops.splice(i, 1);
+  });
+
+  // Update Boss or Wave
+  if (bossObj) {
+    bossObj.x += bossObj.vx;
+    if (bossObj.x < 70 || bossObj.x > W - 70) bossObj.vx *= -1;
+    bossObj.shootCooldown--;
+    if (bossObj.shootCooldown <= 0) {
+      bossObj.shootCooldown = 35;
+      enemyBullets.push({ x: bossObj.x - 20, y: bossObj.y + 20, vy: 3.5, color: '#ff2d55' });
+      enemyBullets.push({ x: bossObj.x + 20, y: bossObj.y + 20, vy: 3.5, color: '#ff2d55' });
+    }
+
+    // Bullets hit Boss
+    bullets.forEach((b, bi) => {
+      if (Math.abs(b.x - bossObj.x) < bossObj.w / 2 && Math.abs(b.y - bossObj.y) < bossObj.h / 2) {
+        bossObj.hp -= b.dmg || 1;
+        bullets.splice(bi, 1);
+        spawnParticles(b.x, b.y, '#ff2d55', 4);
+        playSfx('hit');
+        if (bossObj.hp <= 0) {
+          playSfx('explode');
+          spawnParticles(bossObj.x, bossObj.y, '#facc15', 30);
+          score += 1000;
+          wave++;
+          bossObj = null;
+          updateHUD();
+          setTimeout(() => createWave(wave), 1000);
+        }
+      }
+    });
+  } else {
+    // Normal enemy fleet
+    let hitEdge = false;
+    enemies.forEach(e => {
+      if (!e.alive) return;
+      e.x += enemySpeed * enemyDir;
+      if (e.x < 30 || e.x > W - 30) hitEdge = true;
+
+      // Random enemy shooting
+      if (Math.random() < 0.003 + wave * 0.0005) {
+        enemyBullets.push({ x: e.x, y: e.y + 12, vy: 3 + wave * 0.2, color: e.color });
+      }
+    });
+
+    if (hitEdge) {
+      enemyDir *= -1;
+      enemies.forEach(e => { if (e.alive) e.y += 14; });
+    }
+
+    // Bullet vs Enemies
+    bullets.forEach((b, bi) => {
+      enemies.forEach(e => {
+        if (e.alive && Math.hypot(b.x - e.x, b.y - e.y) < 18) {
+          e.hp -= b.dmg || 1;
+          bullets.splice(bi, 1);
+          spawnParticles(b.x, b.y, e.color, 5);
+          playSfx('hit');
+          if (e.hp <= 0) {
+            e.alive = false;
+            playSfx('explode');
+            spawnParticles(e.x, e.y, e.color, 12);
+            score += e.type === 'elite' ? 200 : e.type === 'scout' ? 100 : 50;
+            maybeDropWeapon(e.x, e.y);
+            updateHUD();
+          }
+        }
+      });
+    });
+
+    // Check if wave cleared
+    if (enemies.every(e => !e.alive)) {
+      wave++;
+      score += 300;
+      updateHUD();
+      createWave(wave);
+    }
+  }
+
+  // Update Particles
+  particles.forEach((p, i) => {
+    p.x += p.vx; p.y += p.vy;
+    p.life -= 0.03;
+    if (p.life <= 0) particles.splice(i, 1);
+  });
+}
+
+function fireWeapon(p) {
+  playSfx('laser');
+  const w = WEAPONS[p.weapon] || WEAPONS.laser;
+  if (w.count === 1) {
+    bullets.push({ x: p.x, y: p.y - 14, vx: 0, vy: -8, color: w.color, dmg: 1 });
+  } else if (w.count === 2) {
+    bullets.push({ x: p.x - 10, y: p.y - 14, vx: -1, vy: -8, color: w.color, dmg: 1 });
+    bullets.push({ x: p.x + 10, y: p.y - 14, vx: 1, vy: -8, color: w.color, dmg: 1 });
+  } else if (w.count === 3) {
+    bullets.push({ x: p.x, y: p.y - 14, vx: 0, vy: -8, color: w.color, dmg: 1 });
+    bullets.push({ x: p.x - 12, y: p.y - 12, vx: -2, vy: -7.5, color: w.color, dmg: 1 });
+    bullets.push({ x: p.x + 12, y: p.y - 12, vx: 2, vy: -7.5, color: w.color, dmg: 1 });
+  }
+}
+
+// ── Render ─────────────────────────────────────────────────────
+function render() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Draw Stars
+  stars.forEach(s => {
+    s.y += s.speed;
+    if (s.y > H) s.y = 0;
+    ctx.fillStyle = `rgba(255,255,255,${0.3 + Math.sin(frameCount * 0.05 + s.bright * 5) * 0.4})`;
+    ctx.beginPath(); ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2); ctx.fill();
+  });
+
+  // Draw Drops
+  drops.forEach(d => {
+    const wInfo = WEAPONS[d.weapon];
+    const bob = Math.sin(frameCount * 0.1) * 3;
+    ctx.save();
+    ctx.shadowColor = wInfo?.color || '#00c8ff'; ctx.shadowBlur = 12;
+    ctx.fillStyle = 'rgba(10,20,40,0.8)';
+    ctx.strokeStyle = wInfo?.color || '#00c8ff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(d.x, d.y + bob, 14, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    ctx.font = '12px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(wInfo?.name.split(' ')[0] || '⚡', d.x, d.y + bob);
+    ctx.restore();
+  });
+
+  // Draw Enemies
+  enemies.forEach(e => {
+    if (!e.alive) return;
+    ctx.save();
+    ctx.shadowColor = e.color; ctx.shadowBlur = 10;
+    ctx.fillStyle = e.color;
+    // Winged Alien Ship
+    ctx.beginPath();
+    ctx.moveTo(e.x, e.y + 10);
+    ctx.lineTo(e.x + e.w / 2, e.y - 8);
+    ctx.lineTo(e.x, e.y - 2);
+    ctx.lineTo(e.x - e.w / 2, e.y - 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  });
+
+  // Draw Boss
+  if (bossObj) {
+    ctx.save();
+    ctx.shadowColor = '#ff2d55'; ctx.shadowBlur = 20;
+    ctx.fillStyle = '#ff2d55';
+    ctx.beginPath();
+    ctx.moveTo(bossObj.x, bossObj.y + 25);
+    ctx.lineTo(bossObj.x + bossObj.w / 2, bossObj.y - 20);
+    ctx.lineTo(bossObj.x - bossObj.w / 2, bossObj.y - 20);
+    ctx.closePath();
+    ctx.fill();
+
+    // Boss HP Bar
+    const hpW = 120, hpH = 6;
+    const hpRatio = bossObj.hp / bossObj.maxHp;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(bossObj.x - hpW / 2, bossObj.y - 32, hpW, hpH);
+    ctx.fillStyle = '#ff2d55';
+    ctx.fillRect(bossObj.x - hpW / 2, bossObj.y - 32, hpW * hpRatio, hpH);
+    ctx.restore();
+  }
+
+  // Draw Bullets
+  bullets.forEach(b => {
+    ctx.save();
+    ctx.shadowColor = b.color; ctx.shadowBlur = 10;
+    ctx.fillStyle = b.color;
+    ctx.beginPath(); ctx.arc(b.x, b.y, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  });
+
+  enemyBullets.forEach(eb => {
+    ctx.save();
+    ctx.shadowColor = eb.color; ctx.shadowBlur = 8;
+    ctx.fillStyle = eb.color;
+    ctx.beginPath(); ctx.arc(eb.x, eb.y, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  });
+
+  // Draw Player 1
+  drawShip(p1);
+
+  // Draw Player 2 (Companion or Co-op)
+  if (p2) drawShip(p2);
+
+  // Draw Particles
+  particles.forEach(p => {
+    ctx.save();
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  });
+}
+
+function drawShip(p) {
+  ctx.save();
+  ctx.shadowColor = p.color; ctx.shadowBlur = 15;
+  // Thrust flame
+  const flame = Math.sin(frameCount * 0.4) * 4 + 8;
+  ctx.fillStyle = 'rgba(0,200,255,0.7)';
+  ctx.beginPath();
+  ctx.moveTo(p.x - 5, p.y + p.h / 2);
+  ctx.lineTo(p.x, p.y + p.h / 2 + flame);
+  ctx.lineTo(p.x + 5, p.y + p.h / 2);
+  ctx.fill();
+
+  // Ship hull
+  ctx.fillStyle = p.color;
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y - p.h / 2);
+  ctx.lineTo(p.x + p.w / 2, p.y + p.h / 2);
+  ctx.lineTo(p.x, p.y + p.h / 4);
+  ctx.lineTo(p.x - p.w / 2, p.y + p.h / 2);
+  ctx.closePath();
+  ctx.fill();
+
+  // Shield bubble
+  if (p.shield > 0) {
+    ctx.strokeStyle = `rgba(16,185,129,${0.5 + Math.sin(frameCount * 0.2) * 0.3})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(p.x, p.y, 26, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ── HUD & Game Over ────────────────────────────────────────────
+function updateHUD() {
+  document.getElementById('scoreVal').textContent = score;
+  document.getElementById('waveVal').textContent = wave;
+  document.getElementById('livesVal').textContent = '❤️'.repeat(Math.max(0, lives));
+  document.getElementById('weaponVal').textContent = WEAPONS[p1.weapon]?.name || '⚡ ليزر';
+  if (score > highScore) {
+    highScore = score;
+    document.getElementById('highVal').textContent = highScore;
+  }
+}
+
+function gameOver() {
+  running = false;
+  document.getElementById('overlay').style.display = 'flex';
+  document.getElementById('ovTitle').textContent = '💀 تدمرت سفينتك!';
+  document.getElementById('ovTitle').className = 'ov-title ov-red';
+  document.getElementById('ovInfo').innerHTML = `النقاط: <b style="color:var(--accent)">${score}</b> | وصلت إلى الموجة: <b style="color:var(--gold)">${wave}</b>`;
+}
+
+function restart() {
+  launchGame();
+}
+
+function toLobby() {
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('gameArea').style.display = 'none';
+  document.getElementById('lobby').style.display = 'flex';
+  running = false;
+}
+
+// URL Params support (Discord direct link)
+window.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const u = params.get('name');
+  if (u) document.getElementById('nameInp').value = decodeURIComponent(u);
+  const m = params.get('mode');
+  if (m && ['solo','bot','multi'].includes(m)) {
+    const card = document.querySelector(`.mode-card[data-mode="${m}"]`);
+    if (card) pickMode(card, m);
+  }
+  const r = params.get('room');
+  if (r) {
+    pickMode(document.querySelector('.mode-card[data-mode="multi"]'), 'multi');
+    document.getElementById('joinCodeInp').value = r.toUpperCase();
+  }
+});
+</script>
+</body>
+</html>

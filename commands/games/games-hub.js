@@ -1,8 +1,9 @@
 /**
- * ═══════════════════════════════════════════════════════════
- * 🎮 لوحة الألعاب — Games Hub
- * نظام أزرار كامل لجميع الألعاب
- * ═══════════════════════════════════════════════════════════
+ * ═══════════════════════════════════════════════════════════════
+ * 🎮 لوحة الألعاب — Games Hub 2.0
+ * ألعاب 2D احترافية مع دعم مولتي بلاير عبر روابط تفاعلية
+ * STATELESS: لا يُحفظ أي بيانات — كل شيء في المتصفح فقط
+ * ═══════════════════════════════════════════════════════════════
  */
 
 'use strict';
@@ -12,361 +13,203 @@ const {
     ButtonStyle, MessageFlags
 } = require('discord.js');
 
-const db = require('../../utils/database');
 const config = require('../../config');
+const dashServer = require('../../dashboard-server');
 
-// ═══════════════════════════════════════════════════════════
-// بناء اللوحة الرئيسية للألعاب
-// ═══════════════════════════════════════════════════════════
-function buildGamesPanel() {
+// ─── Helper: Build game URL ─────────────────────────────────────
+function gameUrl(gamePath, params = {}) {
+    const base = dashServer.getDashboardUrl();
+    const query = new URLSearchParams(params).toString();
+    return `${base}/games/${gamePath}${query ? '?' + query : ''}`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// بناء لوحة الألعاب الرئيسية
+// ═══════════════════════════════════════════════════════════════
+function buildGamesPanel(username = '') {
+    const nameParam = username ? encodeURIComponent(username) : '';
+
     const embed = new EmbedBuilder()
-        .setColor('#9B59B6')
-        .setTitle('🎮 مركز الألعاب')
+        .setColor('#0d1fd4')
+        .setTitle('🎮 مركز الألعاب 2.0 — Arcade Hub')
         .setDescription([
-            '> اختر لعبتك المفضلة من الأزرار بالأسفل!',
+            '> 🚀 **ألعاب 2D احترافية مع دعم مولتي بلاير!**',
+            '> اضغط على أي زر لفتح اللعبة في متصفحك',
             '',
-            '🏆 **العب واربح العملات!**',
-            '🧠 تريفيا • ❌⭕ اكس او • ✊ حجر ورقة',
-            '📝 كلمة مشفرة • 🔢 رياضيات • 😀 أكمل كلمة',
-            '🎯 تحديات يومية'
+            '⚔️ **Battle Arena** — قتال 4 لاعبين مع أسلحة عشوائية',
+            '🛡️ **Tank Clash** — حرب دبابات تكتيكية وأسلحة نيون',
+            '🐍 **Snake 2.0** — ثعبان نيون تنافسي متعدد اللاعبين',
+            '🚀 **Space Defender** — حرب الفضاء وموجات الروبوتات',
+            '🃏 **Memory Match** — تطابق البطاقات الذهني',
+            '🌩️ **Cyber Jump** — منصات سايبربانك',
+            '',
+            '> 🔵 **منفرد** | 🟡 **ضد الروبوت** | 🟢 **مولتي بلاير أونلاين**',
         ].join('\n'))
         .setTimestamp()
-        .setFooter({ text: 'اضغط زر للبدء فوراً!' });
+        .setFooter({ text: '⚡ لا يُحفظ أي تاريخ — العب واستمتع!' });
 
+    // ── Row 1: Battle Arena ────────────────────────────────────
     const row1 = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-            .setCustomId('game_trivia')
-            .setLabel('تريفيا 🧠')
-            .setStyle(ButtonStyle.Primary),
+            .setLabel('⚔️ Battle Arena — منفرد')
+            .setStyle(ButtonStyle.Link)
+            .setURL(gameUrl('battle-arena.html', { name: nameParam, mode: 'solo' })),
         new ButtonBuilder()
-            .setCustomId('game_ttt')
-            .setLabel('اكس او ❌⭕')
-            .setStyle(ButtonStyle.Primary),
+            .setLabel('🤺 Battle Arena — ضد Bot')
+            .setStyle(ButtonStyle.Link)
+            .setURL(gameUrl('battle-arena.html', { name: nameParam, mode: 'bot' })),
         new ButtonBuilder()
-            .setCustomId('game_rps')
-            .setLabel('حجر ورقة مقص ✊')
-            .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-            .setCustomId('game_hangman')
-            .setLabel('حرف المشنقة 🎯')
-            .setStyle(ButtonStyle.Secondary)
+            .setLabel('🌐 Battle Arena — مولتي بلاير')
+            .setStyle(ButtonStyle.Link)
+            .setURL(gameUrl('battle-arena.html', { name: nameParam, mode: 'multi' }))
     );
 
+    // ── Row 2: Snake ──────────────────────────────────────────
     const row2 = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-            .setCustomId('game_scramble')
-            .setLabel('كلمة مشفرة 🔤')
-            .setStyle(ButtonStyle.Secondary),
+            .setLabel('🐍 Snake — منفرد')
+            .setStyle(ButtonStyle.Link)
+            .setURL(gameUrl('snake.html', { name: nameParam, mode: 'solo' })),
         new ButtonBuilder()
-            .setCustomId('game_math')
-            .setLabel('رياضيات 🔢')
-            .setStyle(ButtonStyle.Secondary),
+            .setLabel('🐍 Snake — ضد Bot')
+            .setStyle(ButtonStyle.Link)
+            .setURL(gameUrl('snake.html', { name: nameParam, mode: 'bot' })),
         new ButtonBuilder()
-            .setCustomId('game_8ball')
-            .setLabel('التنبؤ 🎱')
-            .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-            .setCustomId('game_daily_challenges')
-            .setLabel('تحديات يومية 🏆')
-            .setStyle(ButtonStyle.Success)
+            .setLabel('🐍 Snake — مولتي بلاير')
+            .setStyle(ButtonStyle.Link)
+            .setURL(gameUrl('snake.html', { name: nameParam, mode: 'multi' }))
     );
 
+    // ── Row 3: Space + Tanks + Memory + Cyber ─────────────────
     const row3 = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-            .setCustomId('game_leaderboard')
-            .setLabel('المتصدرون 📊')
+            .setLabel('🚀 Space Defender')
+            .setStyle(ButtonStyle.Link)
+            .setURL(gameUrl('space-defender.html', { name: nameParam })),
+        new ButtonBuilder()
+            .setLabel('🛡️ Tank Clash')
+            .setStyle(ButtonStyle.Link)
+            .setURL(gameUrl('tank-clash.html', { name: nameParam })),
+        new ButtonBuilder()
+            .setLabel('🃏 Memory Match')
+            .setStyle(ButtonStyle.Link)
+            .setURL(gameUrl('memory-match.html', { name: nameParam })),
+        new ButtonBuilder()
+            .setLabel('🌩️ Cyber Jump')
+            .setStyle(ButtonStyle.Link)
+            .setURL(gameUrl('cyber-jump.html', { name: nameParam }))
+    );
+
+    // ── Row 4: Info ────────────────────────────────────────────
+    const row4 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId('games_info')
+            .setLabel('ℹ️ كيف تلعب مع أصدقائك?')
             .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
-            .setCustomId('game_slots')
-            .setLabel('سلوتس 🎰')
-            .setStyle(ButtonStyle.Danger),
-        new ButtonBuilder()
-            .setCustomId('game_flip')
-            .setLabel('قلّب عملة 🪙')
+            .setCustomId('games_create_room')
+            .setLabel('🌐 إنشاء غرفة مشتركة')
             .setStyle(ButtonStyle.Primary)
     );
 
-    return { embeds: [embed], components: [row1, row2, row3] };
+    return { embeds: [embed], components: [row1, row2, row3, row4] };
 }
 
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 // معالج الأزرار
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 async function handleGameButton(interaction) {
     const id = interaction.customId;
-    const userId = interaction.user.id;
-    const client = interaction.client;
+    const username = interaction.user.username || interaction.user.globalName || 'لاعب';
+    const nameParam = encodeURIComponent(username);
 
-    // ── تريفيا ────────────────────────────────────────────────
-    if (id === 'game_trivia') {
-        return interaction.reply({
-            content: '> 🧠 اكتب `تريفيا` في الشات لبدء لعبة الأسئلة!',
-            flags: MessageFlags.Ephemeral
-        });
-    }
-
-    // ── اكس او ───────────────────────────────────────────────
-    if (id === 'game_ttt') {
+    // ── معلومات المولتي بلاير ─────────────────────────────────
+    if (id === 'games_info') {
         const embed = new EmbedBuilder()
-            .setColor('#E74C3C')
-            .setTitle('❌⭕ اكس او')
+            .setColor('#00c8ff')
+            .setTitle('🌐 كيف تلعب مع أصدقائك؟')
             .setDescription([
-                '**اكتب في الشات:** `اكس_او @خصمك`',
-                'مثال: `اكس_او @صديقي`',
+                '**خطوات بسيطة:**',
                 '',
-                '🎯 العب ضد صديقك واربح!',
+                '1️⃣ اضغط على **"مولتي بلاير"** في أي لعبة',
+                '2️⃣ اختر **"إنشاء غرفة"** وسيظهر لك **كود من 6 أحرف**',
+                '3️⃣ شارك الكود مع أصدقائك في الديسكورد',
+                '4️⃣ يضغطون على **"مولتي بلاير"** ويدخلون الكود',
+                '5️⃣ ابدأ اللعبة — بسيط! 🎮',
+                '',
+                '> ⚡ **ملاحظة:** لا يُحفظ أي تاريخ أو نقاط — اللعبة مؤقتة بالكامل',
+                '> 🔒 **أمان:** كل جلسة معزولة تماماً عن الأخريات',
             ].join('\n'))
             .setTimestamp();
+
         return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 
-    // ── حجر ورقة مقص ──────────────────────────────────────────────
-    if (id === 'game_rps') {
-        return interaction.reply({
-            content: '> ✊ اكتب `رحجة @شخص` لبدء لعبة حجر ورقة مقص!',
-            flags: MessageFlags.Ephemeral
-        });
-    }
-
-    // ── حرف المشنقة ──────────────────────────────────────────────
-    if (id === 'game_hangman') {
-        return interaction.reply({
-            content: '> 🎯 اكتب `مشنقة` في الشات لبدء لعبة المشنقة!',
-            flags: MessageFlags.Ephemeral
-        });
-    }
-
-    // ── كلمة مشفرة ───────────────────────────────────────────────
-    if (id === 'game_scramble') {
-        return interaction.reply({
-            content: '> 🔤 اكتب `كلمة` في الشات لبدء لعبة الكلمة المشفرة!',
-            flags: MessageFlags.Ephemeral
-        });
-    }
-
-    // ── رياضيات ────────────────────────────────────────────────
-    if (id === 'game_math') {
-        return interaction.reply({
-            content: '> 🔢 اكتب `رياضيات` في الشات لبدء لعبة الرياضيات!',
-            flags: MessageFlags.Ephemeral
-        });
-    }
-
-    // ── التنبؤ ────────────────────────────────────────────────
-    if (id === 'game_8ball') {
-        const questions = [
-            'سيحدث لك شيء رائع اليوم!',
-            'المستقبل يبدو واعداً جداً ✨',
-            'لا أرى ذلك يحدث... 🤔',
-            'نعم بالتأكيد! 🎉',
-            'ربما... حاول مرة أخرى لاحقاً',
-            'الكون يقول: نعم! 🌟',
-            'الطالع لا يبشر بخير 😅',
-            'أوراقي تقول نعم! 🃏',
-        ];
-        const answer = questions[Math.floor(Math.random() * questions.length)];
+    // ── إنشاء غرفة مشتركة ─────────────────────────────────────
+    if (id === 'games_create_room') {
+        const baseUrl = gameUrl('battle-arena.html', { name: nameParam, mode: 'multi' });
         const embed = new EmbedBuilder()
-            .setColor('#9B59B6')
-            .setTitle('🎱 صداقي التنبؤي')
-            .setDescription(`**${interaction.user.username}** طرح سؤالاً على الكون...\n\n> ${answer}`)
-            .setTimestamp();
-        return interaction.reply({ embeds: [embed] });
-    }
-
-    // ── تحديات يومية ─────────────────────────────────────────────
-    if (id === 'game_daily_challenges') {
-        return interaction.reply({
-            content: '> 🏆 اكتب `تحديات` في الشات لعرض التحديات اليومية!',
-            flags: MessageFlags.Ephemeral
-        });
-    }
-
-    // ── سلوتس ─────────────────────────────────────────────────
-    if (id === 'game_slots') {
-        const userData = db.getUserData(userId);
-        const balance = userData.balance || 0;
-        const bet = 50;
-
-        if (balance < bet) {
-            return interaction.reply({ content: `❌ تحتاج على الأقل **${bet}** ${config.currency} للعب السلوتس!`, flags: MessageFlags.Ephemeral });
-        }
-
-        const symbols = ['🍒', '🍋', '🍊', '🍇', '⭐', '💎', '🎰'];
-        const reel1 = symbols[Math.floor(Math.random() * symbols.length)];
-        const reel2 = symbols[Math.floor(Math.random() * symbols.length)];
-        const reel3 = symbols[Math.floor(Math.random() * symbols.length)];
-
-        let multiplier = 0;
-        let resultText = '';
-
-        if (reel1 === reel2 && reel2 === reel3) {
-            if (reel1 === '💎') { multiplier = 50; resultText = '💎 **JACKPOT!! ×50**'; }
-            else if (reel1 === '⭐') { multiplier = 20; resultText = '⭐ **ثلاث نجوم ×20!**'; }
-            else { multiplier = 5; resultText = '🎉 **ثلاثة متطابقة ×5!**'; }
-        } else if (reel1 === reel2 || reel2 === reel3 || reel1 === reel3) {
-            multiplier = 2;
-            resultText = '✅ **اثنان متطابقان ×2**';
-        } else {
-            multiplier = 0;
-            resultText = '❌ **لا تطابق — خسارة**';
-        }
-
-        const won = bet * multiplier;
-        const net = won - bet;
-
-        db.updateFields(userId, { balance: balance + net });
-
-        const color = net > 0 ? '#2ECC71' : net === 0 ? '#F1C40F' : '#E74C3C';
-        const embed = new EmbedBuilder()
-            .setColor(color)
-            .setTitle('🎰 السلوتس')
+            .setColor('#00ff88')
+            .setTitle('🌐 إنشاء غرفة مشتركة')
             .setDescription([
-                `┌───────────────────┐`,
-                `│  ${reel1}   ${reel2}   ${reel3}  │`,
-                `└───────────────────┘`,
+                `مرحباً **${username}**!`,
                 '',
-                resultText,
-                net > 0 ? `💰 ربحت: **+${won.toLocaleString()} ${config.currency}**` : `💸 خسرت: **${bet} ${config.currency}**`,
-            ].join('\n'))
-            .setFooter({ text: `الرهان: ${bet} ${config.currency} | اضغط مرة أخرى للعب من جديد` })
-            .setTimestamp();
-
-        // زر اللعب مرة أخرى
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId('game_slots')
-                .setLabel(`العب مجدداً (${bet} ${config.currency}) 🎰`)
-                .setStyle(ButtonStyle.Danger),
-            new ButtonBuilder()
-                .setCustomId('games_back')
-                .setLabel('رجوع للألعاب 🎮')
-                .setStyle(ButtonStyle.Secondary)
-        );
-
-        return interaction.reply({ embeds: [embed], components: [row] });
-    }
-
-    // ── قلّب عملة ────────────────────────────────────────────
-    if (id === 'game_flip') {
-        const userData = db.getUserData(userId);
-        const balance = userData.balance || 0;
-        const bet = 100;
-
-        if (balance < bet) {
-            return interaction.reply({ content: `❌ تحتاج **${bet}** ${config.currency} للعب!`, flags: MessageFlags.Ephemeral });
-        }
-
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId('flip_heads')
-                .setLabel('وجه 👑')
-                .setStyle(ButtonStyle.Primary),
-            new ButtonBuilder()
-                .setCustomId('flip_tails')
-                .setLabel('ظهر 🌙')
-                .setStyle(ButtonStyle.Secondary)
-        );
-
-        const embed = new EmbedBuilder()
-            .setColor('#F1C40F')
-            .setTitle('🪙 قلّب العملة')
-            .setDescription([
-                `الرهان: **${bet} ${config.currency}**`,
-                '',
-                'اختر: **وجه** أو **ظهر**?',
-                'العب واكسب ضعف راهنك! 💰',
+                '**اختر لعبة للعب الجماعي:**',
             ].join('\n'))
             .setTimestamp();
 
-        return interaction.reply({ embeds: [embed], components: [row] });
-    }
-
-    // ── نتيجة قلّب العملة ────────────────────────────────────
-    if (id === 'flip_heads' || id === 'flip_tails') {
-        const userData = db.getUserData(userId);
-        const balance = userData.balance || 0;
-        const bet = 100;
-        const choice = id === 'flip_heads' ? 'heads' : 'tails';
-        const result = Math.random() < 0.5 ? 'heads' : 'tails';
-        const choiceAr = choice === 'heads' ? 'وجه 👑' : 'ظهر 🌙';
-        const resultAr = result === 'heads' ? 'وجه 👑' : 'ظهر 🌙';
-        const won = choice === result;
-
-        if (balance < bet) {
-            return interaction.update({ content: `❌ رصيدك لا يكفي!`, embeds: [], components: [] });
-        }
-
-        if (won) db.addMoney(userId, bet);
-        else db.removeMoney(userId, bet);
-
-        const embed = new EmbedBuilder()
-            .setColor(won ? '#2ECC71' : '#E74C3C')
-            .setTitle('🪙 نتيجة القلّب')
-            .setDescription([
-                `🎲 النتيجة: **${resultAr}**`,
-                `👤 اخترت: **${choiceAr}**`,
-                '',
-                won
-                    ? `🎉 **فزت! +${bet} ${config.currency}**`
-                    : `😢 **خسرت! -${bet} ${config.currency}**`,
-            ].join('\n'))
-            .setTimestamp();
-
-        const row = new ActionRowBuilder().addComponents(
+        const row1 = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
-                .setCustomId('game_flip')
-                .setLabel('العب مجدداً 🪙')
-                .setStyle(ButtonStyle.Primary),
+                .setLabel('⚔️ Battle Arena')
+                .setStyle(ButtonStyle.Link)
+                .setURL(gameUrl('battle-arena.html', { name: nameParam, mode: 'multi' })),
             new ButtonBuilder()
-                .setCustomId('games_back')
-                .setLabel('رجوع 🎮')
-                .setStyle(ButtonStyle.Secondary)
+                .setLabel('🛡️ Tank Clash')
+                .setStyle(ButtonStyle.Link)
+                .setURL(gameUrl('tank-clash.html', { name: nameParam, mode: 'multi' })),
+            new ButtonBuilder()
+                .setLabel('🐍 Snake 2.0')
+                .setStyle(ButtonStyle.Link)
+                .setURL(gameUrl('snake.html', { name: nameParam, mode: 'multi' }))
         );
 
-        return interaction.update({ embeds: [embed], components: [row] });
+        const row2 = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setLabel('🚀 Space Defender')
+                .setStyle(ButtonStyle.Link)
+                .setURL(gameUrl('space-defender.html', { name: nameParam, mode: 'multi' })),
+            new ButtonBuilder()
+                .setLabel('🃏 Memory Match')
+                .setStyle(ButtonStyle.Link)
+                .setURL(gameUrl('memory-match.html', { name: nameParam, mode: 'multi' })),
+            new ButtonBuilder()
+                .setLabel('🌩️ Cyber Jump')
+                .setStyle(ButtonStyle.Link)
+                .setURL(gameUrl('cyber-jump.html', { name: nameParam, mode: 'multi' }))
+        );
+
+        return interaction.reply({ embeds: [embed], components: [row1, row2], flags: MessageFlags.Ephemeral });
     }
 
-    // ── رجوع للقائمة الرئيسية ─────────────────────────────────
+    // ── رجوع للقائمة ─────────────────────────────────────────
     if (id === 'games_back') {
-        const panel = buildGamesPanel();
+        const panel = buildGamesPanel(username);
         return interaction.update({ ...panel });
-    }
-
-    // ── المتصدرون ─────────────────────────────────────────────
-    if (id === 'game_leaderboard') {
-        const allUsers = db.getAllUsers();
-        const sorted = Object.entries(allUsers)
-            .map(([id, d]) => ({ id, total: (d.balance || 0) + (d.bank || 0) }))
-            .sort((a, b) => b.total - a.total)
-            .slice(0, 10);
-
-        const lines = await Promise.all(sorted.map(async (u, i) => {
-            const user = await interaction.client.users.fetch(u.id).catch(() => ({ username: 'مجهول' }));
-            const medal = ['🥇', '🥈', '🥉'][i] || `${i + 1}.`;
-            return `${medal} **${user.username}** — ${u.total.toLocaleString()} ${config.currency}`;
-        }));
-
-        const embed = new EmbedBuilder()
-            .setColor('#FFD700')
-            .setTitle('🏆 أثرياء السيرفر')
-            .setDescription(lines.join('\n'))
-            .setTimestamp();
-
-        return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 }
 
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 // الأمر الرئيسي
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 module.exports = {
     name: 'games',
-    aliases: ['ألعاب', 'العاب', 'العب', 'لعبة'],
-    description: 'مركز الألعاب الكامل — بالأزرار',
+    aliases: ['ألعاب', 'العاب', 'العب', 'لعبة', 'game', 'arcade'],
+    description: 'مركز الألعاب 2D الاحترافية — مولتي بلاير أونلاين',
     usage: 'العاب / games',
 
     async execute(context) {
-        const panel = buildGamesPanel();
+        const username = context.author?.username || context.user?.username || 'لاعب';
+        const panel = buildGamesPanel(username);
         if (context.isCommand?.()) return context.reply({ ...panel });
         return context.reply({ ...panel });
     },

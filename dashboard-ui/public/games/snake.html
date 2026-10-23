@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐍 Retro Snake 2.0 — Multiplayer Neon</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Cairo:wght@400;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#030712;--neon:#00ffaa;--neon2:#ff00aa;--neon3:#00aaff;
+  --danger:#ff3366;--gold:#ffd700;--text:#e2e8f0;--purple:#aa55ff;
+  --card:rgba(255,255,255,0.04);--border:rgba(0,255,170,0.15);
+  --font:'Cairo',sans-serif;--mono:'Orbitron',monospace;
+}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--font);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:100vh;overflow:hidden;
+}
+body::before{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(0,255,170,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,170,0.02) 1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none;z-index:0;}
+.container{position:relative;z-index:1;width:min(95vw,560px);display:flex;flex-direction:column;align-items:center;gap:16px;}
+.title{font-family:var(--mono);font-size:clamp(18px,4vw,30px);font-weight:900;
+  background:linear-gradient(135deg,var(--neon),var(--neon3));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  letter-spacing:2px;text-align:center;}
+.subtitle{font-size:12px;color:rgba(226,232,240,0.4);text-align:center;letter-spacing:1px;}
+
+/* LOBBY */
+#lobby{width:100%;display:flex;flex-direction:column;gap:14px;}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.mode-btn{
+  padding:14px 8px;background:var(--card);border:1px solid var(--border);border-radius:10px;
+  cursor:pointer;text-align:center;transition:all 0.2s;color:var(--text);
+}
+.mode-btn:hover,.mode-btn.sel{background:rgba(0,255,170,0.08);border-color:var(--neon);}
+.mode-btn .me{font-size:22px;display:block;margin-bottom:5px;}
+.mode-btn .mn{font-size:12px;font-weight:700;}
+.mode-btn .md{font-size:10px;color:rgba(226,232,240,0.4);margin-top:2px;}
+.inp{width:100%;padding:11px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(0,255,170,0.15);border-radius:8px;color:var(--text);font-family:var(--font);font-size:14px;outline:none;transition:all 0.2s;}
+.inp:focus{border-color:var(--neon);box-shadow:0 0 0 3px rgba(0,255,170,0.08);}
+.inp::placeholder{color:rgba(226,232,240,0.3);}
+.btn-row{display:flex;gap:10px;width:100%;}
+.btn{padding:12px 20px;border:none;border-radius:8px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;flex:1;transition:all 0.2s;}
+.btn-green{background:linear-gradient(135deg,var(--neon),#00cc88);color:#030712;box-shadow:0 4px 20px rgba(0,255,170,0.3);}
+.btn-green:hover{box-shadow:0 6px 30px rgba(0,255,170,0.5);transform:translateY(-1px);}
+.btn-ghost{background:rgba(255,255,255,0.04);color:var(--text);border:1px solid rgba(255,255,255,0.08);}
+.btn-ghost:hover{background:rgba(255,255,255,0.08);}
+.btn:active{transform:scale(0.96);}
+.room-code{font-family:var(--mono);font-size:22px;letter-spacing:6px;color:var(--gold);text-align:center;padding:10px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.2);border-radius:8px;}
+.player-list{display:flex;flex-direction:column;gap:6px;width:100%;}
+.p-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--card);border:1px solid rgba(255,255,255,0.06);border-radius:8px;}
+.p-dot{width:8px;height:8px;border-radius:50%;}
+.err{color:var(--danger);font-size:12px;text-align:center;}
+.section-lbl{font-family:var(--mono);font-size:10px;color:var(--neon);letter-spacing:2px;display:flex;align-items:center;gap:8px;}
+.section-lbl::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* GAME */
+#gameArea{display:none;width:100%;flex-direction:column;align-items:center;gap:10px;}
+.hud{display:flex;gap:10px;width:100%;justify-content:space-between;padding:8px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;}
+.hud-v{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--neon);}
+.hud-l{font-size:10px;color:rgba(226,232,240,0.4);letter-spacing:1px;}
+.canvas-wrap{position:relative;width:100%;}
+#canvas{border:1px solid rgba(0,255,170,0.25);border-radius:10px;background:#050d1a;display:block;max-width:100%;box-shadow:0 0 40px rgba(0,255,170,0.1);}
+.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(3,7,18,0.92);border-radius:10px;gap:12px;backdrop-filter:blur(4px);}
+.ov-title{font-family:var(--mono);font-size:clamp(16px,3vw,24px);font-weight:900;text-align:center;}
+.ov-info{font-size:12px;color:rgba(226,232,240,0.6);text-align:center;line-height:1.7;}
+.ctrls{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;}
+.ctrl-row{display:flex;gap:6px;justify-content:center;}
+.ctrl-btn{width:46px;height:46px;border:1px solid rgba(0,255,170,0.25);border-radius:8px;background:rgba(0,255,170,0.04);color:var(--neon);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.1s;user-select:none;}
+.ctrl-btn:active{background:rgba(0,255,170,0.2);border-color:var(--neon);transform:scale(0.9);}
+/* Player scores */
+.scores-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:100%;}
+.score-chip{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;background:var(--card);border:1px solid rgba(255,255,255,0.07);font-size:12px;font-weight:700;}
+
+/* Speed selector */
+.speed-row{display:flex;gap:6px;align-items:center;font-size:11px;color:rgba(226,232,240,0.5);}
+.spd-btn{padding:4px 12px;border:1px solid rgba(0,255,170,0.25);border-radius:6px;background:transparent;color:var(--neon);cursor:pointer;font-size:11px;font-family:var(--mono);transition:all 0.2s;}
+.spd-btn.on,.spd-btn:hover{background:rgba(0,255,170,0.12);border-color:var(--neon);}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="title">🐍 RETRO SNAKE 2.0</div>
+  <div class="subtitle">Neon Multiplayer Edition</div>
+
+  <!-- LOBBY -->
+  <div id="lobby">
+    <div class="section-lbl">اختر وضع اللعب</div>
+    <div class="modes">
+      <div class="mode-btn sel" data-m="solo" onclick="pickMode(this,'solo')">
+        <span class="me">🎮</span><div class="mn">منفرد</div><div class="md">تحدى نفسك</div>
+      </div>
+      <div class="mode-btn" data-m="bot" onclick="pickMode(this,'bot')">
+        <span class="me">🤖</span><div class="mn">ضد الروبوت</div><div class="md">ذكاء اصطناعي</div>
+      </div>
+      <div class="mode-btn" data-m="multi" onclick="pickMode(this,'multi')">
+        <span class="me">🌐</span><div class="mn">مولتي بلاير</div><div class="md">2-4 لاعبين</div>
+      </div>
+    </div>
+
+    <input class="inp" id="nameInp" placeholder="اسمك في اللعبة..." maxlength="12">
+
+    <!-- Multi options -->
+    <div id="multiOpts" style="display:none;flex-direction:column;gap:8px;">
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="doCreate()">➕ إنشاء غرفة</button>
+        <input class="inp" id="codeInp" placeholder="كود الغرفة..." style="flex:1;text-transform:uppercase;letter-spacing:2px;text-align:center;" maxlength="6">
+        <button class="btn btn-ghost" onclick="doJoin()">دخول</button>
+      </div>
+    </div>
+
+    <!-- Waiting room -->
+    <div id="waitRoom" style="display:none;flex-direction:column;gap:10px;">
+      <div class="room-code" id="rCode">——</div>
+      <div style="font-size:12px;color:rgba(226,232,240,0.5);text-align:center;">شارك الكود مع أصدقائك!</div>
+      <div class="player-list" id="pList"></div>
+      <div class="btn-row">
+        <button class="btn btn-green" id="hostStartBtn" style="display:none" onclick="hostStart()">🎮 ابدأ!</button>
+        <button class="btn btn-ghost btn-sm" onclick="copyCode()">📋 نسخ</button>
+      </div>
+    </div>
+
+    <div class="speed-row" id="spdRow">
+      السرعة:
+      <button class="spd-btn on" data-s="150" onclick="pickSpd(this)">بطيء</button>
+      <button class="spd-btn" data-s="100" onclick="pickSpd(this)">متوسط</button>
+      <button class="spd-btn" data-s="65" onclick="pickSpd(this)">سريع</button>
+    </div>
+
+    <button class="btn btn-green" id="soloBtn" onclick="startSolo()">▶ ابدأ اللعبة</button>
+    <div class="err" id="err"></div>
+  </div>
+
+  <!-- GAME -->
+  <div id="gameArea">
+    <div class="scores-row" id="scoresRow"></div>
+    <div class="hud">
+      <div><div class="hud-v" id="hScore">0</div><div class="hud-l">نقاطي</div></div>
+      <div><div class="hud-v" id="hTime">3:00</div><div class="hud-l">الوقت</div></div>
+      <div><div class="hud-v" id="hLen">3</div><div class="hud-l">طولي</div></div>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="canvas" width="500" height="500"></canvas>
+      <div class="overlay" id="overlay" style="display:none;">
+        <div class="ov-title" id="ovTitle" style="color:var(--neon)"></div>
+        <div class="ov-info" id="ovInfo"></div>
+        <div class="speed-row">
+          السرعة:
+          <button class="spd-btn on" data-s="150" onclick="pickSpd(this)">بطيء</button>
+          <button class="spd-btn" data-s="100" onclick="pickSpd(this)">متوسط</button>
+          <button class="spd-btn" data-s="65" onclick="pickSpd(this)">سريع</button>
+        </div>
+        <button class="btn btn-green" id="restartBtn" onclick="restart()">▶ مجدداً</button>
+        <button class="btn btn-ghost" onclick="backLobby()">🏠 اللوبي</button>
+      </div>
+    </div>
+    <div class="ctrls">
+      <div class="ctrl-row"><button class="ctrl-btn" data-d="UP">↑</button></div>
+      <div class="ctrl-row">
+        <button class="ctrl-btn" data-d="LEFT">←</button>
+        <button class="ctrl-btn" data-d="DOWN">↓</button>
+        <button class="ctrl-btn" data-d="RIGHT">→</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+'use strict';
+const COLS=25,ROWS=25,CELL=20;
+const COLORS=['#00ffaa','#ff3366','#ffdd00','#00aaff','#aa55ff','#ff8844'];
+
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+canvas.width=canvas.height=COLS*CELL;
+
+// State
+let myMode='solo', myRoomId=null, myId=null, socket=null;
+let interval=150, soloGameLoop=null;
+// Solo state
+let soloSnake, soloDir, soloNextDir, soloFood, soloScore, soloLevel, soloHighScore=0;
+let particles=[], frameCount=0;
+// Multi state
+let multiSnakes=[], multiFood={x:12,y:12}, multiTimeLeft=180;
+let isHost=false, gameRunning=false;
+
+// ── Mode selection ──────────────────────────────────────────────
+function pickMode(el, m) {
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel'); myMode=m;
+  const mo=document.getElementById('multiOpts');
+  const sb=document.getElementById('soloBtn');
+  const wr=document.getElementById('waitRoom');
+  const sr=document.getElementById('spdRow');
+  mo.style.display=m==='multi'?'flex':'none';
+  sb.style.display=m==='multi'?'none':'flex';
+  wr.style.display='none';
+}
+
+function pickSpd(el) {
+  document.querySelectorAll('.spd-btn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on'); interval=parseInt(el.dataset.s);
+  if(soloGameLoop){clearInterval(soloGameLoop);soloGameLoop=setInterval(soloTick,interval);}
+}
+
+function getName(){return (document.getElementById('nameInp').value||'').trim()||'لاعب';}
+function setErr(m){document.getElementById('err').textContent=m;}
+
+// ── SOLO / BOT ─────────────────────────────────────────────────
+function startSolo() {
+  if(myMode==='bot') {
+    initSocket().then(()=>{
+      socket.emit('createRoom',{gameType:'snake',mode:'bot',username:getName(),avatar:null});
+    }).catch(()=>startLocalGame()); // fallback to local if no server
+  } else {
+    startLocalGame();
+  }
+}
+
+function startLocalGame() {
+  document.getElementById('lobby').style.display='none';
+  document.getElementById('gameArea').style.display='flex';
+  resetSolo();
+  soloGameLoop=setInterval(soloTick,interval);
+  renderLocal();
+}
+
+function resetSolo() {
+  soloSnake=[{x:12,y:12},{x:11,y:12},{x:10,y:12}];
+  soloDir={x:1,y:0}; soloNextDir={x:1,y:0};
+  soloFood=randFood(); soloScore=0; soloLevel=1;
+  particles=[]; frameCount=0;
+  document.getElementById('overlay').style.display='none';
+}
+
+function randFood() {
+  let p; do{p={x:Math.floor(Math.random()*COLS),y:Math.floor(Math.random()*ROWS)};}
+  while(soloSnake&&soloSnake.some(s=>s.x===p.x&&s.y===p.y)); return p;
+}
+
+let botSnake=null,botDir=null;
+function resetBot() {
+  botSnake=[{x:20,y:12},{x:21,y:12},{x:22,y:12}];
+  botDir={x:-1,y:0};
+}
+
+function soloTick() {
+  frameCount++;
+  soloDir=soloNextDir;
+  const nh={x:soloSnake[0].x+soloDir.x,y:soloSnake[0].y+soloDir.y};
+  if(nh.x<0||nh.x>=COLS||nh.y<0||nh.y>=ROWS||soloSnake.some(s=>s.x===nh.x&&s.y===nh.y)){
+    doGameOver(); return;
+  }
+  soloSnake.unshift(nh);
+  if(nh.x===soloFood.x&&nh.y===soloFood.y){
+    soloScore+=10*soloLevel;
+    emitP(soloFood.x*CELL+CELL/2,soloFood.y*CELL+CELL/2,'#ff00aa');
+    soloFood=randFood();
+    if(soloSnake.length%5===0){soloLevel++;interval=Math.max(50,interval-10);clearInterval(soloGameLoop);soloGameLoop=setInterval(soloTick,interval);}
+  } else { soloSnake.pop(); }
+
+  if(myMode==='bot'&&botSnake){
+    // Bot AI
+    const head=botSnake[0];
+    const dx=soloFood.x-head.x,dy=soloFood.y-head.y;
+    const nd=Math.abs(dx)>Math.abs(dy)?{x:Math.sign(dx),y:0}:{x:0,y:Math.sign(dy)};
+    if(!(nd.x===-botDir.x&&nd.y===-botDir.y)) botDir=nd;
+    const bnh={x:botSnake[0].x+botDir.x,y:botSnake[0].y+botDir.y};
+    if(bnh.x<0||bnh.x>=COLS||bnh.y<0||bnh.y>=ROWS||botSnake.some(s=>s.x===bnh.x&&s.y===bnh.y)||soloSnake.some(s=>s.x===bnh.x&&s.y===bnh.y)){
+      // bot dies — no action
+    } else {
+      botSnake.unshift(bnh);
+      if(bnh.x===soloFood.x&&bnh.y===soloFood.y){soloFood=randFood();}
+      else botSnake.pop();
+    }
+  }
+
+  if(soloScore>soloHighScore)soloHighScore=soloScore;
+  updateSoloHUD();
+  renderLocal();
+}
+
+function updateSoloHUD() {
+  document.getElementById('hScore').textContent=soloScore;
+  document.getElementById('hLen').textContent=soloSnake.length;
+}
+
+function renderLocal() {
+  drawBg();
+  drawGrid();
+  if(botSnake){drawSnakeArr(botSnake,'#aa55ff',false);}
+  drawFood(soloFood,'#ff00aa');
+  drawSnakeArr(soloSnake,COLORS[0],true);
+  updateParticles();
+  drawParticles();
+  if(myMode==='solo'){
+    // Score overlay corner
+    ctx.font='bold 11px Orbitron';ctx.fillStyle='rgba(0,255,170,0.6)';
+    ctx.textAlign='left';ctx.fillText(`HIGH ${soloHighScore}`,6,14);
+  }
+}
+
+function drawBg(){ctx.fillStyle='#050d1a';ctx.fillRect(0,0,canvas.width,canvas.height);}
+function drawGrid(){
+  ctx.strokeStyle='rgba(0,255,170,0.03)';ctx.lineWidth=0.5;
+  for(let x=0;x<=COLS;x++){ctx.beginPath();ctx.moveTo(x*CELL,0);ctx.lineTo(x*CELL,canvas.height);ctx.stroke();}
+  for(let y=0;y<=ROWS;y++){ctx.beginPath();ctx.moveTo(0,y*CELL);ctx.lineTo(canvas.width,y*CELL);ctx.stroke();}
+}
+function drawSnakeArr(arr,color,isMe){
+  arr.forEach((seg,i)=>{
+    const isHead=i===0;
+    const t=1-i/arr.length;
+    ctx.shadowColor=color;ctx.shadowBlur=isHead?20:0;
+    if(isHead){
+      const g=ctx.createLinearGradient(seg.x*CELL,seg.y*CELL,(seg.x+1)*CELL,(seg.y+1)*CELL);
+      g.addColorStop(0,color);g.addColorStop(1,adjustColor(color,-40));
+      ctx.fillStyle=g;
+    } else {
+      ctx.fillStyle=`rgba(${hexToRgb(color)},${0.3+t*0.7})`;
+    }
+    roundRect(seg.x*CELL+1,seg.y*CELL+1,CELL-2,CELL-2,isHead?6:4);
+    ctx.fill();
+    if(isHead){
+      ctx.shadowBlur=0;ctx.fillStyle='#030712';
+      ctx.beginPath();ctx.arc(seg.x*CELL+6,seg.y*CELL+7,3,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(seg.x*CELL+14,seg.y*CELL+7,3,0,Math.PI*2);ctx.fill();
+    }
+  });
+  ctx.shadowBlur=0;
+}
+function drawFood(food,col){
+  const p=Math.sin(frameCount*0.15)*0.3+0.7;
+  const fx=food.x*CELL+CELL/2,fy=food.y*CELL+CELL/2;
+  ctx.beginPath();ctx.arc(fx,fy,CELL*0.6*p,0,Math.PI*2);
+  ctx.strokeStyle=`rgba(255,0,170,${0.3*p})`;ctx.lineWidth=2;ctx.stroke();
+  ctx.shadowColor=col;ctx.shadowBlur=15;
+  ctx.fillStyle=col;ctx.beginPath();ctx.arc(fx,fy,CELL*0.38,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.5)';ctx.beginPath();ctx.arc(fx-2,fy-2,CELL*0.1,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;
+}
+
+function doGameOver(){
+  clearInterval(soloGameLoop); soloGameLoop=null;
+  if(soloScore>soloHighScore)soloHighScore=soloScore;
+  document.getElementById('ovTitle').textContent='💀 GAME OVER';
+  document.getElementById('ovTitle').style.color='var(--danger)';
+  document.getElementById('ovInfo').innerHTML=
+    `نقاطك: <strong style="color:var(--neon)">${soloScore}</strong><br>`+
+    (myMode==='bot'?'جرب مرة أخرى لتتفوق على الروبوت!':'');
+  document.getElementById('overlay').style.display='flex';
+}
+
+function restart(){
+  if(myMode==='solo'||myMode==='bot'){resetSolo();if(myMode==='bot')resetBot();soloGameLoop=setInterval(soloTick,interval);}
+  else if(myRoomId&&socket){socket.emit('startGame',{roomId:myRoomId});}
+}
+function backLobby(){
+  clearInterval(soloGameLoop);
+  document.getElementById('gameArea').style.display='none';
+  document.getElementById('lobby').style.display='flex';
+}
+
+// ── MULTIPLAYER ───────────────────────────────────────────────
+function initSocket(){
+  if(socket&&socket.connected) return Promise.resolve();
+  return new Promise((res,rej)=>{
+    socket=io(window.location.origin,{path:'/game-ws',transports:['websocket','polling']});
+    socket.on('connect',res);
+    socket.on('connect_error',rej);
+    setupMultiListeners();
+  });
+}
+function doCreate(){
+  setErr('');
+  initSocket().then(()=>{
+    socket.emit('createRoom',{gameType:'snake',mode:'multi',username:getName(),avatar:null});
+  }).catch(()=>setErr('❌ فشل الاتصال'));
+}
+function doJoin(){
+  const code=(document.getElementById('codeInp').value||'').trim().toUpperCase();
+  if(code.length!==6) return setErr('❌ الكود 6 أحرف');
+  setErr('');
+  initSocket().then(()=>{
+    socket.emit('joinRoom',{roomId:code,username:getName(),avatar:null});
+  }).catch(()=>setErr('❌ فشل الاتصال'));
+}
+function hostStart(){ if(socket&&myRoomId) socket.emit('startGame',{roomId:myRoomId}); }
+function copyCode(){ navigator.clipboard?.writeText(myRoomId||''); }
+
+function setupMultiListeners(){
+  socket.on('roomCreated',d=>{
+    myId=d.playerId; myRoomId=d.roomId; isHost=true;
+    showWaitRoom(d);
+    document.getElementById('hostStartBtn').style.display='flex';
+  });
+  socket.on('roomJoined',d=>{
+    myId=d.playerId; myRoomId=d.roomId; isHost=false;
+    showWaitRoom(d);
+  });
+  socket.on('playerJoined',d=>updatePList(d.players));
+  socket.on('gameStarted',()=>startMultiGame());
+  socket.on('snakeState',d=>{
+    multiSnakes=d.snakes; multiFood=d.food; multiTimeLeft=d.timeLeft;
+    renderMulti();
+    updateMultiHUD();
+  });
+  socket.on('gameOver',w=>{
+    gameRunning=false;
+    document.getElementById('ovTitle').textContent=`🏆 ${w.name} فاز!`;
+    document.getElementById('ovTitle').style.color='var(--gold)';
+    document.getElementById('ovInfo').innerHTML=`النقاط: <strong style="color:var(--neon)">${w.score}</strong>`;
+    document.getElementById('overlay').style.display='flex';
+  });
+  socket.on('error',d=>setErr(d.msg||'خطأ'));
+}
+
+function showWaitRoom(d){
+  document.getElementById('multiOpts').style.display='none';
+  document.getElementById('waitRoom').style.display='flex';
+  document.getElementById('rCode').textContent=d.roomId;
+  updatePList(d.players);
+}
+
+function updatePList(players){
+  document.getElementById('pList').innerHTML=(players||[]).map(p=>`
+    <div class="p-item">
+      <div class="p-dot" style="background:${p.color}"></div>
+      <span style="font-size:13px;font-weight:700;flex:1">${p.username}${p.id===myId?' (أنت)':''}</span>
+      ${p.isBot?'<span style="color:var(--purple);font-size:11px">🤖 Bot</span>':'<span style="color:var(--neon);font-size:11px">✅</span>'}
+    </div>`).join('');
+}
+
+function startMultiGame(){
+  document.getElementById('lobby').style.display='none';
+  document.getElementById('gameArea').style.display='flex';
+  document.getElementById('overlay').style.display='none';
+  gameRunning=true;
+  setupKeys();
+}
+
+function renderMulti(){
+  drawBg(); drawGrid();
+  // Draw all snakes
+  multiSnakes.forEach(sn=>{
+    if(!sn.body||sn.body.length===0) return;
+    drawSnakeArr(sn.body,sn.color,sn.id===myId);
+    // Name
+    const h=sn.body[0];
+    ctx.font='bold 10px Cairo'; ctx.fillStyle=sn.color; ctx.textAlign='center';
+    ctx.fillText(sn.name,h.x*CELL+CELL/2,(h.y-0.5)*CELL);
+  });
+  drawFood(multiFood,'#ff00aa');
+}
+
+function updateMultiHUD(){
+  const me=multiSnakes.find(s=>s.id===myId);
+  if(me){
+    document.getElementById('hScore').textContent=me.score||0;
+    document.getElementById('hLen').textContent=me.body?.length||0;
+  }
+  const tl=multiTimeLeft||0;
+  const mm=Math.floor(tl/60),ss=tl%60;
+  document.getElementById('hTime').textContent=`${mm}:${String(ss).padStart(2,'0')}`;
+
+  // Scores row
+  document.getElementById('scoresRow').innerHTML=(multiSnakes||[]).map(s=>`
+    <div class="score-chip" style="border-color:${s.color}33">
+      <div class="p-dot" style="background:${s.color}"></div>
+      <span>${s.name}</span>
+      <strong style="color:${s.color}">${s.score||0}</strong>
+      ${!s.alive?'💀':''}
+    </div>`).join('');
+}
+
+function setupKeys(){
+  const dirMap={ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0},w:{x:0,y:-1},s:{x:0,y:1},a:{x:-1,y:0},d:{x:1,y:0},W:{x:0,y:-1},S:{x:0,y:1},A:{x:-1,y:0},D:{x:1,y:0}};
+  document.addEventListener('keydown',e=>{
+    const nd=dirMap[e.key];
+    if(nd){
+      if(myMode==='solo'||myMode==='bot'){
+        if(!(nd.x===-soloDir.x&&nd.y===-soloDir.y)) soloNextDir=nd;
+      } else if(socket&&myRoomId&&gameRunning){
+        socket.emit('input',{roomId:myRoomId,keys:{dir:nd}});
+      }
+      e.preventDefault();
+    }
+  });
+  // Mobile
+  const dMap2={UP:{x:0,y:-1},DOWN:{x:0,y:1},LEFT:{x:-1,y:0},RIGHT:{x:1,y:0}};
+  document.querySelectorAll('.ctrl-btn[data-d]').forEach(btn=>{
+    btn.addEventListener('pointerdown',e=>{
+      e.preventDefault();
+      const nd=dMap2[btn.dataset.d];
+      if(myMode==='solo'||myMode==='bot'){
+        if(!(nd.x===-soloDir.x&&nd.y===-soloDir.y)) soloNextDir=nd;
+      } else if(socket&&myRoomId&&gameRunning){
+        socket.emit('input',{roomId:myRoomId,keys:{dir:nd}});
+      }
+    });
+  });
+}
+
+// ── Particles ──────────────────────────────────────────────────
+function emitP(x,y,c,n=8){for(let i=0;i<n;i++){const a=(Math.PI*2/n)*i;const sp=1+Math.random()*3;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,color:c,size:3+Math.random()*3});}}
+function updateParticles(){particles=particles.filter(p=>{p.x+=p.vx;p.y+=p.vy;p.vx*=0.9;p.vy*=0.9;p.life-=0.04;return p.life>0;});}
+function drawParticles(){particles.forEach(p=>{ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);ctx.fill();});ctx.globalAlpha=1;}
+
+// ── Utils ─────────────────────────────────────────────────────
+function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();}
+function hexToRgb(h){const r=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(h);return r?`${parseInt(r[1],16)},${parseInt(r[2],16)},${parseInt(r[3],16)}`:'0,255,170';}
+function adjustColor(h,a){const r=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(h);if(!r)return h;const cl=v=>Math.max(0,Math.min(255,parseInt(r[v],16)+a)).toString(16).padStart(2,'0');return `#${cl(1)}${cl(2)}${cl(3)}`;}
+
+// ── Init ──────────────────────────────────────────────────────
+setupKeys();
+if(myMode==='bot') resetBot();
+// Render empty canvas on load
+drawBg(); drawGrid();
+</script>
+</body>
+</html>

@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>⚔️ Battle Arena — نزال الأبطال</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Cairo:wght@400;600;700;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --bg:#040810;--panel:#0a1020;--card:#101828;--card2:#151f2e;
+  --border:rgba(0,200,255,0.12);--border2:rgba(0,200,255,0.06);
+  --accent:#00c8ff;--accent2:#0099cc;--accent-glow:rgba(0,200,255,0.3);
+  --red:#ff2244;--green:#00ff88;--gold:#ffd700;--purple:#aa55ff;
+  --text:#e2e8f0;--muted:rgba(226,232,240,0.4);
+  --font:'Cairo',sans-serif;--mono:'Orbitron',monospace;
+  --radius:12px;
+}
+
+body{
+  background:var(--bg);color:var(--text);font-family:var(--font);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  overflow:hidden;
+  background-image:
+    radial-gradient(ellipse at 20% 10%,rgba(0,200,255,0.06) 0%,transparent 50%),
+    radial-gradient(ellipse at 80% 90%,rgba(170,85,255,0.05) 0%,transparent 50%);
+}
+
+/* ─── LOBBY ──────────────────────────────────────────── */
+#lobby{
+  width:min(95vw,700px);padding:20px;
+  display:flex;flex-direction:column;align-items:center;gap:20px;
+}
+.logo{
+  font-family:var(--mono);font-size:clamp(22px,5vw,42px);font-weight:900;
+  background:linear-gradient(135deg,var(--accent),var(--purple),var(--red));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  letter-spacing:3px;text-align:center;
+  animation:logoPulse 3s ease-in-out infinite;
+}
+@keyframes logoPulse{0%,100%{filter:drop-shadow(0 0 20px rgba(0,200,255,0.4))}50%{filter:drop-shadow(0 0 40px rgba(170,85,255,0.6))}}
+.logo-sub{font-size:13px;color:var(--muted);letter-spacing:1px;text-align:center;margin-top:-10px;}
+
+.modes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;width:100%;}
+.mode-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:22px 16px;text-align:center;cursor:pointer;
+  transition:all 0.25s ease;position:relative;overflow:hidden;
+}
+.mode-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--accent);opacity:0;transition:opacity 0.3s;
+}
+.mode-card:hover,.mode-card.selected{
+  border-color:rgba(0,200,255,0.4);
+  box-shadow:0 0 30px rgba(0,200,255,0.15);
+  transform:translateY(-3px);
+}
+.mode-card:hover::before,.mode-card.selected::before{opacity:1;}
+.mode-card.selected{background:rgba(0,200,255,0.05);}
+.mode-emoji{font-size:32px;display:block;margin-bottom:10px;}
+.mode-name{font-weight:800;font-size:14px;margin-bottom:4px;color:var(--text);}
+.mode-desc{font-size:11px;color:var(--muted);line-height:1.5;}
+
+.section-title{
+  font-family:var(--mono);font-size:12px;color:var(--accent);
+  letter-spacing:2px;text-transform:uppercase;width:100%;
+  display:flex;align-items:center;gap:10px;
+}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+.input-group{width:100%;display:flex;flex-direction:column;gap:8px;}
+.input-label{font-size:12px;color:var(--muted);}
+.game-input{
+  width:100%;padding:12px 16px;background:var(--card2);
+  border:1px solid var(--border);border-radius:10px;
+  color:var(--text);font-family:var(--font);font-size:14px;
+  outline:none;transition:all 0.2s;
+}
+.game-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,200,255,0.1);}
+.game-input::placeholder{color:var(--muted);}
+
+.room-row{display:flex;gap:10px;width:100%;}
+.room-code{
+  font-family:var(--mono);font-size:20px;font-weight:700;letter-spacing:4px;
+  color:var(--gold);text-align:center;padding:10px;
+  background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.2);
+  border-radius:10px;flex:1;
+}
+
+.btn{
+  padding:13px 24px;border:none;border-radius:10px;font-family:var(--font);
+  font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;
+  display:inline-flex;align-items:center;gap:8px;white-space:nowrap;
+}
+.btn:active{transform:scale(0.96);}
+.btn-primary{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#020408;box-shadow:0 4px 20px var(--accent-glow);
+}
+.btn-primary:hover{box-shadow:0 6px 30px rgba(0,200,255,0.5);transform:translateY(-2px);}
+.btn-secondary{background:var(--card2);color:var(--text);border:1px solid var(--border);}
+.btn-secondary:hover{background:var(--card);border-color:rgba(0,200,255,0.3);}
+.btn-red{background:linear-gradient(135deg,var(--red),#cc1133);color:#fff;box-shadow:0 4px 20px rgba(255,34,68,0.3);}
+.btn-red:hover{box-shadow:0 6px 30px rgba(255,34,68,0.5);}
+.btn-full{width:100%;justify-content:center;}
+.btn-sm{padding:8px 16px;font-size:12px;}
+
+.player-list{
+  width:100%;display:flex;flex-direction:column;gap:8px;
+  max-height:180px;overflow-y:auto;
+}
+.player-item{
+  display:flex;align-items:center;gap:12px;padding:10px 14px;
+  background:var(--card2);border:1px solid var(--border2);border-radius:10px;
+}
+.player-dot{width:10px;height:10px;border-radius:50%;}
+.player-name{font-weight:700;font-size:13px;flex:1;}
+.player-badge{font-size:10px;padding:3px 8px;border-radius:99px;background:rgba(0,200,255,0.1);color:var(--accent);}
+.player-bot{color:var(--purple);}
+
+.status-bar{
+  padding:10px 16px;background:rgba(0,200,255,0.04);
+  border:1px solid rgba(0,200,255,0.12);border-radius:10px;
+  font-size:13px;color:var(--muted);width:100%;text-align:center;
+}
+.error-msg{color:var(--red);font-size:13px;text-align:center;}
+
+.loading-dots::after{
+  content:'';animation:dots 1.5s infinite;
+}
+@keyframes dots{0%{content:''}33%{content:'.'}66%{content:'..'}100%{content:'...'}}
+
+/* ─── GAME HUD ───────────────────────────────────────── */
+#gameArea{display:none;position:relative;width:100%;flex-direction:column;align-items:center;}
+#gameCanvas{
+  display:block;border:1px solid rgba(0,200,255,0.2);border-radius:10px;
+  box-shadow:0 0 60px rgba(0,200,255,0.08);cursor:none;
+  image-rendering:pixelated;
+}
+
+.hud-top{
+  width:100%;display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;background:rgba(4,8,16,0.92);
+  border-bottom:1px solid var(--border2);gap:12px;flex-wrap:wrap;
+}
+.hud-timer{
+  font-family:var(--mono);font-size:16px;font-weight:700;color:var(--gold);
+  display:flex;align-items:center;gap:6px;
+}
+.hud-players-strip{display:flex;gap:8px;flex:1;overflow-x:auto;padding:2px 0;}
+.hud-player-mini{
+  display:flex;align-items:center;gap:6px;
+  padding:4px 10px;border-radius:99px;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);
+  white-space:nowrap;flex-shrink:0;
+}
+.hud-player-mini.me{border-color:rgba(0,200,255,0.4);}
+.hp-mini{font-size:10px;font-weight:700;}
+.kills-mini{font-size:10px;color:var(--muted);}
+
+.hud-bottom{
+  width:100%;display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;background:rgba(4,8,16,0.92);
+  border-top:1px solid var(--border2);gap:8px;
+}
+.weapon-display{
+  display:flex;align-items:center;gap:10px;
+  padding:6px 14px;background:rgba(0,200,255,0.06);
+  border:1px solid rgba(0,200,255,0.2);border-radius:10px;
+}
+.weapon-emoji{font-size:22px;}
+.weapon-name{font-weight:700;font-size:13px;color:var(--accent);}
+.weapon-ammo{font-size:11px;color:var(--muted);}
+
+.hp-bar-wrap{flex:1;max-width:200px;}
+.hp-bar-label{font-size:10px;color:var(--muted);margin-bottom:3px;display:flex;justify-content:space-between;}
+.hp-bar-bg{height:8px;background:rgba(255,255,255,0.1);border-radius:99px;overflow:hidden;}
+.hp-bar-fill{height:100%;border-radius:99px;transition:width 0.1s;}
+
+/* Mobile controls */
+.mobile-controls{
+  display:none;width:100%;padding:8px 12px;
+  background:rgba(4,8,16,0.95);border-top:1px solid var(--border2);
+  gap:10px;align-items:center;justify-content:space-between;
+}
+@media(max-width:768px){ .mobile-controls{display:flex;} }
+.dpad{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,44px);gap:4px;}
+.dpad-btn{
+  width:44px;height:44px;border:1px solid var(--border);border-radius:8px;
+  background:rgba(0,200,255,0.06);color:var(--accent);font-size:18px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;user-select:none;
+  transition:all 0.1s;-webkit-user-select:none;
+}
+.dpad-btn:active{background:rgba(0,200,255,0.2);transform:scale(0.9);}
+.action-btns{display:flex;flex-direction:column;gap:8px;}
+.action-btn{
+  padding:8px 20px;border-radius:10px;border:none;cursor:pointer;
+  font-size:14px;font-weight:700;user-select:none;-webkit-user-select:none;
+  font-family:var(--font);transition:all 0.1s;
+}
+.attack-btn{background:linear-gradient(135deg,var(--red),#cc0022);color:#fff;}
+.attack-btn:active{transform:scale(0.9);}
+.jump-btn{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#020408;}
+.jump-btn:active{transform:scale(0.9);}
+
+/* Kill feed & chat */
+#killFeed{
+  position:absolute;top:60px;left:10px;width:260px;
+  pointer-events:none;display:flex;flex-direction:column;gap:4px;z-index:10;
+}
+.kill-item{
+  padding:5px 10px;background:rgba(4,8,16,0.85);border-radius:6px;
+  border-left:3px solid var(--red);font-size:12px;
+  animation:killFadeIn 0.3s ease,killFadeOut 0.5s ease 2.5s forwards;
+}
+@keyframes killFadeIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+@keyframes killFadeOut{to{opacity:0;transform:translateX(-10px)}}
+
+#chatBox{
+  position:absolute;bottom:100px;left:10px;width:240px;
+  display:flex;flex-direction:column;gap:4px;pointer-events:none;z-index:10;
+}
+.chat-msg{
+  padding:5px 10px;background:rgba(4,8,16,0.8);border-radius:6px;
+  font-size:12px;animation:killFadeIn 0.2s ease,killFadeOut 0.4s ease 4.5s forwards;
+  word-break:break-word;
+}
+#chatInput{
+  position:absolute;bottom:70px;left:10px;width:220px;
+  display:none;gap:6px;z-index:20;
+}
+.chat-field{
+  flex:1;padding:6px 10px;background:rgba(4,8,16,0.95);border:1px solid var(--border);
+  border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;outline:none;
+}
+
+/* Overlay */
+.game-overlay{
+  position:absolute;inset:0;background:rgba(4,8,16,0.92);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:16px;border-radius:10px;z-index:50;
+}
+.overlay-big{font-family:var(--mono);font-size:clamp(20px,4vw,36px);font-weight:900;}
+.overlay-info{font-size:14px;color:var(--muted);text-align:center;line-height:1.8;}
+.scoreboard{
+  display:flex;flex-direction:column;gap:8px;width:min(90%,360px);
+  max-height:240px;overflow-y:auto;
+}
+.sb-row{
+  display:flex;align-items:center;gap:12px;padding:10px 14px;
+  background:var(--card2);border-radius:10px;border:1px solid var(--border2);
+}
+.sb-rank{font-family:var(--mono);font-weight:700;font-size:14px;width:24px;}
+.sb-name{flex:1;font-weight:700;font-size:13px;}
+.sb-kills{color:var(--red);font-weight:700;font-size:13px;}
+.sb-deaths{color:var(--muted);font-size:11px;}
+
+/* Respawn overlay inside canvas */
+.respawn-overlay{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:rgba(4,8,16,0.9);border:1px solid rgba(255,34,68,0.3);
+  border-radius:12px;padding:16px 24px;text-align:center;z-index:40;
+  display:none;pointer-events:none;
+}
+.respawn-count{font-family:var(--mono);font-size:28px;font-weight:900;color:var(--red);}
+.respawn-text{font-size:12px;color:var(--muted);margin-top:4px;}
+
+/* Weapon stats tooltip */
+.weapon-tip{
+  position:absolute;bottom:70px;right:10px;width:180px;
+  background:rgba(4,8,16,0.9);border:1px solid var(--border);border-radius:10px;
+  padding:12px;font-size:12px;z-index:30;display:none;
+}
+.tip-row{display:flex;justify-content:space-between;padding:3px 0;color:var(--muted);}
+.tip-val{color:var(--text);font-weight:700;}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ LOBBY ═══════════ -->
+<div id="lobby">
+  <div>
+    <div class="logo">⚔️ BATTLE ARENA</div>
+    <div class="logo-sub">نزال الأبطال — أسلحة عشوائية • فيزياء حقيقية • ضربات مدمرة</div>
+  </div>
+
+  <!-- Step 1: Choose mode -->
+  <div id="step1" style="width:100%;display:flex;flex-direction:column;gap:16px">
+    <div class="section-title">اختر وضع اللعب</div>
+    <div class="modes-grid">
+      <div class="mode-card selected" data-mode="solo" onclick="selectMode(this,'solo')">
+        <span class="mode-emoji">🤖</span>
+        <div class="mode-name">منفرد</div>
+        <div class="mode-desc">العب وحدك، تدرب وطور مهاراتك</div>
+      </div>
+      <div class="mode-card" data-mode="bot" onclick="selectMode(this,'bot')">
+        <span class="mode-emoji">🤺</span>
+        <div class="mode-name">ضد الروبوت</div>
+        <div class="mode-desc">3 روبوتات ذكاء اصطناعي تواجهك</div>
+      </div>
+      <div class="mode-card" data-mode="multi" onclick="selectMode(this,'multi')">
+        <span class="mode-emoji">🌐</span>
+        <div class="mode-name">مولتي بلاير</div>
+        <div class="mode-desc">العب مع أصدقائك أونلاين (4 لاعبين)</div>
+      </div>
+    </div>
+
+    <div class="input-group">
+      <div class="input-label">👤 اسمك في اللعبة</div>
+      <input class="game-input" id="usernameInput" placeholder="أدخل اسمك..." maxlength="15" value="">
+    </div>
+
+    <!-- Multiplayer: create or join -->
+    <div id="multiOptions" style="display:none;width:100%;display:none;flex-direction:column;gap:12px;">
+      <div class="room-row">
+        <button class="btn btn-primary" style="flex:1" onclick="proceedCreate()">➕ إنشاء غرفة</button>
+        <div style="display:flex;align-items:center;color:var(--muted);font-size:12px;">أو</div>
+        <input class="game-input" id="roomCodeInput" placeholder="كود الغرفة" maxlength="6" style="flex:1;letter-spacing:3px;text-transform:uppercase;text-align:center;">
+        <button class="btn btn-secondary" onclick="proceedJoin()">دخول ←</button>
+      </div>
+    </div>
+
+    <button class="btn btn-primary btn-full" id="startBtn" onclick="handleStart()">
+      ▶ ابدأ اللعبة
+    </button>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <!-- Step 2: Waiting room -->
+  <div id="step2" style="width:100%;display:none;flex-direction:column;gap:14px;">
+    <div class="section-title">انتظار اللاعبين</div>
+    <div class="room-code" id="displayRoomCode">——</div>
+    <div class="status-bar" id="waitStatus">⏳ جاري التحميل<span class="loading-dots"></span></div>
+    <div class="player-list" id="playerList"></div>
+    <div style="display:flex;gap:10px;width:100%;">
+      <button class="btn btn-primary" id="startGameBtn" style="flex:1;display:none" onclick="requestStart()">🎮 ابدأ اللعبة!</button>
+      <button class="btn btn-secondary btn-sm" onclick="copyRoomCode()">📋 نسخ الكود</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ GAME ═══════════ -->
+<div id="gameArea" style="display:none;width:100%;flex-direction:column;align-items:center;">
+  <div class="hud-top">
+    <div class="hud-timer" id="hudTimer">⏱ 5:00</div>
+    <div class="hud-players-strip" id="hudPlayers"></div>
+    <div style="font-size:11px;color:var(--muted);">🏆 أول 10 قتلات يفوز</div>
+  </div>
+
+  <div style="position:relative;width:100%;display:flex;justify-content:center;">
+    <canvas id="gameCanvas"></canvas>
+    <div id="killFeed"></div>
+    <div id="chatBox"></div>
+    <div id="chatInput" style="display:none;position:absolute;bottom:70px;left:10px;width:220px;display:none;gap:6px;z-index:20;">
+      <input class="chat-field" id="chatField" placeholder="رسالة..." maxlength="60">
+      <button class="btn btn-sm btn-primary" onclick="sendChat()">إرسال</button>
+    </div>
+    <div class="respawn-overlay" id="respawnOverlay">
+      <div class="respawn-count" id="respawnCount">3</div>
+      <div class="respawn-text">💀 استعادة الروح...</div>
+    </div>
+  </div>
+
+  <div class="hud-bottom">
+    <div class="weapon-display" id="weaponDisplay">
+      <div class="weapon-emoji" id="wEmoji">👊</div>
+      <div>
+        <div class="weapon-name" id="wName">قبضة</div>
+        <div class="weapon-ammo" id="wAmmo">لانهائي</div>
+      </div>
+    </div>
+    <div class="hp-bar-wrap">
+      <div class="hp-bar-label"><span>❤️ الصحة</span><span id="hpText">100</span></div>
+      <div class="hp-bar-bg"><div class="hp-bar-fill" id="hpBar" style="width:100%;background:var(--green)"></div></div>
+    </div>
+    <button class="btn btn-secondary btn-sm" onclick="toggleChat()">💬</button>
+    <button class="btn btn-secondary btn-sm" onclick="leaveGame()">🚪</button>
+  </div>
+
+  <!-- Mobile d-pad -->
+  <div class="mobile-controls" id="mobileCtrls">
+    <div class="dpad">
+      <div></div>
+      <button class="dpad-btn" id="mb-up">↑</button>
+      <div></div>
+      <button class="dpad-btn" id="mb-left">←</button>
+      <div></div>
+      <button class="dpad-btn" id="mb-right">→</button>
+    </div>
+    <div class="action-btns">
+      <button class="action-btn attack-btn" id="mb-attack">⚔️ ضرب</button>
+      <button class="action-btn jump-btn" id="mb-jump">🚀 قفز</button>
+    </div>
+  </div>
+</div>
+
+<!-- Game Over Overlay -->
+<div class="game-overlay" id="gameOverOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;">
+  <div class="overlay-big" id="goTitle" style="color:var(--gold)">🏆 انتهت اللعبة!</div>
+  <div class="overlay-info" id="goInfo"></div>
+  <div class="scoreboard" id="scoreboard"></div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+    <button class="btn btn-primary" onclick="restartGame()">▶ العب مجدداً</button>
+    <button class="btn btn-secondary" onclick="goLobby()">🏠 اللوبي</button>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+'use strict';
+
+// ════════════════════════════════════════════════
+// CLIENT CONFIG
+// ════════════════════════════════════════════════
+const SERVER_URL = window.location.origin;
+const SOCKET_PATH = '/game-ws';
+
+// Rendering constants
+const BASE_W = 1280, BASE_H = 720;
+let SCALE = 1;
+let canvas, ctx, socket;
+let roomId = null, myId = null;
+let mode = 'solo', gameType = 'battle';
+let gameState = null;
+let started = false;
+let myDead = false;
+let respawnInterval = null;
+
+const keys = { left: false, right: false, jump: false, attack: false };
+let lastInputSent = {};
+let inputSendInterval = null;
+
+// Assets (procedurally drawn)
+const WEAPON_INFO = {};
+
+// Platform cache for rendering
+let platforms = [];
+let arenaSize = { w: BASE_W, h: BASE_H };
+let killLimit = 10;
+let weaponStats = {};
+
+// Kill feed + chat
+const killFeedItems = [];
+const chatMsgs = [];
+
+// Particle system (client-side visual only)
+const particles = [];
+let prevPlayerStates = {};
+
+// ════════════════════════════════════════════════
+// LOBBY LOGIC
+// ════════════════════════════════════════════════
+let selectedMode = 'solo';
+
+function selectMode(el, m) {
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedMode = m;
+  const multiOpts = document.getElementById('multiOptions');
+  const startBtn = document.getElementById('startBtn');
+  if (m === 'multi') {
+    multiOpts.style.display = 'flex';
+    startBtn.style.display = 'none';
+  } else {
+    multiOpts.style.display = 'none';
+    startBtn.style.display = 'flex';
+  }
+}
+
+function setError(msg) { document.getElementById('errorMsg').textContent = msg; }
+
+function getUsername() {
+  const v = (document.getElementById('usernameInput').value || '').trim();
+  return v || 'بطل مجهول';
+}
+
+function handleStart() {
+  if (selectedMode === 'solo' || selectedMode === 'bot') {
+    mode = selectedMode;
+    connectAndCreate();
+  }
+}
+
+function proceedCreate() {
+  mode = 'multi';
+  connectAndCreate();
+}
+
+function proceedJoin() {
+  const code = (document.getElementById('roomCodeInput').value || '').trim().toUpperCase();
+  if (code.length !== 6) return setError('❌ كود الغرفة يجب أن يكون 6 أحرف');
+  mode = 'multi';
+  connectAndJoin(code);
+}
+
+function initSocket() {
+  if (socket && socket.connected) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    socket = io(SERVER_URL, { path: SOCKET_PATH, transports: ['websocket','polling'] });
+    socket.on('connect', resolve);
+    socket.on('connect_error', e => reject(e));
+    setupSocketListeners();
+  });
+}
+
+function connectAndCreate() {
+  setError('');
+  initSocket().then(() => {
+    socket.emit('createRoom', { gameType: 'battle', mode, username: getUsername(), avatar: null });
+  }).catch(() => setError('❌ فشل الاتصال بالسيرفر'));
+}
+
+function connectAndJoin(code) {
+  setError('');
+  initSocket().then(() => {
+    socket.emit('joinRoom', { roomId: code, username: getUsername(), avatar: null });
+  }).catch(() => setError('❌ فشل الاتصال بالسيرفر'));
+}
+
+function requestStart() {
+  if (socket && roomId) socket.emit('startGame', { roomId });
+}
+
+function copyRoomCode() {
+  if (!roomId) return;
+  navigator.clipboard?.writeText(roomId).then(() => showToast('تم نسخ الكود!'));
+}
+
+// ════════════════════════════════════════════════
+// SOCKET LISTENERS
+// ════════════════════════════════════════════════
+function setupSocketListeners() {
+  socket.on('roomCreated', data => onRoomReady(data, true));
+  socket.on('roomJoined',  data => onRoomReady(data, false));
+
+  socket.on('playerJoined', data => {
+    updateLobbyPlayers(data.players);
+    showToast(`👋 ${data.name} انضم!`);
+  });
+
+  socket.on('playerLeft', data => {
+    if (gameState) {
+      gameState.players = gameState.players?.filter(p => p.id !== data.id);
+    }
+    addKillFeed(`⚠️ لاعب غادر الغرفة`,'#888');
+  });
+
+  socket.on('gameStarted', () => {
+    startGame();
+  });
+
+  socket.on('gameState', snapshot => {
+    processSnapshot(snapshot);
+  });
+
+  socket.on('gameOver', winner => {
+    handleGameOver(winner);
+  });
+
+  socket.on('chat', msg => {
+    addChatMsg(msg.name, msg.msg, msg.color);
+  });
+
+  socket.on('error', data => {
+    setError(data.msg || '❌ خطأ');
+  });
+}
+
+function onRoomReady(data, isHost) {
+  myId = data.playerId;
+  roomId = data.roomId;
+  platforms = data.platforms || [];
+  arenaSize = data.arenaSize || { w: BASE_W, h: BASE_H };
+  killLimit = data.killLimit || 10;
+  weaponStats = data.weaponStats || {};
+
+  // Show waiting room
+  document.getElementById('lobby').querySelector('#step1').style.display = 'none';
+  document.getElementById('step2').style.display = 'flex';
+  document.getElementById('displayRoomCode').textContent = roomId;
+  document.getElementById('waitStatus').textContent = mode === 'multi'
+    ? `🔗 شارك الكود مع أصدقائك — انتظار لاعبين...`
+    : `⏳ جاري تهيئة اللعبة...`;
+
+  updateLobbyPlayers(data.players);
+
+  if (isHost && mode === 'multi') {
+    document.getElementById('startGameBtn').style.display = 'flex';
+  }
+
+  // Solo/bot start automatically (server triggers 'gameStarted')
+}
+
+function updateLobbyPlayers(players) {
+  const list = document.getElementById('playerList');
+  list.innerHTML = (players || []).map(p => `
+    <div class="player-item">
+      <div class="player-dot" style="background:${p.color}"></div>
+      <div class="player-name ${p.isBot?'player-bot':''}">${p.username}${p.id===myId?' (أنت)':''}</div>
+      ${p.isBot?'<span class="player-badge">🤖 AI</span>':'<span class="player-badge" style="color:var(--green)">✅ جاهز</span>'}
+    </div>
+  `).join('');
+}
+
+// ════════════════════════════════════════════════
+// GAME INIT
+// ════════════════════════════════════════════════
+function startGame() {
+  document.getElementById('lobby').style.display = 'none';
+  document.getElementById('gameOverOverlay').style.display = 'none';
+  document.getElementById('gameArea').style.display = 'flex';
+  started = true;
+
+  canvas = document.getElementById('gameCanvas');
+  ctx = canvas.getContext('2d');
+
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  // Input
+  setupInput();
+
+  // Send input loop
+  inputSendInterval = setInterval(sendInput, 50);
+
+  // Render loop
+  requestAnimationFrame(renderLoop);
+}
+
+function resizeCanvas() {
+  const maxW = window.innerWidth;
+  const maxH = window.innerHeight - 160;
+  SCALE = Math.min(maxW / BASE_W, maxH / BASE_H, 1);
+  canvas.width = Math.floor(BASE_W * SCALE);
+  canvas.height = Math.floor(BASE_H * SCALE);
+  canvas.style.width = canvas.width + 'px';
+  canvas.style.height = canvas.height + 'px';
+}
+
+function setupInput() {
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft'  || e.key === 'a' || e.key === 'A') keys.left   = true;
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right  = true;
+    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === ' ') keys.jump = true;
+    if (e.key === 'z' || e.key === 'Z' || e.key === 'Enter') keys.attack = true;
+    if (e.key === 't' || e.key === 'T') toggleChat();
+    e.preventDefault?.();
+  });
+  document.addEventListener('keyup', e => {
+    if (e.key === 'ArrowLeft'  || e.key === 'a' || e.key === 'A') keys.left   = false;
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right  = false;
+    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === ' ') keys.jump = false;
+    if (e.key === 'z' || e.key === 'Z' || e.key === 'Enter') keys.attack = false;
+  });
+
+  // Mobile
+  const binds = [
+    ['mb-left','left'],['mb-right','right'],['mb-up','jump'],
+    ['mb-jump','jump'],['mb-attack','attack'],
+  ];
+  binds.forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('pointerdown', e => { e.preventDefault(); keys[key] = true; });
+    el.addEventListener('pointerup', () => keys[key] = false);
+    el.addEventListener('pointercancel', () => keys[key] = false);
+  });
+}
+
+function sendInput() {
+  if (!socket || !roomId || !started) return;
+  const cur = { ...keys };
+  if (JSON.stringify(cur) !== JSON.stringify(lastInputSent)) {
+    socket.emit('input', { roomId, keys: cur });
+    lastInputSent = { ...cur };
+  }
+}
+
+// ════════════════════════════════════════════════
+// SNAPSHOT PROCESSING
+// ════════════════════════════════════════════════
+function processSnapshot(snap) {
+  // Detect kills / new events
+  if (gameState?.players) {
+    snap.players.forEach(np => {
+      const op = gameState.players.find(p => p.id === np.id);
+      if (op && !op.dead && np.dead) {
+        // Emit death particles
+        emitParticles(np.x, np.y, np.color, 12);
+      }
+      if (op && op.kills < np.kills) {
+        // New kill
+        const killer = snap.players.find(p => p.kills > (gameState.players.find(x=>x.id===p.id)?.kills||0));
+        // add kill feed
+      }
+    });
+  }
+
+  // Kill feed from kills difference
+  if (gameState?.players) {
+    snap.players.forEach(np => {
+      const op = prevPlayerStates[np.id];
+      if (op && np.kills > (op.kills||0)) {
+        const victim = snap.players.find(p => p.id !== np.id && (prevPlayerStates[p.id]?.dead === false) && p.dead);
+        addKillFeed(`💀 ${np.username} قتل ${victim?.username || ''}`, np.color);
+      }
+    });
+  }
+  snap.players.forEach(p => { prevPlayerStates[p.id] = { ...p }; });
+
+  gameState = snap;
+  updateHUD();
+}
+
+// ════════════════════════════════════════════════
+// RENDER LOOP
+// ════════════════════════════════════════════════
+let frameCount = 0;
+function renderLoop() {
+  if (!started) return;
+  requestAnimationFrame(renderLoop);
+  frameCount++;
+  draw();
+}
+
+function draw() {
+  if (!ctx) return;
+  ctx.save();
+  ctx.scale(SCALE, SCALE);
+
+  // Background
+  drawBackground();
+
+  // Platforms
+  drawPlatforms();
+
+  if (gameState) {
+    // Pickups
+    drawPickups(gameState.pickups || []);
+
+    // Bullets
+    drawBullets(gameState.bullets || []);
+
+    // Players
+    drawPlayers(gameState.players || []);
+
+    // Particles
+    updateAndDrawParticles();
+
+    // My respawn timer
+    const me = gameState.players?.find(p => p.id === myId);
+    if (me?.dead && me.respawnTimer > 0) {
+      const secs = Math.ceil(me.respawnTimer / 60);
+      const ov = document.getElementById('respawnOverlay');
+      ov.style.display = 'block';
+      document.getElementById('respawnCount').textContent = secs;
+    } else {
+      document.getElementById('respawnOverlay').style.display = 'none';
+    }
+  }
+
+  ctx.restore();
+}
+
+function drawBackground() {
+  // Dark gradient bg
+  const grad = ctx.createLinearGradient(0, 0, 0, BASE_H);
+  grad.addColorStop(0, '#020510');
+  grad.addColorStop(1, '#040812');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, BASE_W, BASE_H);
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(0,200,255,0.03)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= BASE_W; x += 64) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,BASE_H); ctx.stroke(); }
+  for (let y = 0; y <= BASE_H; y += 64) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(BASE_W,y); ctx.stroke(); }
+
+  // Ambient glow spots
+  const t = frameCount * 0.008;
+  const drawGlow = (x, y, r, color) => {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, color); g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, BASE_W, BASE_H);
+  };
+  drawGlow(200 + Math.sin(t)*100, 300, 300, 'rgba(0,100,255,0.04)');
+  drawGlow(1000 + Math.cos(t)*80, 400, 250, 'rgba(170,50,255,0.04)');
+}
+
+function drawPlatforms() {
+  platforms.forEach((plat, i) => {
+    const isGround = i === 0;
+    // Platform body
+    const grad = ctx.createLinearGradient(plat.x, plat.y, plat.x, plat.y + plat.h);
+    if (isGround) {
+      grad.addColorStop(0, '#1a2a44');
+      grad.addColorStop(1, '#0d1828');
+    } else {
+      grad.addColorStop(0, '#162038');
+      grad.addColorStop(1, '#0d1428');
+    }
+    ctx.fillStyle = grad;
+    roundRect(ctx, plat.x, plat.y, plat.w, plat.h, isGround ? 0 : 8);
+    ctx.fill();
+
+    // Top edge glow
+    ctx.strokeStyle = `rgba(0,200,255,${isGround?0.4:0.25})`;
+    ctx.lineWidth = isGround ? 2 : 1.5;
+    ctx.beginPath(); ctx.moveTo(plat.x, plat.y); ctx.lineTo(plat.x + plat.w, plat.y); ctx.stroke();
+
+    // Side glow for floating platforms
+    if (!isGround) {
+      ctx.shadowColor = 'rgba(0,200,255,0.3)'; ctx.shadowBlur = 8;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+  });
+}
+
+function drawPickups(pickups) {
+  pickups.forEach(pk => {
+    const ws = weaponStats[pk.weapon] || {};
+    const bob = Math.sin(frameCount * 0.08 + (pk.bobPhase||0)) * 4;
+    const x = pk.x, y = pk.y + bob;
+
+    // Glow ring
+    const glowAlpha = 0.3 + Math.sin(frameCount * 0.1) * 0.15;
+    ctx.beginPath(); ctx.arc(x, y, 20, 0, Math.PI * 2);
+    ctx.strokeStyle = ws.color || '#fff';
+    ctx.lineWidth = 1.5; ctx.globalAlpha = glowAlpha; ctx.stroke(); ctx.globalAlpha = 1;
+
+    // Shadow
+    ctx.shadowColor = ws.color || '#fff'; ctx.shadowBlur = 15;
+
+    // Box
+    const bx = x - 18, by = y - 18;
+    ctx.fillStyle = `rgba(0,0,0,0.6)`;
+    roundRect(ctx, bx, by, 36, 36, 8); ctx.fill();
+    ctx.strokeStyle = ws.color || '#fff'; ctx.lineWidth = 1.5;
+    roundRect(ctx, bx, by, 36, 36, 8); ctx.stroke();
+
+    // Emoji
+    ctx.shadowBlur = 0;
+    ctx.font = '20px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(ws.emoji || '❓', x, y);
+  });
+  ctx.shadowBlur = 0;
+}
+
+function drawBullets(bullets) {
+  bullets.forEach(b => {
+    const color = b.color || '#fff';
+    ctx.shadowColor = color; ctx.shadowBlur = 12;
+    ctx.fillStyle = color;
+    if (b.weapon === 'rocket' || b.weapon === 'bomb') {
+      ctx.font = '14px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(b.weapon === 'rocket' ? '🚀' : '💣', b.x, b.y);
+    } else if (b.weapon === 'laser') {
+      ctx.fillStyle = color; ctx.strokeStyle = color; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+  });
+}
+
+function drawPlayers(players) {
+  players.forEach(p => {
+    if (!p || (p.dead && p.respawnTimer > 120)) return;
+
+    const alpha = p.dead ? 0.3 : (p.invincible ? (Math.sin(frameCount * 0.3) > 0 ? 1 : 0.3) : 1);
+    ctx.globalAlpha = alpha;
+
+    const px = p.x, py = p.y;
+    const isMe = p.id === myId;
+    const color = p.color || '#00c8ff';
+
+    // Shadow on ground
+    if (!p.dead) {
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath(); ctx.ellipse(px, BASE_H - 40, 18, 5, 0, 0, Math.PI*2); ctx.fill();
+    }
+
+    // Shield aura
+    if (p.shielded) {
+      ctx.beginPath(); ctx.arc(px, py - 15, 32, 0, Math.PI*2);
+      ctx.strokeStyle = 'rgba(68,136,255,0.6)'; ctx.lineWidth = 2;
+      ctx.shadowColor = '#4488ff'; ctx.shadowBlur = 15;
+      ctx.stroke(); ctx.shadowBlur = 0;
+    }
+
+    // Body glow (for me)
+    if (isMe) { ctx.shadowColor = color; ctx.shadowBlur = 20; }
+
+    // ── Draw Stickman ──────────────────────────────────────
+    const scaleX = p.dir || 1;
+    ctx.save(); ctx.translate(px, py - 10); ctx.scale(scaleX, 1);
+
+    const lc = p.dead ? '#555' : color;
+    ctx.strokeStyle = lc; ctx.lineWidth = 3; ctx.lineCap = 'round';
+
+    // Head
+    ctx.beginPath(); ctx.arc(0, -32, 10, 0, Math.PI*2);
+    ctx.fillStyle = p.dead ? '#333' : `${color}33`;
+    ctx.fill(); ctx.stroke();
+
+    // Eyes
+    if (!p.dead) {
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(4, -34, 3, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = lc;
+      ctx.beginPath(); ctx.arc(5, -34, 1.5, 0, Math.PI*2); ctx.fill();
+    } else {
+      ctx.strokeStyle = '#f44'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(2,-36); ctx.lineTo(6,-32); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(6,-36); ctx.lineTo(2,-32); ctx.stroke();
+    }
+
+    // Body
+    ctx.strokeStyle = lc; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(0,-20); ctx.lineTo(0,10); ctx.stroke();
+
+    // Arms — animated
+    const armSwing = Math.sin(frameCount * 0.2) * 10;
+    if (p.weapon) {
+      // Weapon arm
+      const ws = weaponStats[p.weapon];
+      ctx.beginPath(); ctx.moveTo(0,-15); ctx.lineTo(25,0); ctx.stroke();
+      ctx.font = '14px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.globalAlpha = alpha;
+      ctx.fillText(ws?.emoji || '⚔️', 30, 0);
+      // Other arm
+      ctx.strokeStyle = lc; ctx.beginPath(); ctx.moveTo(0,-15); ctx.lineTo(-20,-5); ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.moveTo(0,-15); ctx.lineTo(20,-5+armSwing*0.3); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,-15); ctx.lineTo(-20,-5-armSwing*0.3); ctx.stroke();
+    }
+
+    // Legs — walk animation
+    const legSwing = Math.abs(p.vx) > 0.5 ? Math.sin(frameCount * 0.25) * 15 : 0;
+    ctx.beginPath(); ctx.moveTo(0,10); ctx.lineTo(-12,30 + legSwing); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,10); ctx.lineTo(12,30 - legSwing); ctx.stroke();
+
+    ctx.restore();
+    ctx.shadowBlur = 0;
+
+    // HP bar above head
+    if (!p.dead) {
+      const barW = 44, barH = 5;
+      const bx = px - barW/2, by = py - 60;
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      roundRect(ctx, bx-2, by-2, barW+4, barH+4, 3); ctx.fill();
+      const hpRatio = (p.hp||0) / (p.maxHp||100);
+      const hpColor = hpRatio > 0.6 ? '#00ff88' : hpRatio > 0.3 ? '#ffdd00' : '#ff2244';
+      ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      roundRect(ctx, bx, by, barW, barH, 3); ctx.fill();
+      ctx.fillStyle = hpColor;
+      ctx.shadowColor = hpColor; ctx.shadowBlur = 8;
+      roundRect(ctx, bx, by, barW * hpRatio, barH, 3); ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    // Name tag
+    const nameAlpha = isMe ? 0.9 : 0.7;
+    ctx.globalAlpha = nameAlpha;
+    ctx.font = `bold ${isMe ? 12 : 11}px Cairo`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillStyle = isMe ? '#00c8ff' : (p.isBot ? '#aa55ff' : '#fff');
+    ctx.fillText(p.username || '?', px, py - 62);
+
+    // Kill count
+    if (!p.dead && p.kills > 0) {
+      ctx.font = 'bold 10px Orbitron'; ctx.fillStyle = '#ffd700';
+      ctx.fillText(`⚔️${p.kills}`, px + 28, py - 40);
+    }
+
+    ctx.globalAlpha = 1;
+  });
+}
+
+// ─── Particles ──────────────────────────────────────────────────
+function emitParticles(x, y, color, count) {
+  for (let i = 0; i < count; i++) {
+    const a = (Math.PI * 2 / count) * i + Math.random() * 0.5;
+    const spd = 2 + Math.random() * 5;
+    particles.push({
+      x, y, vx: Math.cos(a)*spd, vy: Math.sin(a)*spd - 2,
+      life: 1, color, size: 3 + Math.random() * 5,
+    });
+  }
+}
+
+function updateAndDrawParticles() {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy;
+    p.vy += 0.15; p.vx *= 0.95;
+    p.life -= 0.025;
+    if (p.life <= 0) { particles.splice(i, 1); continue; }
+    ctx.globalAlpha = p.life;
+    ctx.shadowColor = p.color; ctx.shadowBlur = 10;
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+}
+
+// ─── HUD Update ────────────────────────────────────────────────
+function updateHUD() {
+  if (!gameState) return;
+
+  // Timer
+  const tl = Math.max(0, gameState.tl || 0);
+  const m = Math.floor(tl / 60), s = tl % 60;
+  document.getElementById('hudTimer').innerHTML = `⏱ ${m}:${String(s).padStart(2,'0')}`;
+
+  // Players strip
+  const strip = document.getElementById('hudPlayers');
+  strip.innerHTML = (gameState.players || []).map(p => `
+    <div class="hud-player-mini ${p.id===myId?'me':''}">
+      <div class="player-dot" style="background:${p.color}"></div>
+      <span style="font-size:11px;font-weight:700;color:${p.isBot?'#aa55ff':'var(--text)'}">${p.username}</span>
+      <span class="hp-mini" style="color:${(p.hp/p.maxHp)>0.5?'var(--green)':'var(--red)'}">❤️${p.hp||0}</span>
+      <span class="kills-mini">⚔️${p.kills||0}</span>
+    </div>
+  `).join('');
+
+  // My player HUD
+  const me = gameState.players?.find(p => p.id === myId);
+  if (me) {
+    const hp = me.hp || 0;
+    document.getElementById('hpText').textContent = hp;
+    const hpBar = document.getElementById('hpBar');
+    const ratio = hp / (me.maxHp || 100);
+    hpBar.style.width = (ratio * 100) + '%';
+    hpBar.style.background = ratio > 0.6 ? 'var(--green)' : ratio > 0.3 ? '#ffdd00' : 'var(--red)';
+
+    const ws = me.weapon ? weaponStats[me.weapon] : null;
+    document.getElementById('wEmoji').textContent = ws?.emoji || '👊';
+    document.getElementById('wName').textContent = me.weapon || 'قبضة';
+    document.getElementById('wAmmo').textContent = (me.ammo === -1 || !me.weapon) ? '∞' : `${me.ammo} رصاصة`;
+  }
+}
+
+// ─── Kill Feed ──────────────────────────────────────────────────
+function addKillFeed(text, color) {
+  const feed = document.getElementById('killFeed');
+  const el = document.createElement('div');
+  el.className = 'kill-item';
+  el.style.borderLeftColor = color || '#ff2244';
+  el.textContent = text;
+  feed.appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
+// ─── Chat ───────────────────────────────────────────────────────
+function addChatMsg(name, msg, color) {
+  const box = document.getElementById('chatBox');
+  const el = document.createElement('div');
+  el.className = 'chat-msg';
+  el.innerHTML = `<span style="color:${color};font-weight:700">${name}:</span> ${msg}`;
+  box.appendChild(el);
+  setTimeout(() => el.remove(), 5000);
+  if (box.children.length > 6) box.firstChild.remove();
+}
+
+function toggleChat() {
+  const ci = document.getElementById('chatInput');
+  const showing = ci.style.display === 'flex';
+  ci.style.display = showing ? 'none' : 'flex';
+  if (!showing) document.getElementById('chatField').focus();
+}
+
+function sendChat() {
+  const field = document.getElementById('chatField');
+  const msg = field.value.trim();
+  if (msg && socket && roomId) {
+    socket.emit('chat', { roomId, message: msg });
+    field.value = '';
+  }
+  document.getElementById('chatInput').style.display = 'none';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('chatInput')?.style.display === 'flex') {
+    sendChat();
+  }
+});
+
+// ─── Game Over ──────────────────────────────────────────────────
+function handleGameOver(winner) {
+  started = false;
+  clearInterval(inputSendInterval);
+  document.getElementById('gameOverOverlay').style.display = 'flex';
+
+  const isMe = winner && (
+    (gameState?.players?.find(p=>p.id===myId)?.username === winner.name) ||
+    gameState?.players?.find(p=>p.id===myId)?.kills >= killLimit
+  );
+
+  document.getElementById('goTitle').textContent = isMe ? '🏆 أنت الفائز!' : `🥇 ${winner?.name || '?'} فاز!`;
+  document.getElementById('goTitle').style.color = isMe ? 'var(--gold)' : 'var(--accent)';
+  document.getElementById('goInfo').textContent = `عدد القتلات: ${winner?.kills || 0}`;
+
+  // Scoreboard
+  const players = (gameState?.players || []).sort((a, b) => b.kills - a.kills);
+  const medals = ['🥇','🥈','🥉'];
+  document.getElementById('scoreboard').innerHTML = players.map((p, i) => `
+    <div class="sb-row" style="border-color:${p.id===myId?'rgba(0,200,255,0.3)':''}">
+      <div class="sb-rank">${medals[i] || `${i+1}.`}</div>
+      <div style="width:8px;height:8px;border-radius:50%;background:${p.color};flex-shrink:0"></div>
+      <div class="sb-name">${p.username}${p.isBot?'🤖':''}</div>
+      <div class="sb-kills">⚔️ ${p.kills}</div>
+      <div class="sb-deaths">💀 ${p.deaths}</div>
+    </div>
+  `).join('');
+}
+
+function restartGame() {
+  document.getElementById('gameOverOverlay').style.display = 'none';
+  gameState = null; particles.length = 0;
+  prevPlayerStates = {};
+  if (socket && roomId) {
+    started = true;
+    socket.emit('createRoom', { gameType: 'battle', mode, username: getUsername(), avatar: null });
+  }
+}
+
+function goLobby() {
+  document.getElementById('gameOverOverlay').style.display = 'none';
+  document.getElementById('gameArea').style.display = 'none';
+  document.getElementById('lobby').style.display = 'flex';
+  document.getElementById('step1').style.display = 'flex';
+  document.getElementById('step2').style.display = 'none';
+  started = false; gameState = null; particles.length = 0;
+}
+
+function leaveGame() {
+  if (socket) socket.disconnect();
+  goLobby();
+}
+
+// ─── Toast ──────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = `position:fixed;bottom:80px;right:20px;padding:8px 16px;
+    background:rgba(0,200,255,0.1);border:1px solid rgba(0,200,255,0.3);
+    border-radius:8px;font-size:13px;z-index:999;animation:killFadeIn 0.3s ease`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// ─── Canvas Utility ─────────────────────────────────────────────
+function roundRect(ctx, x, y, w, h, r) {
+  r = Math.min(r, w/2, h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.arcTo(x+w, y, x+w, y+r, r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.arcTo(x+w, y+h, x+w-r, y+h, r);
+  ctx.lineTo(x+r, y+h);
+  ctx.arcTo(x, y+h, x, y+h-r, r);
+  ctx.lineTo(x, y+r);
+  ctx.arcTo(x, y, x+r, y, r);
+  ctx.closePath();
+}
+
+// ─── URL param support (for Discord links) ─────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const joinCode = params.get('room');
+  const uname = params.get('name');
+  if (uname) document.getElementById('usernameInput').value = decodeURIComponent(uname);
+  if (joinCode) {
+    selectMode(document.querySelector('[data-mode="multi"]'), 'multi');
+    document.getElementById('roomCodeInput').value = joinCode.toUpperCase();
+    document.getElementById('multiOptions').style.display = 'flex';
+  }
+});
+</script>
+</body>
+</html>

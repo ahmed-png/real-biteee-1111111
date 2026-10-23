@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌩️ Cyber Jump — منصات سايبربانك</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Cairo:wght@400;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#04060f;--neon:#cc00ff;--neon2:#00ffcc;--neon3:#ff6600;
+  --text:#e2e8f0;--muted:rgba(226,232,240,0.4);
+  --font:'Cairo',sans-serif;--mono:'Orbitron',monospace;
+}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--font);
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  min-height:100vh;overflow:hidden;padding:10px;gap:10px;
+}
+.title{font-family:var(--mono);font-size:clamp(16px,4vw,26px);font-weight:900;
+  background:linear-gradient(135deg,var(--neon),var(--neon2),var(--neon3));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  letter-spacing:2px;text-align:center;}
+
+/* LOBBY */
+#lobby{width:min(95vw,400px);display:flex;flex-direction:column;gap:12px;align-items:center;}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;}
+.mode-btn{padding:12px 6px;background:rgba(204,0,255,0.04);border:1px solid rgba(204,0,255,0.15);border-radius:10px;cursor:pointer;text-align:center;transition:all 0.2s;color:var(--text);}
+.mode-btn:hover,.mode-btn.sel{background:rgba(204,0,255,0.1);border-color:var(--neon);}
+.mode-btn span{font-size:22px;display:block;margin-bottom:4px;}
+.mode-btn b{font-size:11px;font-weight:700;}
+.mode-btn small{font-size:9px;color:var(--muted);}
+.inp{width:100%;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(204,0,255,0.15);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;}
+.inp:focus{border-color:var(--neon);}
+.inp::placeholder{color:var(--muted);}
+.btn-row{display:flex;gap:8px;width:100%;}
+.btn{padding:11px 16px;border:none;border-radius:8px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;flex:1;transition:all 0.2s;}
+.btn-purple{background:linear-gradient(135deg,var(--neon),#9900cc);color:#fff;box-shadow:0 4px 20px rgba(204,0,255,0.3);}
+.btn-purple:hover{box-shadow:0 6px 30px rgba(204,0,255,0.5);}
+.btn-ghost{background:rgba(255,255,255,0.04);color:var(--text);border:1px solid rgba(255,255,255,0.08);}
+.btn:active{transform:scale(0.96);}
+.room-code{font-family:var(--mono);font-size:22px;letter-spacing:6px;color:#ffd700;text-align:center;padding:10px;background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.2);border-radius:8px;width:100%;}
+.p-list{display:flex;flex-direction:column;gap:6px;width:100%;}
+.p-item{display:flex;align-items:center;gap:8px;padding:7px 11px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:7px;font-size:11px;}
+.p-dot{width:8px;height:8px;border-radius:50%;}
+.err{color:#ff3355;font-size:12px;text-align:center;}
+
+/* GAME */
+#gameArea{display:none;width:100%;flex-direction:column;align-items:center;gap:8px;}
+.hud{display:flex;gap:12px;width:min(95vw,520px);justify-content:space-between;padding:7px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(204,0,255,0.15);border-radius:8px;}
+.hud-v{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--neon2);}
+.hud-l{font-size:9px;color:var(--muted);letter-spacing:1px;}
+.canvas-wrap{position:relative;}
+#canvas{border:1px solid rgba(204,0,255,0.2);border-radius:10px;background:var(--bg);display:block;box-shadow:0 0 50px rgba(204,0,255,0.1);}
+.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,6,15,0.92);border-radius:10px;gap:12px;backdrop-filter:blur(4px);}
+.ov-title{font-family:var(--mono);font-size:clamp(16px,4vw,24px);font-weight:900;text-align:center;}
+.ov-info{font-size:12px;color:var(--muted);text-align:center;line-height:1.8;}
+.ov-scores{display:flex;flex-direction:column;gap:6px;width:90%;}
+.ov-row{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:8px;font-size:12px;}
+.mobile-ctrls{display:flex;gap:10px;width:min(95vw,520px);justify-content:space-between;padding:6px;}
+.ctrl-btn{padding:10px 22px;border:1px solid rgba(204,0,255,0.25);border-radius:8px;background:rgba(204,0,255,0.05);color:var(--neon);cursor:pointer;font-size:18px;transition:all 0.1s;user-select:none;-webkit-user-select:none;font-family:var(--font);}
+.ctrl-btn:active{background:rgba(204,0,255,0.2);transform:scale(0.9);}
+.jump-btn{background:linear-gradient(135deg,rgba(0,255,204,0.1),rgba(0,150,150,0.1));border-color:rgba(0,255,204,0.3);color:var(--neon2);}
+.jump-btn:active{background:rgba(0,255,204,0.2);}
+
+/* Multiplayer scores strip */
+.scores-strip{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:min(95vw,520px);}
+.score-chip{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);font-size:11px;font-weight:700;}
+</style>
+</head>
+<body>
+<div class="title">🌩️ CYBER JUMP</div>
+
+<!-- LOBBY -->
+<div id="lobby">
+  <div style="font-size:12px;color:var(--muted);text-align:center">منصات سايبربانك • اجمع النقاط • تفادى العوائق</div>
+  <div class="modes">
+    <div class="mode-btn sel" data-m="solo" onclick="pickMode(this,'solo')">
+      <span>🎮</span><b>منفرد</b><br><small>تحدٍّ لا نهاية</small>
+    </div>
+    <div class="mode-btn" data-m="bot" onclick="pickMode(this,'bot')">
+      <span>🤖</span><b>ضد Bot</b><br><small>تنافس مع AI</small>
+    </div>
+    <div class="mode-btn" data-m="multi" onclick="pickMode(this,'multi')">
+      <span>🌐</span><b>مولتي</b><br><small>2-4 لاعبين</small>
+    </div>
+  </div>
+  <input class="inp" id="nameInp" placeholder="اسمك..." maxlength="12">
+  <div id="multiOpts" style="display:none;flex-direction:column;gap:8px;width:100%;">
+    <div class="btn-row">
+      <button class="btn btn-purple" onclick="doCreate()">➕ إنشاء</button>
+      <input class="inp" id="codeInp" placeholder="كود الغرفة" style="flex:1;text-align:center;letter-spacing:2px;text-transform:uppercase" maxlength="6">
+      <button class="btn btn-ghost" onclick="doJoin()">دخول</button>
+    </div>
+  </div>
+  <div id="waitRoom" style="display:none;flex-direction:column;gap:8px;width:100%;align-items:center;">
+    <div class="room-code" id="rCode">——</div>
+    <div style="font-size:11px;color:var(--muted)">شارك الكود مع أصدقائك</div>
+    <div class="p-list" id="pList"></div>
+    <div class="btn-row">
+      <button class="btn btn-purple" id="hostStartBtn" style="display:none" onclick="hostStart()">🎮 ابدأ!</button>
+      <button class="btn btn-ghost" onclick="()=>navigator.clipboard?.writeText(myRoomId||'')">📋</button>
+    </div>
+  </div>
+  <button class="btn btn-purple" id="soloBtn" onclick="startGame()">▶ ابدأ</button>
+  <div class="err" id="errMsg"></div>
+</div>
+
+<!-- GAME -->
+<div id="gameArea">
+  <div class="scores-strip" id="scoresStrip" style="display:none"></div>
+  <div class="hud">
+    <div><div class="hud-v" id="hScore">0</div><div class="hud-l">نقاطي</div></div>
+    <div><div class="hud-v" id="hLevel">1</div><div class="hud-l">المستوى</div></div>
+    <div><div class="hud-v" id="hBest">0</div><div class="hud-l">الأفضل</div></div>
+    <div><div class="hud-v" id="hLives" style="color:#ff3355">❤️❤️❤️</div><div class="hud-l">الأرواح</div></div>
+  </div>
+  <div class="canvas-wrap">
+    <canvas id="canvas" width="520" height="380"></canvas>
+    <div class="overlay" id="ov" style="display:none">
+      <div class="ov-title" id="ovTitle" style="color:var(--neon)"></div>
+      <div class="ov-info" id="ovInfo"></div>
+      <div class="ov-scores" id="ovScores"></div>
+      <div class="btn-row" style="width:80%">
+        <button class="btn btn-purple" onclick="restart()">▶ مجدداً</button>
+        <button class="btn btn-ghost" onclick="goLobby()">🏠</button>
+      </div>
+    </div>
+  </div>
+  <div class="mobile-ctrls">
+    <button class="ctrl-btn" id="mb-left">◀</button>
+    <button class="ctrl-btn jump-btn" id="mb-jump">↑ قفز</button>
+    <button class="ctrl-btn" id="mb-right">▶</button>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+'use strict';
+
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+const W=canvas.width, H=canvas.height;
+
+// ── State ─────────────────────────────────────────────────────
+let myMode='solo', myRoomId=null, myId=null, socket=null, isHost=false;
+let running=false, best=0;
+
+// Players (local + multiplayer)
+let players=[], botPlayer=null;
+let obstacles=[], gems=[], frameCount=0, gameSpeed=1, score=0, level=1, lives=3;
+let particles=[], scrollOffset=0, raf=null;
+
+// Colors for multiplayer
+const COLORS=['#cc00ff','#00ffcc','#ff6600','#00aaff','#ff3366','#ffdd00'];
+
+const keys={left:false,right:false,jump:false};
+
+// ── Mode ──────────────────────────────────────────────────────
+function pickMode(el,m){
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel'); myMode=m;
+  document.getElementById('multiOpts').style.display=m==='multi'?'flex':'none';
+  document.getElementById('soloBtn').style.display=m==='multi'?'none':'flex';
+  document.getElementById('waitRoom').style.display='none';
+}
+function getName(){ return (document.getElementById('nameInp').value||'').trim()||'لاعب'; }
+function setErr(m){ document.getElementById('errMsg').textContent=m; }
+
+// ── Local Game ────────────────────────────────────────────────
+function startGame(){
+  document.getElementById('lobby').style.display='none';
+  document.getElementById('gameArea').style.display='flex';
+  initGame();
+}
+
+function createPlayer(id,name,color,x,isBot=false){
+  return {id,name,color,isBot,
+    x,y:H-80,w:24,h:36,vx:0,vy:0,
+    onGround:false,jumps:2,score:0,lives:3,
+    dead:false,invincible:0,trail:[],
+    keys:{left:false,right:false,jump:false},
+    animFrame:0,
+  };
+}
+
+function initGame(){
+  obstacles=[]; gems=[]; particles=[]; frameCount=0; gameSpeed=1; score=0; level=1; lives=3;
+  document.getElementById('ov').style.display='none';
+  document.getElementById('hLives').textContent='❤️❤️❤️';
+
+  players=[createPlayer('me',getName(),COLORS[0],W/2-12)];
+  if(myMode==='bot'){
+    botPlayer=createPlayer('bot','CyberBot🤖',COLORS[1],W/4,true);
+    players.push(botPlayer);
+    document.getElementById('scoresStrip').style.display='flex';
+  }
+
+  // Generate initial platforms/gems
+  generateSection();
+  if(raf) cancelAnimationFrame(raf);
+  running=true;
+  raf=requestAnimationFrame(loop);
+  setupInput();
+}
+
+function generateSection(){
+  // Moving terrain
+  for(let i=0;i<6;i++){
+    const x=Math.random()*W, y=100+Math.random()*(H-150);
+    obstacles.push({x,y,w:8+Math.random()*20,h:8+Math.random()*20,
+      type:Math.random()<0.3?'spike':'block',
+      color:Math.random()<0.5?'#ff3355':'#cc00ff',
+      vx:(Math.random()-0.5)*2*gameSpeed,
+    });
+  }
+  for(let i=0;i<8;i++){
+    gems.push({x:Math.random()*W,y:50+Math.random()*(H-100),
+      collected:false,value:10,bob:Math.random()*Math.PI*2,
+      color:Math.random()<0.5?'#ffd700':'#00ffcc',
+    });
+  }
+}
+
+const GRV=0.5;
+function loop(){
+  if(!running){ return; }
+  raf=requestAnimationFrame(loop);
+  frameCount++;
+  if(frameCount%300===0){
+    gameSpeed=Math.min(3,gameSpeed+0.1);
+    level=Math.floor(gameSpeed*2);
+    generateSection();
+  }
+
+  // Update my player
+  const me=players[0];
+  if(!me.dead){
+    const spd=4.5;
+    if(keys.left){me.vx=-spd;me.x=Math.max(0,me.x-spd);}
+    else if(keys.right){me.vx=spd;me.x=Math.min(W-me.w,me.x+spd);}
+    else me.vx*=0.7;
+
+    if(keys.jump&&me.jumps>0){
+      me.vy=-11; me.jumps--; me.onGround=false;
+      keys.jump=false; // single press
+    }
+    me.vy+=GRV; me.y+=me.vy;
+    if(me.y+me.h>=H-20){ me.y=H-me.h-20; me.vy=0; me.onGround=true; me.jumps=2; }
+    if(me.invincible>0) me.invincible--;
+
+    // Trail
+    me.trail.push({x:me.x+me.w/2,y:me.y+me.h/2,life:1,color:me.color});
+    if(me.trail.length>8) me.trail.shift();
+
+    // Gems
+    gems.forEach(g=>{
+      if(g.collected) return;
+      if(me.x<g.x+16&&me.x+me.w>g.x&&me.y<g.y+16&&me.y+me.h>g.y){
+        g.collected=true; score+=g.value*level;
+        emitParticles(g.x,g.y,g.color,6);
+      }
+    });
+
+    // Obstacles
+    if(me.invincible===0){
+      obstacles.forEach(o=>{
+        if(me.x<o.x+o.w&&me.x+me.w>o.x&&me.y<o.y+o.h&&me.y+me.h>o.y){
+          lives--; me.invincible=120;
+          emitParticles(me.x,me.y,me.color,12);
+          if(lives<=0){ me.dead=true; endGame(); }
+          updateLivesHUD();
+        }
+      });
+    }
+  }
+
+  // Bot AI
+  if(myMode==='bot'&&botPlayer&&!botPlayer.dead){
+    const bot=botPlayer;
+    // Move toward nearest gem
+    const nearGem=gems.filter(g=>!g.collected).reduce((a,b)=>{
+      const da=Math.abs(a.x-bot.x),db=Math.abs(b.x-bot.x); return da<db?a:b;
+    },{x:bot.x,collected:true});
+    if(!nearGem.collected){
+      bot.keys.left=nearGem.x<bot.x-5; bot.keys.right=nearGem.x>bot.x+5;
+    }
+    // Avoid obstacles
+    const nearObs=obstacles.find(o=>Math.abs(o.x-bot.x)<60&&o.y>bot.y-20);
+    if(nearObs&&bot.onGround&&bot.jumps>0){ bot.vy=-11; bot.jumps--; bot.onGround=false; }
+    const bspd=4;
+    if(bot.keys.left) bot.x=Math.max(0,bot.x-bspd);
+    if(bot.keys.right) bot.x=Math.min(W-bot.w,bot.x+bspd);
+    bot.vy+=GRV; bot.y+=bot.vy;
+    if(bot.y+bot.h>=H-20){ bot.y=H-bot.h-20; bot.vy=0; bot.onGround=true; bot.jumps=2; }
+    // Gems
+    gems.forEach(g=>{
+      if(g.collected) return;
+      if(bot.x<g.x+16&&bot.x+bot.w>g.x&&bot.y<g.y+16&&bot.y+bot.h>g.y){
+        g.collected=true; bot.score+=g.value*level;
+        emitParticles(g.x,g.y,g.color,5);
+      }
+    });
+  }
+
+  // Move obstacles
+  obstacles.forEach(o=>{ o.x+=o.vx*gameSpeed; if(o.x<-50||o.x>W+50){ o.x=Math.random()>0.5?-40:W+40; o.y=80+Math.random()*(H-130); } });
+  gems.forEach(g=>{ g.bob+=0.06; });
+  particles=particles.filter(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.1;p.vx*=0.95;p.life-=0.04;return p.life>0;});
+
+  // Clean collected gems
+  if(gems.filter(g=>!g.collected).length<3) generateSection();
+
+  document.getElementById('hScore').textContent=score;
+  document.getElementById('hLevel').textContent=level;
+  if(score>best){best=score;document.getElementById('hBest').textContent=best;}
+  updateScoresStrip();
+  draw();
+}
+
+function updateLivesHUD(){
+  const hearts=['❤️','🖤','🖤'];
+  document.getElementById('hLives').textContent=Array.from({length:3},(_,i)=>i<lives?'❤️':'🖤').join('');
+}
+function updateScoresStrip(){
+  if(myMode==='solo') return;
+  document.getElementById('scoresStrip').innerHTML=players.map(p=>`
+    <div class="score-chip" style="border-color:${p.color}44">
+      <div class="p-dot" style="background:${p.color}"></div>
+      <span>${p.name}</span><strong style="color:${p.color}">${p.score||score}</strong>
+    </div>`).join('');
+}
+
+function endGame(){
+  running=false;
+  document.getElementById('ovTitle').textContent='💀 GAME OVER';
+  document.getElementById('ovTitle').style.color='var(--neon)';
+  document.getElementById('ovInfo').textContent=`النقاط: ${score} | المستوى: ${level}`;
+  if(myMode==='bot'){
+    const botScore=botPlayer?.score||0;
+    const iWon=score>=botScore;
+    document.getElementById('ovScores').innerHTML=`
+      <div class="ov-row" style="border-right:3px solid ${iWon?COLORS[0]:COLORS[1]}">
+        <div style="width:8px;height:8px;border-radius:50%;background:${COLORS[0]}"></div>
+        <span style="flex:1">${getName()}</span><strong>${score}</strong>
+      </div>
+      <div class="ov-row" style="border-right:3px solid ${iWon?COLORS[1]:COLORS[0]}">
+        <div style="width:8px;height:8px;border-radius:50%;background:${COLORS[1]}"></div>
+        <span style="flex:1">CyberBot 🤖</span><strong>${botScore}</strong>
+      </div>
+    `;
+  }
+  document.getElementById('ov').style.display='flex';
+}
+
+function restart(){ document.getElementById('ov').style.display='none'; initGame(); }
+function goLobby(){
+  running=false; cancelAnimationFrame(raf);
+  document.getElementById('gameArea').style.display='none';
+  document.getElementById('lobby').style.display='flex';
+}
+
+// ── Drawing ──────────────────────────────────────────────────
+function draw(){
+  // BG
+  ctx.fillStyle='var(--bg)'; ctx.fillRect(0,0,W,H);
+  // Grid
+  ctx.strokeStyle='rgba(204,0,255,0.04)'; ctx.lineWidth=1;
+  for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  // Ground
+  const gGrad=ctx.createLinearGradient(0,H-20,0,H);
+  gGrad.addColorStop(0,'rgba(204,0,255,0.4)'); gGrad.addColorStop(1,'rgba(100,0,150,0.1)');
+  ctx.fillStyle=gGrad; ctx.fillRect(0,H-20,W,20);
+  ctx.shadowColor='var(--neon)'; ctx.shadowBlur=15;
+  ctx.strokeStyle=COLORS[0]; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(0,H-20); ctx.lineTo(W,H-20); ctx.stroke();
+  ctx.shadowBlur=0;
+
+  // Gems
+  gems.forEach(g=>{
+    if(g.collected) return;
+    const bob=Math.sin(g.bob)*4;
+    ctx.shadowColor=g.color; ctx.shadowBlur=10;
+    ctx.fillStyle=g.color;
+    ctx.save(); ctx.translate(g.x+8,g.y+8+bob); ctx.rotate(frameCount*0.03);
+    drawDiamond(ctx,0,0,10);
+    ctx.fill(); ctx.restore();
+    ctx.shadowBlur=0;
+    // Value
+    ctx.font='8px Orbitron'; ctx.fillStyle='rgba(255,255,255,0.7)'; ctx.textAlign='center';
+    ctx.fillText('+'+g.value,g.x+8,g.y-2+bob);
+  });
+
+  // Obstacles
+  obstacles.forEach(o=>{
+    ctx.shadowColor=o.color; ctx.shadowBlur=8;
+    ctx.fillStyle=o.color;
+    if(o.type==='spike'){
+      ctx.save();ctx.translate(o.x+o.w/2,o.y+o.h);
+      ctx.beginPath();ctx.moveTo(0,-o.h);ctx.lineTo(o.w/2,0);ctx.lineTo(-o.w/2,0);ctx.closePath();
+      ctx.fill();ctx.restore();
+    } else {
+      const r=4;
+      ctx.beginPath();ctx.moveTo(o.x+r,o.y);ctx.lineTo(o.x+o.w-r,o.y);ctx.arcTo(o.x+o.w,o.y,o.x+o.w,o.y+r,r);ctx.lineTo(o.x+o.w,o.y+o.h-r);ctx.arcTo(o.x+o.w,o.y+o.h,o.x+o.w-r,o.y+o.h,r);ctx.lineTo(o.x+r,o.y+o.h);ctx.arcTo(o.x,o.y+o.h,o.x,o.y+o.h-r,r);ctx.lineTo(o.x,o.y+r);ctx.arcTo(o.x,o.y,o.x+r,o.y,r);ctx.closePath();ctx.fill();
+    }
+    ctx.shadowBlur=0;
+  });
+
+  // Players
+  players.forEach(p=>{
+    if(p.dead) return;
+    // Trail
+    p.trail?.forEach((t,i)=>{
+      ctx.globalAlpha=t.life*(i/8)*0.4;
+      ctx.fillStyle=t.color;
+      ctx.fillRect(t.x-6,t.y-8,12,16);
+      t.life-=0.15;
+    });
+    ctx.globalAlpha=1;
+
+    const alpha=p.invincible>0?(Math.sin(frameCount*0.3)>0?1:0.3):1;
+    ctx.globalAlpha=alpha;
+    ctx.shadowColor=p.color; ctx.shadowBlur=15;
+
+    // Body
+    const bodyGrad=ctx.createLinearGradient(p.x,p.y,p.x,p.y+p.h);
+    bodyGrad.addColorStop(0,p.color+'dd'); bodyGrad.addColorStop(1,p.color+'66');
+    ctx.fillStyle=bodyGrad;
+    // Head
+    ctx.beginPath(); ctx.arc(p.x+p.w/2,p.y+8,10,0,Math.PI*2); ctx.fill();
+    // Body
+    ctx.fillRect(p.x+4,p.y+16,p.w-8,p.h-20);
+    // Legs anim
+    const ls=Math.abs(p.vx)>0.5?Math.sin(frameCount*0.3)*6:0;
+    ctx.fillRect(p.x+4,p.y+p.h-8,8,8+ls); ctx.fillRect(p.x+p.w-12,p.y+p.h-8,8,8-ls);
+    // Eyes
+    ctx.shadowBlur=0; ctx.fillStyle='#fff'; ctx.globalAlpha=alpha;
+    ctx.beginPath(); ctx.arc(p.x+p.w/2-3,p.y+7,2.5,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x+p.w/2+3,p.y+7,2.5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(p.x+p.w/2-2.5,p.y+7.5,1.2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x+p.w/2+3.5,p.y+7.5,1.2,0,Math.PI*2); ctx.fill();
+    // Name
+    ctx.font='bold 9px Cairo'; ctx.fillStyle=p.color; ctx.textAlign='center';
+    ctx.fillText(p.name,p.x+p.w/2,p.y-4);
+    ctx.globalAlpha=1; ctx.shadowBlur=0;
+  });
+
+  // Particles
+  particles.forEach(p=>{
+    ctx.globalAlpha=p.life; ctx.fillStyle=p.color; ctx.shadowColor=p.color; ctx.shadowBlur=5;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2); ctx.fill();
+  });
+  ctx.globalAlpha=1; ctx.shadowBlur=0;
+
+  // HUD overlay
+  ctx.font='bold 11px Orbitron'; ctx.fillStyle='rgba(204,0,255,0.7)'; ctx.textAlign='left';
+  ctx.fillText(`Lv.${level}  x${gameSpeed.toFixed(1)}`,8,18);
+}
+
+function drawDiamond(ctx,cx,cy,r){
+  ctx.beginPath();ctx.moveTo(cx,cy-r);ctx.lineTo(cx+r*0.6,cy);ctx.lineTo(cx,cy+r);ctx.lineTo(cx-r*0.6,cy);ctx.closePath();
+}
+
+function emitParticles(x,y,c,n=8){
+  for(let i=0;i<n;i++){
+    const a=(Math.PI*2/n)*i; const sp=1+Math.random()*4;
+    particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,color:c,size:3+Math.random()*3});
+  }
+}
+
+// ── Input ────────────────────────────────────────────────────
+function setupInput(){
+  document.onkeydown=e=>{
+    if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A') keys.left=true;
+    if(e.key==='ArrowRight'||e.key==='d'||e.key==='D') keys.right=true;
+    if((e.key==='ArrowUp'||e.key==='w'||e.key==='W'||e.key===' ')&&!keys.jump){
+      keys.jump=true;
+      const me=players[0];if(me&&me.jumps>0){me.vy=-11;me.jumps--;me.onGround=false;}
+    }
+    e.preventDefault();
+  };
+  document.onkeyup=e=>{
+    if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A') keys.left=false;
+    if(e.key==='ArrowRight'||e.key==='d'||e.key==='D') keys.right=false;
+    if(e.key==='ArrowUp'||e.key==='w'||e.key==='W'||e.key===' ') keys.jump=false;
+  };
+  // Mobile
+  const mb_l=document.getElementById('mb-left');
+  const mb_r=document.getElementById('mb-right');
+  const mb_j=document.getElementById('mb-jump');
+  mb_l.onpointerdown=e=>{e.preventDefault();keys.left=true;};mb_l.onpointerup=()=>keys.left=false;
+  mb_r.onpointerdown=e=>{e.preventDefault();keys.right=true;};mb_r.onpointerup=()=>keys.right=false;
+  mb_j.onpointerdown=e=>{e.preventDefault();const me=players[0];if(me&&me.jumps>0){me.vy=-11;me.jumps--;me.onGround=false;}};
+}
+
+// ── MULTIPLAYER ───────────────────────────────────────────────
+function initSocket(){
+  if(socket&&socket.connected) return Promise.resolve();
+  return new Promise((res,rej)=>{
+    socket=io(window.location.origin,{path:'/game-ws',transports:['websocket','polling']});
+    socket.on('connect',res); socket.on('connect_error',rej);
+    setupMultiListeners();
+  });
+}
+function doCreate(){setErr('');initSocket().then(()=>{socket.emit('createRoom',{gameType:'cyber',mode:'multi',username:getName(),avatar:null});}).catch(()=>setErr('❌ فشل الاتصال'));}
+function doJoin(){
+  const code=(document.getElementById('codeInp').value||'').trim().toUpperCase();
+  if(code.length!==6) return setErr('❌ الكود 6 أحرف');
+  setErr('');initSocket().then(()=>{socket.emit('joinRoom',{roomId:code,username:getName(),avatar:null});}).catch(()=>setErr('❌ فشل'));
+}
+function hostStart(){if(socket&&myRoomId) socket.emit('startGame',{roomId:myRoomId});}
+function setupMultiListeners(){
+  socket.on('roomCreated',d=>{myId=d.playerId;myRoomId=d.roomId;isHost=true;showWait(d);document.getElementById('hostStartBtn').style.display='flex';});
+  socket.on('roomJoined',d=>{myId=d.playerId;myRoomId=d.roomId;isHost=false;showWait(d);});
+  socket.on('playerJoined',d=>updatePList(d.players));
+  socket.on('gameStarted',()=>startGame());
+  socket.on('error',d=>setErr(d.msg||'خطأ'));
+}
+function showWait(d){document.getElementById('multiOpts').style.display='none';document.getElementById('waitRoom').style.display='flex';document.getElementById('rCode').textContent=d.roomId;updatePList(d.players);}
+function updatePList(pls){document.getElementById('pList').innerHTML=(pls||[]).map(p=>`<div class="p-item"><div class="p-dot" style="background:${p.color||COLORS[0]}"></div><span style="flex:1;font-weight:700">${p.username}${p.id===myId?' (أنت)':''}</span><span style="color:var(--neon2);font-size:11px">✅</span></div>`).join('');}
+
+// URL params
+window.addEventListener('DOMContentLoaded',()=>{
+  const p=new URLSearchParams(window.location.search);
+  if(p.get('name')) document.getElementById('nameInp').value=decodeURIComponent(p.get('name'));
+  if(p.get('mode')){
+    const mEl=document.querySelector(`[data-m="${p.get('mode')}"]`);
+    if(mEl) pickMode(mEl,p.get('mode'));
+  }
+});
+</script>
+</body>
+</html>

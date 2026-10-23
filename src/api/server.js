@@ -64,14 +64,18 @@ app.get('/health', (req, res) => {
     res.status(200).send('OK');
 });
 
+// ─── Serve 2D Web Games Directly ──────────────────────────────────────────────
+const gamesPath = path.join(__dirname, '../../dashboard-ui/public/games');
+app.use('/games', express.static(gamesPath));
+
 // ─── Serve Vite Frontend ───────────────────────────────────────────────────────
 const distPath = path.join(__dirname, '../../dashboard-ui/dist');
 app.use(express.static(distPath));
 
 // SPA Fallback — React Router يتولى الـ routing في الـ client side
 app.use((req, res) => {
-    // لا نرجع HTML لـ API requests
-    if (req.path.startsWith('/api/') || req.path.startsWith('/auth/')) {
+    // لا نرجع HTML لـ API requests أو ألعاب غير موجودة
+    if (req.path.startsWith('/api/') || req.path.startsWith('/auth/') || req.path.startsWith('/games/')) {
         return res.status(404).json({ success: false, error: 'Not found' });
     }
     res.sendFile(path.join(distPath, 'index.html'));

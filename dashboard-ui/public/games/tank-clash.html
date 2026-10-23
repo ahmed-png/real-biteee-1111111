@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>🛡️ Tank Clash 2D — حرب الدبابات النيون</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Cairo:wght@400;600;700;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --bg:#030712;--panel:#0a1226;--card:#101c38;
+  --border:rgba(0,255,170,0.18);--accent:#00ffaa;--accent2:#00aaff;
+  --red:#ff3366;--gold:#ffd700;--purple:#aa55ff;--text:#e2e8f0;
+  --muted:rgba(226,232,240,0.45);--font:'Cairo',sans-serif;--mono:'Orbitron',monospace;
+}
+
+body{
+  background:var(--bg);color:var(--text);font-family:var(--font);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;overflow:hidden;
+  background-image:
+    radial-gradient(ellipse at 20% 20%,rgba(0,255,170,0.06) 0%,transparent 60%),
+    radial-gradient(ellipse at 80% 80%,rgba(0,170,255,0.06) 0%,transparent 60%);
+}
+
+.game-container{
+  position:relative;z-index:2;display:flex;flex-direction:column;
+  align-items:center;gap:10px;width:min(96vw,860px);
+}
+
+/* ─── LOBBY ─────────────────────────────────────── */
+#lobby{
+  width:100%;max-width:680px;display:flex;flex-direction:column;gap:14px;
+  background:rgba(10,18,38,0.9);border:1px solid var(--border);
+  border-radius:16px;padding:26px;backdrop-filter:blur(12px);
+  box-shadow:0 12px 45px rgba(0,0,0,0.6);
+}
+
+.logo{
+  font-family:var(--mono);font-size:clamp(22px,5vw,34px);font-weight:900;
+  background:linear-gradient(135deg,var(--accent),var(--accent2),var(--red));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  letter-spacing:2px;text-align:center;
+}
+.logo-sub{font-size:12px;color:var(--muted);text-align:center;margin-top:-6px;}
+
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:6px;}
+.mode-card{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:16px 10px;text-align:center;cursor:pointer;transition:all 0.22s ease;
+}
+.mode-card:hover,.mode-card.sel{
+  border-color:var(--accent);background:rgba(0,255,170,0.08);
+  box-shadow:0 0 25px rgba(0,255,170,0.2);transform:translateY(-2px);
+}
+.mode-card .icon{font-size:26px;display:block;margin-bottom:6px;}
+.mode-card .title{font-size:13px;font-weight:700;color:var(--text);}
+.mode-card .desc{font-size:10px;color:var(--muted);margin-top:3px;}
+
+.inp{
+  width:100%;padding:12px 14px;background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);border-radius:10px;color:var(--text);
+  font-family:var(--font);font-size:13px;outline:none;transition:all 0.2s;
+}
+.inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,255,170,0.15);}
+
+.btn{
+  padding:12px 22px;border:none;border-radius:10px;font-family:var(--font);
+  font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;
+  align-items:center;justify-content:center;gap:8px;transition:all 0.2s;
+}
+.btn:active{transform:scale(0.97);}
+.btn-primary{
+  background:linear-gradient(135deg,var(--accent),#00bb77);
+  color:#030712;box-shadow:0 4px 20px rgba(0,255,170,0.3);width:100%;
+}
+.btn-primary:hover{box-shadow:0 6px 30px rgba(0,255,170,0.5);transform:translateY(-1px);}
+.btn-secondary{background:rgba(255,255,255,0.06);color:var(--text);border:1px solid var(--border);}
+.btn-secondary:hover{background:rgba(255,255,255,0.12);}
+
+.multi-opts{display:none;flex-direction:column;gap:10px;}
+.room-badge{
+  font-family:var(--mono);font-size:22px;font-weight:700;letter-spacing:5px;
+  color:var(--gold);text-align:center;padding:12px;background:rgba(255,215,0,0.06);
+  border:1px solid rgba(255,215,0,0.3);border-radius:10px;
+}
+
+/* ─── HUD ───────────────────────────────────────── */
+#gameArea{display:none;width:100%;flex-direction:column;align-items:center;gap:8px;}
+.hud{
+  display:flex;gap:10px;width:100%;justify-content:space-between;
+  padding:8px 16px;background:rgba(10,18,38,0.85);border:1px solid var(--border);
+  border-radius:12px;backdrop-filter:blur(8px);
+}
+.hud-item{text-align:center;}
+.hud-val{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent);}
+.hud-lbl{font-size:10px;color:var(--muted);letter-spacing:1px;}
+
+.canvas-wrap{position:relative;width:100%;}
+#canvas{
+  border:1px solid var(--border);border-radius:12px;background:#050c1e;
+  display:block;max-width:100%;box-shadow:0 0 40px rgba(0,255,170,0.12);
+}
+
+.overlay{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;background:rgba(3,7,18,0.93);
+  border-radius:12px;gap:14px;backdrop-filter:blur(6px);
+}
+.ov-title{font-family:var(--mono);font-size:clamp(18px,4vw,28px);font-weight:900;}
+.ov-green{color:var(--accent);} .ov-red{color:var(--red);} .ov-gold{color:var(--gold);}
+.ov-info{font-size:13px;color:rgba(226,232,240,0.65);text-align:center;line-height:1.7;}
+
+.mobile-controls{
+  display:none;gap:16px;align-items:center;justify-content:space-between;
+  width:100%;padding:4px 10px;
+}
+@media (max-width:768px){.mobile-controls{display:flex;}}
+.dpad{display:grid;grid-template-columns:repeat(3,44px);gap:4px;}
+.dbtn{
+  width:44px;height:44px;border:1px solid var(--border);border-radius:8px;
+  background:rgba(0,255,170,0.06);color:var(--accent);font-size:16px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;
+}
+.dbtn:active{background:rgba(0,255,170,0.25);transform:scale(0.92);}
+.shoot-btn{
+  width:80px;height:80px;border-radius:50%;border:2px solid rgba(255,51,102,0.4);
+  background:rgba(255,51,102,0.15);color:var(--red);font-size:15px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;
+}
+.shoot-btn:active{background:rgba(255,51,102,0.35);transform:scale(0.92);}
+</style>
+</head>
+<body>
+
+<div class="game-container">
+  <!-- LOBBY -->
+  <div id="lobby">
+    <div class="logo">🛡️ TANK CLASH 2D</div>
+    <div class="logo-sub">حرب دبابات تكتيكية 2D — أسلحة عشوائية ومولتي بلاير أونلاين</div>
+
+    <div class="modes">
+      <div class="mode-card sel" data-mode="solo" onclick="pickMode(this,'solo')">
+        <span class="icon">🎯</span>
+        <div class="title">تحدي النجاة</div>
+        <div class="desc">قتال دبابات متتالية</div>
+      </div>
+      <div class="mode-card" data-mode="bot" onclick="pickMode(this,'bot')">
+        <span class="icon">🤖</span>
+        <div class="title">ضد 3 بوتات</div>
+        <div class="desc">ذكاء اصطناعي وأسلحة</div>
+      </div>
+      <div class="mode-card" data-mode="multi" onclick="pickMode(this,'multi')">
+        <span class="icon">🌐</span>
+        <div class="title">مولتي بلاير</div>
+        <div class="desc">شارك الكود والعب أونلاين</div>
+      </div>
+    </div>
+
+    <div>
+      <input type="text" id="nameInp" class="inp" placeholder="اسم الدبابة والقائد..." maxlength="16">
+    </div>
+
+    <div class="multi-opts" id="multiOpts">
+      <button class="btn btn-primary" onclick="createRoom()">🌐 إنشاء غرفة جديدة</button>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="joinCodeInp" class="inp" placeholder="أدخل كود الغرفة (6 أحرف)" maxlength="6" style="text-transform:uppercase;text-align:center;letter-spacing:4px;font-family:var(--mono);">
+        <button class="btn btn-secondary" onclick="joinRoom()">دخول</button>
+      </div>
+    </div>
+
+    <div id="waitRoom" style="display:none;flex-direction:column;gap:10px;text-align:center;">
+      <div style="font-size:12px;color:var(--muted);">كود الغرفة للمشاركة مع أصدقائك:</div>
+      <div class="room-badge" id="roomCodeDisplay">------</div>
+      <div id="pList" style="display:flex;flex-direction:column;gap:6px;width:100%;"></div>
+      <div style="display:flex;gap:8px;width:100%;">
+        <button class="btn btn-primary" id="hostStartBtn" style="flex:1;" onclick="hostStart()">🚀 ابدأ المعركة</button>
+        <button class="btn btn-secondary" onclick="copyCode()">📋 نسخ الكود</button>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="launchSoloBtn" onclick="launchGame()">▶ انطلق إلى المعركة</button>
+    <div id="errMsg" style="font-size:12px;color:var(--red);text-align:center;"></div>
+  </div>
+
+  <!-- GAME AREA -->
+  <div id="gameArea">
+    <div class="hud">
+      <div class="hud-item"><div class="hud-val" id="scoreVal">0</div><div class="hud-lbl">القتلات</div></div>
+      <div class="hud-item"><div class="hud-val" id="hpVal">100%</div><div class="hud-lbl">الدرع</div></div>
+      <div class="hud-item"><div class="hud-val" id="weaponVal">🔫 قذيفة</div><div class="hud-lbl">السلاح</div></div>
+      <div class="hud-item"><div class="hud-val" id="aliveVal">4</div><div class="hud-lbl">المتبقون</div></div>
+      <div class="hud-item"><div class="hud-val" id="timerVal">03:00</div><div class="hud-lbl">الوقت</div></div>
+    </div>
+
+    <div class="canvas-wrap">
+      <canvas id="canvas" width="800" height="520"></canvas>
+      <div class="overlay" id="overlay" style="display:none;">
+        <div class="ov-title ov-green" id="ovTitle">🏆 فوز ساحق!</div>
+        <div class="ov-info" id="ovInfo">دمرت جميع الدبابات المنافسة</div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-primary" onclick="restart()">▶ جولة جديدة</button>
+          <button class="btn btn-secondary" onclick="toLobby()">🏠 اللوبي</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Virtual Dual Controls -->
+    <div class="mobile-controls">
+      <div class="dpad">
+        <div></div><button class="dbtn" id="mUp">↑</button><div></div>
+        <button class="dbtn" id="mLeft">←</button><button class="dbtn" id="mDown">↓</button><button class="dbtn" id="mRight">→</button>
+      </div>
+      <button class="shoot-btn" id="mShoot">🔥 إطلاق</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+'use strict';
+
+// ── Web Audio Synth SFX ─────────────────────────────────────────
+let audioCtx = null;
+function playSfx(type) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+
+    if (type === 'cannon') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(160, t);
+      osc.frequency.exponentialRampToValueAtTime(30, t + 0.15);
+      gain.gain.setValueAtTime(0.25, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+      osc.start(t); osc.stop(t + 0.15);
+    } else if (type === 'laser') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(700, t);
+      osc.frequency.exponentialRampToValueAtTime(200, t + 0.1);
+      gain.gain.setValueAtTime(0.18, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+      osc.start(t); osc.stop(t + 0.1);
+    } else if (type === 'powerup') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(400, t);
+      osc.frequency.linearRampToValueAtTime(950, t + 0.18);
+      gain.gain.setValueAtTime(0.2, t);
+      gain.gain.linearRampToValueAtTime(0.01, t + 0.18);
+      osc.start(t); osc.stop(t + 0.18);
+    } else if (type === 'explode') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(110, t);
+      osc.frequency.exponentialRampToValueAtTime(20, t + 0.35);
+      gain.gain.setValueAtTime(0.35, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.35);
+      osc.start(t); osc.stop(t + 0.35);
+    }
+  } catch(e) {}
+}
+
+// ── Game Constants & State ─────────────────────────────────────
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+let mode = 'solo', running = false, frameCount = 0;
+let kills = 0, timeLeft = 180, timerInterval = null;
+let roomId = null, socket = null, myId = null, isHost = false;
+
+function setErr(msg) {
+  document.getElementById('errMsg').textContent = msg;
+}
+
+// ── Socket.io Multiplayer Support ─────────────────────────────
+function initSocket() {
+  if (socket && socket.connected) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    socket = io(window.location.origin, { path: '/game-ws', transports: ['websocket', 'polling'] });
+    socket.on('connect', resolve);
+    socket.on('connect_error', reject);
+    setupMultiListeners();
+  });
+}
+
+function setupMultiListeners() {
+  socket.on('roomCreated', d => {
+    myId = d.playerId; roomId = d.roomId; isHost = true;
+    showWait(d);
+    document.getElementById('hostStartBtn').style.display = 'flex';
+  });
+  socket.on('roomJoined', d => {
+    myId = d.playerId; roomId = d.roomId; isHost = false;
+    showWait(d);
+    document.getElementById('hostStartBtn').style.display = 'none';
+  });
+  socket.on('playerJoined', d => updatePList(d.players));
+  socket.on('gameStarted', () => {
+    launchMultiGame();
+  });
+  socket.on('tankState', d => {
+    if (mode === 'multi') {
+      const myTank = d.tanks.find(t => t.id === myId) || d.tanks[0];
+      // Put player at index 0 for HUD
+      tanks = [myTank, ...d.tanks.filter(t => t.id !== myTank?.id)];
+      bullets = d.bullets || [];
+      crates = d.crates || [];
+      timeLeft = d.timeLeft || 0;
+      const m = Math.floor(timeLeft / 60), s = timeLeft % 60;
+      document.getElementById('timerVal').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      updateHUD();
+    }
+  });
+  socket.on('gameOver', w => {
+    gameOver(w.name === getName());
+  });
+  socket.on('error', d => setErr(d.msg || 'خطأ'));
+}
+
+function showWait(d) {
+  document.getElementById('multiOpts').style.display = 'none';
+  document.getElementById('waitRoom').style.display = 'flex';
+  document.getElementById('roomCodeDisplay').textContent = d.roomId;
+  updatePList(d.players);
+}
+
+function updatePList(players) {
+  const pList = document.getElementById('pList');
+  if (!pList) return;
+  pList.innerHTML = (players || []).map(p => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;background:rgba(255,255,255,0.05);border-radius:8px;">
+      <div style="width:10px;height:10px;border-radius:50%;background:${p.color || '#00ffaa'};"></div>
+      <span style="flex:1;font-size:12px;font-weight:700;text-align:right;">${p.username}${p.id === myId ? ' (أنت)' : ''}</span>
+      <span style="font-size:11px;color:var(--accent);">✅ جاهز</span>
+    </div>
+  `).join('');
+}
+
+function hostStart() {
+  if (socket && roomId) socket.emit('startGame', { roomId });
+}
+
+function copyCode() {
+  if (roomId) {
+    navigator.clipboard?.writeText(roomId).then(() => setErr('✅ تم نسخ كود الغرفة!'));
+  }
+}
+
+// Map Obstacles (Neon walls)
+const WALLS = [
+  { x: 140, y: 100, w: 20, h: 120 },
+  { x: 640, y: 100, w: 20, h: 120 },
+  { x: 140, y: 300, w: 20, h: 120 },
+  { x: 640, y: 300, w: 20, h: 120 },
+  { x: 300, y: 160, w: 200, h: 20 },
+  { x: 300, y: 340, w: 200, h: 20 },
+  { x: 380, y: 220, w: 40, h: 80 },
+];
+
+const WEAPONS = {
+  cannon:  { name: 'قذيفة', emoji: '🔫', color: '#00ffaa', spd: 7, dmg: 35, bounces: 1 },
+  missile: { name: 'صاروخ', emoji: '🚀', color: '#ff3366', spd: 9, dmg: 60, bounces: 0 },
+  plasma:  { name: 'بلازما', emoji: '⚡', color: '#00aaff', spd: 11, dmg: 40, bounces: 2 },
+  shield:  { name: 'درع', emoji: '🛡️', color: '#ffd700', spd: 0, dmg: 0, bounces: 0 },
+  mines:   { name: 'لغم', emoji: '💣', color: '#aa55ff', spd: 0, dmg: 80, bounces: 0 }
+};
+
+let tanks = [], bullets = [], crates = [], particles = [];
+
+// Input controls
+const keys = { up: false, down: false, left: false, right: false, fire: false };
+window.addEventListener('keydown', e => {
+  if (['ArrowUp','KeyW'].includes(e.code)) keys.up = true;
+  if (['ArrowDown','KeyS'].includes(e.code)) keys.down = true;
+  if (['ArrowLeft','KeyA'].includes(e.code)) keys.left = true;
+  if (['ArrowRight','KeyD'].includes(e.code)) keys.right = true;
+  if (['Space','KeyJ'].includes(e.code)) { keys.fire = true; e.preventDefault(); }
+  if (mode === 'multi' && socket && roomId && running) {
+    socket.emit('input', { roomId, keys });
+  }
+});
+window.addEventListener('keyup', e => {
+  if (['ArrowUp','KeyW'].includes(e.code)) keys.up = false;
+  if (['ArrowDown','KeyS'].includes(e.code)) keys.down = false;
+  if (['ArrowLeft','KeyA'].includes(e.code)) keys.left = false;
+  if (['ArrowRight','KeyD'].includes(e.code)) keys.right = false;
+  if (['Space','KeyJ'].includes(e.code)) keys.fire = false;
+  if (mode === 'multi' && socket && roomId && running) {
+    socket.emit('input', { roomId, keys });
+  }
+});
+
+// Mobile virtual pad
+const bindBtn = (id, k) => {
+  const el = document.getElementById(id);
+  el.addEventListener('touchstart', e => {
+    e.preventDefault(); keys[k] = true;
+    if (mode === 'multi' && socket && roomId && running) socket.emit('input', { roomId, keys });
+  });
+  el.addEventListener('touchend', e => {
+    e.preventDefault(); keys[k] = false;
+    if (mode === 'multi' && socket && roomId && running) socket.emit('input', { roomId, keys });
+  });
+};
+bindBtn('mUp','up'); bindBtn('mDown','down');
+bindBtn('mLeft','left'); bindBtn('mRight','right');
+bindBtn('mShoot','fire');
+
+// ── Lobby UI ───────────────────────────────────────────────────
+function pickMode(el, m) {
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel'); mode = m;
+  document.getElementById('multiOpts').style.display = m === 'multi' ? 'flex' : 'none';
+  document.getElementById('launchSoloBtn').style.display = m === 'multi' ? 'none' : 'flex';
+  document.getElementById('waitRoom').style.display = 'none';
+}
+
+function createRoom() {
+  setErr('');
+  mode = 'multi';
+  initSocket().then(() => {
+    socket.emit('createRoom', { gameType: 'tank', mode: 'multi', username: getName() });
+  }).catch(() => setErr('❌ فشل الاتصال بالسيرفر'));
+}
+
+function joinRoom() {
+  const code = (document.getElementById('joinCodeInp').value || '').trim().toUpperCase();
+  if (code.length !== 6) return setErr('❌ كود الغرفة 6 أحرف');
+  setErr('');
+  mode = 'multi';
+  initSocket().then(() => {
+    socket.emit('joinRoom', { roomId: code, username: getName() });
+  }).catch(() => setErr('❌ فشل الاتصال بالسيرفر'));
+}
+
+function getName() {
+  return (document.getElementById('nameInp').value || '').trim() || 'دبابة الصاعقة';
+}
+
+function launchMultiGame() {
+  document.getElementById('lobby').style.display = 'none';
+  document.getElementById('gameArea').style.display = 'flex';
+  document.getElementById('overlay').style.display = 'none';
+  running = true;
+  requestAnimationFrame(gameLoop);
+}
+
+// ── Launch Game (Solo / Bot) ───────────────────────────────────
+function launchGame() {
+  document.getElementById('lobby').style.display = 'none';
+  document.getElementById('gameArea').style.display = 'flex';
+  document.getElementById('overlay').style.display = 'none';
+
+  kills = 0; timeLeft = 180;
+  bullets = []; crates = []; particles = [];
+
+  // Spawn Tanks
+  const pName = getName();
+  tanks = [
+    createTank(100, 100, '#00ffaa', pName, false, 0),
+    createTank(700, 100, '#ff3366', mode === 'bot' ? 'روبوت دمر 1' : 'دبابة ثانوية', mode === 'bot', Math.PI),
+    createTank(100, 420, '#00aaff', mode === 'bot' ? 'روبوت دمر 2' : 'دبابة ثانوية', mode === 'bot', 0),
+    createTank(700, 420, '#ffd700', mode === 'bot' ? 'روبوت دمر 3' : 'دبابة ثانوية', mode === 'bot', Math.PI)
+  ];
+
+  // Spawn Initial Weapon Crates
+  spawnCrate(); spawnCrate(); spawnCrate();
+
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    const m = Math.floor(timeLeft / 60), s = timeLeft % 60;
+    document.getElementById('timerVal').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    if (timeLeft <= 0) gameOver();
+  }, 1000);
+
+  running = true;
+  requestAnimationFrame(gameLoop);
+}
+
+function createTank(x, y, color, name, isBot, angle) {
+  return {
+    x, y, color, name, isBot, angle,
+    turretAngle: angle,
+    hp: 100, maxHp: 100,
+    speed: 3.2, turnSpeed: 0.055,
+    weapon: 'cannon', ammo: -1, shield: 0,
+    alive: true, shootCooldown: 0,
+    botTimer: 0, botAction: 'patrol'
+  };
+}
+
+function spawnCrate() {
+  const keys = ['missile', 'plasma', 'shield', 'mines'];
+  const wKey = keys[Math.floor(Math.random() * keys.length)];
+  let x, y, safe = false;
+  while (!safe) {
+    x = 80 + Math.random() * (W - 160);
+    y = 80 + Math.random() * (H - 160);
+    safe = !WALLS.some(w => x > w.x - 20 && x < w.x + w.w + 20 && y > w.y - 20 && y < w.y + w.h + 20);
+  }
+  crates.push({ x, y, weapon: wKey, bob: Math.random() * 10 });
+}
+
+// ── Particle System ─────────────────────────────────────────────
+function spawnParticles(x, y, color, count = 12) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const spd = Math.random() * 3 + 1;
+    particles.push({
+      x, y, vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd,
+      life: 1, color, size: Math.random() * 3 + 2
+    });
+  }
+}
+
+// ── Game Loop ──────────────────────────────────────────────────
+function gameLoop() {
+  if (!running) return;
+  frameCount++;
+
+  update();
+  render();
+
+  requestAnimationFrame(gameLoop);
+}
+
+function update() {
+  const player = tanks[0];
+
+  // Random crate drops
+  if (frameCount % 300 === 0 && crates.length < 5) spawnCrate();
+
+  // Update Tanks
+  tanks.forEach((tank, idx) => {
+    if (!tank.alive) return;
+    tank.shootCooldown--;
+
+    if (idx === 0) {
+      // Player controls
+      if (keys.left) tank.angle -= tank.turnSpeed;
+      if (keys.right) tank.angle += tank.turnSpeed;
+      tank.turretAngle = tank.angle;
+
+      let move = 0;
+      if (keys.up) move = tank.speed;
+      if (keys.down) move = -tank.speed * 0.6;
+
+      if (move !== 0) {
+        const nx = tank.x + Math.cos(tank.angle) * move;
+        const ny = tank.y + Math.sin(tank.angle) * move;
+        if (!checkWallCollision(nx, ny, 16)) {
+          tank.x = nx; tank.y = ny;
+        }
+      }
+
+      if (keys.fire && tank.shootCooldown <= 0) {
+        shootWeapon(tank);
+        tank.shootCooldown = 20;
+      }
+    } else if (tank.isBot) {
+      // AI Bot Logic
+      tank.botTimer--;
+      if (tank.botTimer <= 0) {
+        tank.botTimer = 40 + Math.random() * 60;
+        tank.botAction = Math.random() > 0.3 ? 'chase' : 'roam';
+      }
+
+      // Target player
+      const dx = player.x - tank.x;
+      const dy = player.y - tank.y;
+      const targetAngle = Math.atan2(dy, dx);
+
+      // Smooth rotate towards target
+      let diff = targetAngle - tank.angle;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      tank.angle += Math.sign(diff) * Math.min(Math.abs(diff), tank.turnSpeed);
+      tank.turretAngle = tank.angle;
+
+      // Move forward if line of sight or chasing
+      const dist = Math.hypot(dx, dy);
+      if (dist > 140) {
+        const nx = tank.x + Math.cos(tank.angle) * (tank.speed * 0.7);
+        const ny = tank.y + Math.sin(tank.angle) * (tank.speed * 0.7);
+        if (!checkWallCollision(nx, ny, 16)) { tank.x = nx; tank.y = ny; }
+      }
+
+      // Shoot if roughly facing player
+      if (Math.abs(diff) < 0.3 && dist < 450 && tank.shootCooldown <= 0) {
+        shootWeapon(tank);
+        tank.shootCooldown = 35 + Math.random() * 20;
+      }
+    }
+
+    // Check Crate Pickups
+    crates.forEach((c, ci) => {
+      if (Math.hypot(tank.x - c.x, tank.y - c.y) < 28) {
+        playSfx('powerup');
+        if (c.weapon === 'shield') tank.shield = Math.min(2, tank.shield + 1);
+        else tank.weapon = c.weapon;
+        spawnParticles(c.x, c.y, WEAPONS[c.weapon]?.color || '#fff', 10);
+        crates.splice(ci, 1);
+        if (idx === 0) updateHUD();
+      }
+    });
+  });
+
+  // Update Bullets
+  bullets.forEach((b, bi) => {
+    b.x += b.vx; b.y += b.vy;
+
+    // Wall bounce or destroy
+    WALLS.forEach(w => {
+      if (b.x > w.x && b.x < w.x + w.w && b.y > w.y && b.y < w.y + w.h) {
+        if (b.bounces > 0) {
+          b.bounces--;
+          b.vx *= -1;
+        } else {
+          bullets.splice(bi, 1);
+          spawnParticles(b.x, b.y, b.color, 4);
+        }
+      }
+    });
+
+    // Boundary bounce
+    if (b.x < 10 || b.x > W - 10) {
+      if (b.bounces > 0) { b.bounces--; b.vx *= -1; }
+      else bullets.splice(bi, 1);
+    }
+    if (b.y < 10 || b.y > H - 10) {
+      if (b.bounces > 0) { b.bounces--; b.vy *= -1; }
+      else bullets.splice(bi, 1);
+    }
+
+    // Tank collision
+    tanks.forEach((tank, ti) => {
+      if (!tank.alive || b.owner === ti) return;
+      if (Math.hypot(b.x - tank.x, b.y - tank.y) < 20) {
+        bullets.splice(bi, 1);
+        if (tank.shield > 0) {
+          tank.shield--;
+          playSfx('cannon');
+        } else {
+          tank.hp -= b.dmg;
+          playSfx('explode');
+          spawnParticles(tank.x, tank.y, tank.color, 8);
+          if (tank.hp <= 0) {
+            tank.alive = false;
+            spawnParticles(tank.x, tank.y, '#ff3366', 25);
+            if (b.owner === 0) kills++;
+            checkEndGame();
+          }
+        }
+        if (ti === 0) updateHUD();
+      }
+    });
+  });
+
+  // Update Particles
+  particles.forEach((p, i) => {
+    p.x += p.vx; p.y += p.vy;
+    p.life -= 0.035;
+    if (p.life <= 0) particles.splice(i, 1);
+  });
+}
+
+function shootWeapon(tank) {
+  const w = WEAPONS[tank.weapon] || WEAPONS.cannon;
+  playSfx(tank.weapon === 'plasma' ? 'laser' : 'cannon');
+
+  const bx = tank.x + Math.cos(tank.turretAngle) * 24;
+  const by = tank.y + Math.sin(tank.turretAngle) * 24;
+
+  bullets.push({
+    x: bx, y: by,
+    vx: Math.cos(tank.turretAngle) * w.spd,
+    vy: Math.sin(tank.turretAngle) * w.spd,
+    dmg: w.dmg, bounces: w.bounces,
+    color: w.color, owner: tanks.indexOf(tank)
+  });
+}
+
+function checkWallCollision(x, y, radius) {
+  if (x < radius || x > W - radius || y < radius || y > H - radius) return true;
+  return WALLS.some(w =>
+    x + radius > w.x && x - radius < w.x + w.w &&
+    y + radius > w.y && y - radius < w.y + w.h
+  );
+}
+
+// ── Render ─────────────────────────────────────────────────────
+function render() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Draw Grid Lines (Neon Arena Floor)
+  ctx.strokeStyle = 'rgba(0,255,170,0.03)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 40) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = 0; y < H; y += 40) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // Draw Walls
+  WALLS.forEach(w => {
+    ctx.save();
+    ctx.fillStyle = '#0a1428';
+    ctx.strokeStyle = 'rgba(0,255,170,0.3)';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = 'rgba(0,255,170,0.2)';
+    ctx.shadowBlur = 10;
+    ctx.fillRect(w.x, w.y, w.w, w.h);
+    ctx.strokeRect(w.x, w.y, w.w, w.h);
+    ctx.restore();
+  });
+
+  // Draw Weapon Crates
+  crates.forEach(c => {
+    const wInfo = WEAPONS[c.weapon];
+    const bob = Math.sin(frameCount * 0.1 + c.bob) * 3;
+    ctx.save();
+    ctx.shadowColor = wInfo?.color || '#00ffaa'; ctx.shadowBlur = 12;
+    ctx.fillStyle = 'rgba(5,15,30,0.85)';
+    ctx.strokeStyle = wInfo?.color || '#00ffaa';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(c.x - 14, c.y - 14 + bob, 28, 28);
+    ctx.fillRect(c.x - 14, c.y - 14 + bob, 28, 28);
+    ctx.font = '14px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(wInfo?.emoji || '📦', c.x, c.y + bob);
+    ctx.restore();
+  });
+
+  // Draw Tanks
+  tanks.forEach(tank => {
+    if (!tank.alive) return;
+    ctx.save();
+    ctx.translate(tank.x, tank.y);
+    ctx.rotate(tank.angle);
+
+    // Tank Tracks
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(-18, -14, 36, 7);
+    ctx.fillRect(-18, 7, 36, 7);
+
+    // Tank Body
+    ctx.shadowColor = tank.color; ctx.shadowBlur = 12;
+    ctx.fillStyle = tank.color;
+    ctx.fillRect(-14, -10, 28, 20);
+
+    // Turret Barrel
+    ctx.rotate(tank.turretAngle - tank.angle);
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(0, -3, 20, 6);
+
+    // Turret Dome
+    ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill();
+
+    // Shield Aura
+    if (tank.shield > 0) {
+      ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(0, 0, 24, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.restore();
+
+    // Health Bar above tank
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(tank.x - 18, tank.y - 24, 36, 4);
+    ctx.fillStyle = tank.color;
+    ctx.fillRect(tank.x - 18, tank.y - 24, (tank.hp / tank.maxHp) * 36, 4);
+
+    // Name tag
+    ctx.font = '10px Cairo'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillText(tank.name, tank.x, tank.y - 28);
+  });
+
+  // Draw Bullets
+  bullets.forEach(b => {
+    ctx.save();
+    ctx.shadowColor = b.color; ctx.shadowBlur = 10;
+    ctx.fillStyle = b.color;
+    ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  });
+
+  // Draw Particles
+  particles.forEach(p => {
+    ctx.save();
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  });
+}
+
+// ── HUD & Game Over ────────────────────────────────────────────
+function updateHUD() {
+  const p = tanks[0];
+  document.getElementById('scoreVal').textContent = kills;
+  document.getElementById('hpVal').textContent = Math.max(0, p.hp) + '%';
+  document.getElementById('weaponVal').textContent = (WEAPONS[p.weapon]?.emoji || '🔫') + ' ' + (WEAPONS[p.weapon]?.name || 'قذيفة');
+  document.getElementById('aliveVal').textContent = tanks.filter(t => t.alive).length;
+}
+
+function checkEndGame() {
+  const player = tanks[0];
+  const aliveBots = tanks.filter((t, i) => i !== 0 && t.alive).length;
+
+  if (!player.alive) {
+    gameOver(false);
+  } else if (aliveBots === 0) {
+    gameOver(true);
+  }
+}
+
+function gameOver(isWin = false) {
+  running = false;
+  clearInterval(timerInterval);
+  document.getElementById('overlay').style.display = 'flex';
+  const title = document.getElementById('ovTitle');
+  if (isWin) {
+    title.textContent = '🏆 نصر تكتيكي ساحق!';
+    title.className = 'ov-title ov-green';
+  } else {
+    title.textContent = '💀 تم تدمير دبابتك!';
+    title.className = 'ov-title ov-red';
+  }
+  document.getElementById('ovInfo').innerHTML = `قتلات: <b style="color:var(--accent)">${kills}</b> | المتبقون: <b>${tanks.filter(t => t.alive).length}</b>`;
+}
+
+function restart() {
+  launchGame();
+}
+
+function toLobby() {
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('gameArea').style.display = 'none';
+  document.getElementById('lobby').style.display = 'flex';
+  running = false;
+  clearInterval(timerInterval);
+}
+
+// URL Params support
+window.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const u = params.get('name');
+  if (u) document.getElementById('nameInp').value = decodeURIComponent(u);
+  const m = params.get('mode');
+  if (m && ['solo','bot','multi'].includes(m)) {
+    const card = document.querySelector(`.mode-card[data-mode="${m}"]`);
+    if (card) pickMode(card, m);
+  }
+  const r = params.get('room');
+  if (r) {
+    pickMode(document.querySelector('.mode-card[data-mode="multi"]'), 'multi');
+    document.getElementById('joinCodeInp').value = r.toUpperCase();
+  }
+});
+</script>
+</body>
+</html>
