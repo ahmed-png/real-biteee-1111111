@@ -33,12 +33,21 @@ const DEFAULTS = {
 const cache = new Map();
 
 async function loadBotSettings() {
-    console.log('[BotSettingsDB] ⏳ Loading bot settings from MongoDB...');
-    const settings = await BotSetting.find({}).lean();
-    for (const s of settings) {
-        cache.set(s.key, s.value);
+    const mongoose = require('mongoose');
+    if (mongoose.connection.readyState !== 1) {
+        console.warn('[BotSettingsDB] ⚠️ MongoDB غير متصل — استخدام الإعدادات الافتراضية.');
+        return;
     }
-    console.log(`[BotSettingsDB] ✅ Loaded ${settings.length} settings into memory.`);
+    console.log('[BotSettingsDB] ⏳ Loading bot settings from MongoDB...');
+    try {
+        const settings = await BotSetting.find({}).lean();
+        for (const s of settings) {
+            cache.set(s.key, s.value);
+        }
+        console.log(`[BotSettingsDB] ✅ Loaded ${settings.length} settings into memory.`);
+    } catch (err) {
+        console.warn('[BotSettingsDB] ⚠️ تعذر تحميل الإعدادات من MongoDB:', err.message);
+    }
 }
 
 function _get(key) {
