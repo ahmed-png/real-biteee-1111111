@@ -1,5 +1,6 @@
 'use strict';
 
+const mongoose = require('mongoose');
 const { User, Guild, Clan, WebSession, BotSetting, WelcomeImage } = require('./models');
 
 // ─── Cache System (In-Memory) ────────────────────────────────────────────────
@@ -17,9 +18,14 @@ const LIMITS = { MAX_WALLET: 5000000, MAX_BANK: 10000000, MAX_INVESTMENT: 100000
  * دالة تحميل البيانات بالكامل من MongoDB عند تشغيل البوت
  */
 async function loadDatabase() {
+    if (mongoose.connection.readyState !== 1) {
+        console.warn('[DB] ⚠️ MongoDB غير متصل — استخدام البيانات الافتراضية في الذاكرة المؤقتة (Local In-Memory Mode).');
+        return { users: cache.users, guilds: cache.guilds };
+    }
     console.log('[DB] ⏳ Loading data from MongoDB to memory cache...');
     
-    const users = await User.find({}).lean();
+    try {
+        const users = await User.find({}).lean();
     for (const u of users) {
         delete u._id; delete u.__v;
         cache.users.set(u.userId, u);
@@ -36,7 +42,10 @@ async function loadDatabase() {
         cache.sessions.set(s.token, s);
     }
 
-    console.log(`[DB] ✅ Loaded ${users.length} Users, ${guilds.length} Guilds into memory.`);
+        console.log(`[DB] ✅ Loaded ${users.length} Users, ${guilds.length} Guilds into memory.`);
+    } catch (err) {
+        console.warn('[DB] ⚠️ فشل استرداد البيانات من MongoDB:', err.message);
+    }
     return { users: cache.users, guilds: cache.guilds };
 }
 
