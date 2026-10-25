@@ -29,24 +29,31 @@ function gameUrl(gamePath, params = {}) {
 function buildGamesPanel(username = '') {
     const nameParam = username ? encodeURIComponent(username) : '';
 
+    const arenaUrl = gameUrl('battle-arena.html', { name: nameParam, mode: 'solo' });
+    const snakeUrl = gameUrl('snake.html', { name: nameParam, mode: 'solo' });
+    const spaceUrl = gameUrl('space-defender.html', { name: nameParam });
+    const tankUrl = gameUrl('tank-clash.html', { name: nameParam });
+    const memoryUrl = gameUrl('memory-match.html', { name: nameParam });
+    const cyberUrl = gameUrl('cyber-jump.html', { name: nameParam });
+
     const embed = new EmbedBuilder()
         .setColor('#0d1fd4')
         .setTitle('🎮 مركز الألعاب 2.0 — Arcade Hub')
         .setDescription([
-            '> 🚀 **ألعاب 2D احترافية مع دعم مولتي بلاير!**',
-            '> اضغط على أي زر لفتح اللعبة في متصفحك',
+            '> 🚀 **ألعاب 2D تفاعلية في المتصفح مع دعم أونلاين!**',
+            '> اضغط على الأزرار بالأسفل أو افتح الروابط المباشرة:',
             '',
-            '⚔️ **Battle Arena** — قتال 4 لاعبين مع أسلحة عشوائية',
-            '🛡️ **Tank Clash** — حرب دبابات تكتيكية وأسلحة نيون',
-            '🐍 **Snake 2.0** — ثعبان نيون تنافسي متعدد اللاعبين',
-            '🚀 **Space Defender** — حرب الفضاء وموجات الروبوتات',
-            '🃏 **Memory Match** — تطابق البطاقات الذهني',
-            '🌩️ **Cyber Jump** — منصات سايبربانك',
+            `⚔️ [**Battle Arena — قتال أبطال 4 لاعبين**](${arenaUrl})`,
+            `🐍 [**Snake 2.0 — ثعبان نيون تنافسي**](${snakeUrl})`,
+            `🚀 [**Space Defender — حرب الفضاء**](${spaceUrl})`,
+            `🛡️ [**Tank Clash — حرب دبابات تكتيكية**](${tankUrl})`,
+            `🃏 [**Memory Match — تطابق البطاقات الذهني**](${memoryUrl})`,
+            `🌩️ [**Cyber Jump — منصات سايبربانك**](${cyberUrl})`,
             '',
-            '> 🔵 **منفرد** | 🟡 **ضد الروبوت** | 🟢 **مولتي بلاير أونلاين**',
+            '> 💡 *إذا لم يستجب الزر في ديسكورد، اضغط على اسم اللعبة الأزرق أعلاه مباشرة.*',
         ].join('\n'))
         .setTimestamp()
-        .setFooter({ text: '⚡ لا يُحفظ أي تاريخ — العب واستمتع!' });
+        .setFooter({ text: '⚡ العب واستمتع — تدعم اللعب الفردي والجماعي!' });
 
     // ── Row 1: Battle Arena ────────────────────────────────────
     const row1 = new ActionRowBuilder().addComponents(
