@@ -19,12 +19,13 @@ async function connectDb() {
     }
 
     try {
-        await mongoose.connect(uri);
+        await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
         _isConnected = true;
         console.log('[DB] ✅ Connected to MongoDB Atlas');
     } catch (err) {
-        console.error('[DB] ❌ FATAL MongoDB connection error:', err.message);
-        process.exit(1);
+        console.warn('[DB] ⚠️ فشل الاتصال بقاعدة MongoDB Atlas:', err.message);
+        console.warn('[DB] ⚡ سيتم تشغيل البوت محلياً (وضع الذاكرة المؤقتة In-Memory Cache) بدون إيقاف البوت.');
+        _isConnected = false;
     }
 }
 
