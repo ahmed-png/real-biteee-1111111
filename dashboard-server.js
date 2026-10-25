@@ -14,14 +14,31 @@ const app = require('./src/api/server');
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('./src/api/routes/auth');
 
+const os = require('os');
 const PORT = process.env.PORT || 3000;
-const RENDER_URL = process.env.RENDER_EXTERNAL_URL || null;
-const BASE_URL = RENDER_URL || `http://localhost:${PORT}`;
+
+function getLocalIp() {
+    try {
+        const interfaces = os.networkInterfaces();
+        for (const name of Object.keys(interfaces)) {
+            for (const iface of interfaces[name]) {
+                if (iface.family === 'IPv4' && !iface.internal) {
+                    return iface.address;
+                }
+            }
+        }
+    } catch {}
+    return '127.0.0.1';
+}
+
+const EXTERNAL_URL = process.env.PUBLIC_URL || process.env.DASHBOARD_URL || process.env.RENDER_EXTERNAL_URL || null;
+const BASE_URL = EXTERNAL_URL || `http://${getLocalIp()}:${PORT}`;
 
 function getDashboardUrl() {
     return BASE_URL;
 }
 module.exports.getDashboardUrl = getDashboardUrl;
+module.exports.getLocalIp = getLocalIp;
 
 /**
  * Generate a short-lived JWT for dashboard access
@@ -67,8 +84,8 @@ try {
 module.exports.start = () => {
     server.listen(PORT, '0.0.0.0', () => {
         console.log(`[Dashboard] 🌐 Server running on port ${PORT}`);
-        console.log(`[Dashboard] 🔗 Internal URL: http://localhost:${PORT}`);
-        if (RENDER_URL) console.log(`[Dashboard] ☁️ Public URL: ${RENDER_URL}`);
+        console.log(`[Dashboard] 📱 Network URL: http://${getLocalIp()}:${PORT}`);
+        if (EXTERNAL_URL) console.log(`[Dashboard] ☁️ Public URL: ${EXTERNAL_URL}`);
         if (gameServerMounted) {
             console.log(`[GameServer] 🎮 Real-time multiplayer active on /game-ws`);
         }
