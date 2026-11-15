@@ -1,102 +1,78 @@
-# 🤖 بوت Discord الاحترافي الشامل
+# بوت Discord وألعاب 2D
 
-## 🚀 التشغيل السريع
+بوت مبني على Node.js وDiscord.js، مع قاعدة بيانات MongoDB، ولوحة تحكم React، وست ألعاب متصفح ثنائية الأبعاد تعمل عبر خادم Express وSocket.IO.
 
-```bash
-npm install
-node index.js
-```
+## المتطلبات
 
-يستخدم البوت MongoDB فقط. أنشئ ملف `.env` وضع القيم التالية قبل التشغيل:
+- Node.js 22.12 أو أحدث.
+- حساب Discord وتطبيق/بوت من Discord Developer Portal.
+- قاعدة MongoDB Atlas أو MongoDB متاحة من Render.
+- خدمة Render تعمل باستمرار لتشغيل البوت والألعاب الجماعية.
 
-```env
-DISCORD_TOKEN=...
-OWNER_ID=...
-MONGODB_URI=mongodb+srv://...
-JWT_SECRET=ضع_قيمة_عشوائية_بطول_32_حرفا_على_الأقل
-DASHBOARD_KEY=ضع_مفتاحا_عشوائيا_بطول_16_حرفا_على_الأقل
-DASHBOARD_ORIGIN=https://example.com
-```
+## الإعداد المحلي
 
-إذا كانت لديك بيانات قديمة في `data/economy.json` شغّل الترحيل مرة واحدة:
+1. ثبّت Node.js، ثم نفّذ:
 
-```bash
-node scripts/migrate-db.js
-```
+   ```bash
+   npm ci
+   npm run build:dashboard
+   ```
 
-ملفات SQLite القديمة مثل `data/bot.db` ليست جزءاً من التشغيل الحالي ولا تتم قراءتها.
+2. انسخ `.env.example` إلى `.env` واملأ القيم المطلوبة:
+   - `DISCORD_TOKEN`
+   - `OWNER_ID`
+   - `MONGODB_URI`
+   - `JWT_SECRET` بطول 32 حرفاً على الأقل
+   - `DASHBOARD_KEY` بطول 16 حرفاً على الأقل
 
-## 📊 الإحصائيات
+   لا ترفع `.env` أو أي مفاتيح إلى GitHub.
 
-- ✅ **115+ أمر** (عربي + إنجليزي)
-- ✅ **19 لعبة** (كلاسيكية + كازينو + ذكاء)
-- ✅ **10 أنظمة حماية**
-- ✅ **6 أنظمة اقتصادية متقدمة**
-- ✅ **12 أمر إداري**
-- ✅ **أتمتة ذكية**
-- ✅ **ميزات اجتماعية**
+3. من Discord Developer Portal فعّل **Message Content Intent** و**Server Members Intent** إذا كانت ميزات السيرفر تتطلبهما، ثم ادعُ البوت بالصلاحيات اللازمة.
+4. شغّل البوت:
 
-## 🎮 أهم الأوامر
+   ```bash
+   npm start
+   ```
 
-### الاقتصاد
-```
-رصيد - يومي - راتب - عمل
-بورصة قائمة - عقار شراء house - شركة إنشاء
-```
+   الاختبارات: `npm test`
+   فحص واجهة الويب: `npm run lint:dashboard`
 
-### الألعاب
-```
-!poker 1000 - !roulette red 500 - !crash 500 2.5
-مسابقة - رياضيات - ذاكرة - تخمين
-```
+## الألعاب
 
-### الإدارة
-```
-!warn @user - !purge 50 - !lock - !serverstats
-```
+استخدم أمر `العاب` أو `!games` لفتح مركز الألعاب. الألعاب الست موجودة في `dashboard-ui/public/games` وتُقدّم من البوت على المسار `/games/`. تعتمد الغرف الجماعية على Socket.IO وتُحفظ في ذاكرة الخدمة، لذا تنتهي الغرف النشطة عند إعادة تشغيل الخدمة أو إيقافها.
 
-### اجتماعي
-```
-!marry @user - !addfriend @user - !guild create
-```
+## النشر على Render
 
-### تطور
-```
-!prestige - !skills - !badges
-```
+ملف `render.yaml` يعرّف خدمة ويب واحدة تشغّل البوت ولوحة التحكم والألعاب معاً.
 
-## 📁 الملفات الرئيسية
+1. ارفع المشروع إلى مستودع GitHub خاص بك، من دون `.env` أو أسرار أو ملفات `node_modules`.
+2. في Render اختر **New → Blueprint** ثم اربط المستودع واقبل إعداد `render.yaml`، أو أنشئ Web Service يدوياً باستخدام:
+   - **Build Command:** `npm ci && npm run build:dashboard`
+   - **Start Command:** `npm start`
+   - **Health Check Path:** `/health`
+3. أضف القيم السرية المطلوبة عند إعداد Blueprint أو في **Environment** بالخدمة:
+   - `DISCORD_TOKEN`: توكن البوت من Discord Developer Portal.
+   - `OWNER_ID`: معرف حساب مالك البوت في Discord.
+   - `MONGODB_URI`: رابط اتصال قاعدة MongoDB.
+   - `JWT_SECRET`: سر عشوائي ثابت لا يقل عن 32 حرفاً.
+   - `DASHBOARD_KEY`: مفتاح عشوائي ثابت لا يقل عن 16 حرفاً.
+   - `NODE_ENV` يضبطه ملف Render على `production`.
+4. لتسجيل دخول مالكي السيرفرات إلى لوحة التحكم عبر Discord OAuth2، أضف `DISCORD_CLIENT_ID` و`DISCORD_CLIENT_SECRET`، واضبط Redirect URI في Discord وفي Render على:
 
-```
-commands/
-  ├── economy-advanced.js    # البورصة، المزادات، القروض، العقارات، الشركات، التأمين
-  ├── casino-premium.js      # Poker, Roulette, Crash, Baccarat
-  ├── admin-advanced.js      # 12 أمر إداري متقدم
-  ├── fun.js                 # حظك، Ship، Facts، Meme
-  ├── social.js              # Friends، Marriage، Guilds
-  └── games-advanced.js      # Trivia، Math، Memory، Hangman
+   ```text
+   https://<اسم-الخدمة>.onrender.com/auth/discord/callback
+   ```
 
-utils/
-  ├── levels-enhanced.js     # Prestige، Skills، Badges
-  ├── auto-tasks.js          # 6 مهام تلقائية
-  ├── protect-advanced.js    # حماية متقدمة
-  └── embed-builder.js       # نظام Embeds احترافي
-```
+   واجعل `DISCORD_REDIRECT_URI` مطابقاً له. هذه القيم غير مطلوبة لتشغيل البوت نفسه.
+5. بعد نجاح النشر، افتح `https://<اسم-الخدمة>.onrender.com/health` وانتظر أن يعيد `OK`، ثم افتح رابط الخدمة للوصول إلى لوحة التحكم والألعاب.
 
-## ⚙️ الإعدادات
+### تنبيهات مهمة حول Render
 
-الإعدادات الحساسة لا توضع داخل `config.js`، بل داخل متغيرات البيئة فقط.
+- **الخطة المجانية تدخل وضع السكون بعد 15 دقيقة من دون حركة واردة**؛ وقد يتوقف البوت عن استقبال أحداث Discord خلال ذلك. لتشغيل البوت باستمرار استخدم Web Service مدفوعة، أو بنية منفصلة بخدمة Background Worker مدفوعة للبوت وخدمة ويب للوحة التحكم.
+- نظام الملفات في الخدمة مؤقت؛ يستخدم المشروع MongoDB للبيانات الدائمة، لكن الملفات المحلية والغرف الجماعية النشطة لا تبقى بعد إعادة التشغيل أو إعادة النشر.
+- اسم الخدمة في `render.yaml` (`my-real-bot`) يجب أن يكون متاحاً في حسابك؛ غيّره إذا كان مستخدماً.
+- إذا كانت قاعدة MongoDB على Atlas، اسمح باتصالات Render في إعدادات الشبكة واستخدم مستخدم قاعدة بيانات محدود الصلاحيات. لا تضع رابط القاعدة في المستودع.
 
-## ✨ الميزات البارزة
+## متغيرات اختيارية
 
-1. **دعم ثنائي اللغة** - كل الأوامر بالعربي والإنجليزي
-2. **Embeds احترافية** - 10+ قوالب جاهزة
-3. **اقتصاد ديناميكي** - أسعار متحركة، تفاعل بين اللاعبين
-4. **حماية شاملة** - 10 أنظمة حماية تلقائية
-5. **أتمتة ذكية** - مهام تلقائية يومية
-6. **نظام Prestige** - إعادة تعيين للمكافآت
-7. **قبائل** - نظام Guilds/Clans متكامل
-
-## 🎯 جاهز للإنتاج!
-
-البوت مكتمل ومختبر. ابدأ الآن! 🚀
+يمكن إضافة مفاتيح المزودين الاختيارية إلى Render أو `.env` عند الحاجة، مثل `GEMINI_API_KEY` و`YOUTUBE_API_KEY` و`HF_TOKEN` و`OPENROUTER_API_KEY`. لا يلزم أي منها لبدء البوت الأساسي.
