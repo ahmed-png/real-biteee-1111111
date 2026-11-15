@@ -3,6 +3,7 @@
 const config = require('../../config');
 const { isOwner } = require('../../utils/permissions');
 const dailyChallenges = require('../../utils/daily-challenges');
+const { resolveSetupAction } = require('../../utils/command-routing');
 
 let analytics = null;
 try { analytics = require('../../utils/analytics'); } catch { }
@@ -25,18 +26,6 @@ const ROOM_COMMANDS = [
     'new-room', 'rooms', 'my-room', 'delete-room', 'renew-room',
 ];
 
-const BASIC_SETUP_TRIGGERS = ['اعداد', 'setup', '!setup'];
-// ملاحظة: 'تفعيل' بدون إضافة تنتقل لـ server-setup عبر aliases
-const SERVER_SETUP_TRIGGERS = [
-    'تفعيل سيرفر', 'تفعيل-سيرفر', 'اعداد سيرفر',
-    'setup-server', 'reset-server', 'بناء-سيرفر',
-];
-const RESET_TRIGGERS = [
-    'اعادة تفعيل', 'إعادة تفعيل',
-    'اعادةتفعيل', 'إعادةتفعيل',
-    'اعادة-تفعيل', 'إعادة-تفعيل',
-    'reset'
-];
 const NUKE_CLAN_TRIGGERS = ['حذف كلانات', 'حذف كلان', 'إلغاء كلانات', 'إلغاء كلان', 'nuke-clans', 'nuke_clans', 'reset-clans'];
 const CLAN_TRIGGERS = ['تفعيل كلان', 'تفعيل-كلان', 'setup clans', 'setup-clans', 'كلان', 'كلانات', 'قبائل', 'clan', 'clans'];
 const POLL_PREFIXES = ['بول ', 'poll ', 'استطلاع ', 'تصويت '];
@@ -85,8 +74,9 @@ module.exports = async function commandsMiddleware(message) {
         return false;
     }
 
-    // ✅ إعادة تفعيل (Reset) — يجب أن يُفحص قبل كل شيء آخر
-    if (RESET_TRIGGERS.some(t => lowMsg === t || lowMsg.startsWith(t + ' '))) {
+    // أوامر الإعداد لها مطابقة متعددة الكلمات وتسبق حلّ أسماء الأوامر ذات الكلمة الواحدة.
+    const setupAction = resolveSetupAction(content, prefix);
+    if (setupAction === 'reset-server') {
         try {
             const serverSetup = require('../../commands/moderation/server-setup');
             await serverSetup.execute(message, [], { isReset: true });
@@ -94,8 +84,7 @@ module.exports = async function commandsMiddleware(message) {
         return false;
     }
 
-    // ── تفعيل سيرفر
-    if (SERVER_SETUP_TRIGGERS.some(t => lowMsg === t || lowMsg.startsWith(t + ' '))) {
+    if (setupAction === 'server') {
         try {
             const serverSetup = require('../../commands/moderation/server-setup');
             await serverSetup.execute(message, []);
@@ -103,8 +92,7 @@ module.exports = async function commandsMiddleware(message) {
         return false;
     }
 
-    // ── إعداد الرتب
-    if (BASIC_SETUP_TRIGGERS.some(t => lowMsg === t)) {
+    if (setupAction === 'roles') {
         try {
             const setupCmd = require('../../commands/moderation/setup');
             await setupCmd.execute(message, []);
