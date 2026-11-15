@@ -11,21 +11,13 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
+const { resolveRuntimeSecret } = require('../../../utils/runtime-secrets');
 
-const crypto = require('crypto');
-
-let JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET || JWT_SECRET.length < 32) {
-    JWT_SECRET = crypto.randomBytes(32).toString('hex');
-    process.env.JWT_SECRET = JWT_SECRET;
-    console.log('[Auth] 🔑 Auto-generated temporary JWT_SECRET');
-}
-
-let DASHBOARD_KEY = process.env.DASHBOARD_KEY;
-if (!DASHBOARD_KEY || DASHBOARD_KEY.length < 16) {
-    DASHBOARD_KEY = process.env.DASHBOARD_KEY || 'biteee_dashboard_secret_2026_super_key';
-    process.env.DASHBOARD_KEY = DASHBOARD_KEY;
-    console.log('[Auth] 🔑 Set default DASHBOARD_KEY');
+const JWT_SECRET = resolveRuntimeSecret('JWT_SECRET', process.env.JWT_SECRET, 32);
+const DASHBOARD_KEY = resolveRuntimeSecret('DASHBOARD_KEY', process.env.DASHBOARD_KEY, 16);
+if (process.env.NODE_ENV !== 'production') {
+    if (JWT_SECRET !== process.env.JWT_SECRET) console.warn('[Auth] Generated a temporary development JWT_SECRET.');
+    if (DASHBOARD_KEY !== process.env.DASHBOARD_KEY) console.warn('[Auth] Generated a temporary development DASHBOARD_KEY.');
 }
 const BOT_OWNER_ID = process.env.OWNER_ID;
 const loginAttempts = new Map();
@@ -46,7 +38,7 @@ const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || (RENDER_URL ? `
 const DISCORD_API = 'https://discord.com/api/v10';
 
 function getDashboardKey() {
-    return process.env.DASHBOARD_KEY;
+    return DASHBOARD_KEY;
 }
 
 function allowLogin(req) {
