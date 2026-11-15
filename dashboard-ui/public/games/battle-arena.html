@@ -1177,7 +1177,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(window.location.search);
   const joinCode = params.get('room');
   const uname = params.get('name');
-  if (uname) document.getElementById('usernameInput').value = decodeURIComponent(uname);
+  if (uname) document.getElementById('usernameInput').value = uname;
   if (joinCode) {
     selectMode(document.querySelector('[data-mode="multi"]'), 'multi');
     document.getElementById('roomCodeInput').value = joinCode.toUpperCase();
