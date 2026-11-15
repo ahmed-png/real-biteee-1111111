@@ -28,12 +28,11 @@ function buildGamesPanel(username = '') {
     const nameParam = username || '';
 
     const arenaUrl = gameUrl('battle-arena.html', { name: nameParam, mode: 'solo' });
-    const snakeUrl = gameUrl('snake.html', { name: nameParam, mode: 'solo' });
     const spaceUrl = gameUrl('space-defender.html', { name: nameParam });
     const tankUrl = gameUrl('tank-clash.html', { name: nameParam });
-    const memoryUrl = gameUrl('memory-match.html', { name: nameParam });
     const cyberUrl = gameUrl('cyber-jump.html', { name: nameParam });
     const survivalUrl = gameUrl('survival.html', { name: nameParam });
+    const duelUrl = gameUrl('duel.html', { name: nameParam });
 
     const embed = new EmbedBuilder()
         .setColor('#0d1fd4')
@@ -43,17 +42,16 @@ function buildGamesPanel(username = '') {
             '> اضغط على الأزرار بالأسفل أو افتح الروابط المباشرة:',
             '',
             `⚔️ [**Battle Arena — قتال أبطال 4 لاعبين**](${arenaUrl})`,
-            `🐍 [**Snake 2.0 — ثعبان نيون تنافسي**](${snakeUrl})`,
+            `🎯 [**المهمة الأخيرة — نجاة وتصويب (فردي)**](${survivalUrl})`,
+            `🥊 [**ساحة المبارزة — قتال منصات ضد خصم ذكي**](${duelUrl})`,
             `🚀 [**Space Defender — حرب الفضاء**](${spaceUrl})`,
             `🛡️ [**Tank Clash — حرب دبابات تكتيكية**](${tankUrl})`,
-            `🃏 [**Memory Match — تطابق البطاقات الذهني**](${memoryUrl})`,
             `🌩️ [**Cyber Jump — منصات سايبربانك**](${cyberUrl})`,
-            `🎯 [**المهمة الأخيرة — نجاة وتصويب (فردي)**](${survivalUrl})`,
             '',
             '> 💡 *إذا لم يستجب الزر في ديسكورد، اضغط على اسم اللعبة الأزرق أعلاه مباشرة.*',
         ].join('\n'))
         .setTimestamp()
-        .setFooter({ text: '⚡ العب واستمتع — تدعم اللعب الفردي والجماعي!' });
+        .setFooter({ text: '⚡ ألعاب فردية وجماعية — تعمل على الكمبيوتر والجوال!' });
 
     // ── Row 1: Battle Arena ────────────────────────────────────
     const row1 = new ActionRowBuilder().addComponents(
@@ -71,44 +69,32 @@ function buildGamesPanel(username = '') {
             .setURL(gameUrl('battle-arena.html', { name: nameParam, mode: 'multi' }))
     );
 
-    // ── Row 2: Snake ──────────────────────────────────────────
+    // ── Row 2: New combat games and arcade shooters ───────────
     const row2 = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-            .setLabel('🐍 Snake — منفرد')
+            .setLabel('🎯 المهمة الأخيرة')
             .setStyle(ButtonStyle.Link)
-            .setURL(gameUrl('snake.html', { name: nameParam, mode: 'solo' })),
+            .setURL(survivalUrl),
         new ButtonBuilder()
-            .setLabel('🐍 Snake — ضد Bot')
+            .setLabel('🥊 ساحة المبارزة')
             .setStyle(ButtonStyle.Link)
-            .setURL(gameUrl('snake.html', { name: nameParam, mode: 'bot' })),
-        new ButtonBuilder()
-            .setLabel('🐍 Snake — مولتي بلاير')
-            .setStyle(ButtonStyle.Link)
-            .setURL(gameUrl('snake.html', { name: nameParam, mode: 'multi' })),
-        new ButtonBuilder()
-            .setLabel('🎯 المهمة الأخيرة — فردي')
-            .setStyle(ButtonStyle.Link)
-            .setURL(survivalUrl)
-    );
-
-    // ── Row 3: Space + Tanks + Memory + Cyber ─────────────────
-    const row3 = new ActionRowBuilder().addComponents(
+            .setURL(duelUrl),
         new ButtonBuilder()
             .setLabel('🚀 Space Defender')
             .setStyle(ButtonStyle.Link)
-            .setURL(gameUrl('space-defender.html', { name: nameParam })),
+            .setURL(spaceUrl),
         new ButtonBuilder()
             .setLabel('🛡️ Tank Clash')
             .setStyle(ButtonStyle.Link)
-            .setURL(gameUrl('tank-clash.html', { name: nameParam })),
-        new ButtonBuilder()
-            .setLabel('🃏 Memory Match')
-            .setStyle(ButtonStyle.Link)
-            .setURL(gameUrl('memory-match.html', { name: nameParam })),
+            .setURL(tankUrl)
+    );
+
+    // ── Row 3: Cyber Jump ─────────────────────────────────────
+    const row3 = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setLabel('🌩️ Cyber Jump')
             .setStyle(ButtonStyle.Link)
-            .setURL(gameUrl('cyber-jump.html', { name: nameParam }))
+            .setURL(cyberUrl)
     );
 
     // ── Row 4: Info ────────────────────────────────────────────
@@ -178,9 +164,9 @@ async function handleGameButton(interaction) {
                 .setStyle(ButtonStyle.Link)
                 .setURL(gameUrl('tank-clash.html', { name: nameParam, mode: 'multi' })),
             new ButtonBuilder()
-                .setLabel('🐍 Snake 2.0')
+                .setLabel('🌩️ Cyber Jump')
                 .setStyle(ButtonStyle.Link)
-                .setURL(gameUrl('snake.html', { name: nameParam, mode: 'multi' }))
+                .setURL(gameUrl('cyber-jump.html', { name: nameParam, mode: 'multi' }))
         );
 
         const row2 = new ActionRowBuilder().addComponents(
@@ -188,14 +174,6 @@ async function handleGameButton(interaction) {
                 .setLabel('🚀 Space Defender')
                 .setStyle(ButtonStyle.Link)
                 .setURL(gameUrl('space-defender.html', { name: nameParam, mode: 'multi' })),
-            new ButtonBuilder()
-                .setLabel('🃏 Memory Match')
-                .setStyle(ButtonStyle.Link)
-                .setURL(gameUrl('memory-match.html', { name: nameParam, mode: 'multi' })),
-            new ButtonBuilder()
-                .setLabel('🌩️ Cyber Jump')
-                .setStyle(ButtonStyle.Link)
-                .setURL(gameUrl('cyber-jump.html', { name: nameParam, mode: 'multi' }))
         );
 
         return interaction.reply({ embeds: [embed], components: [row1, row2], flags: MessageFlags.Ephemeral });
