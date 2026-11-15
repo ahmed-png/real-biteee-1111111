@@ -33,6 +33,7 @@ function buildGamesPanel(username = '') {
     const tankUrl = gameUrl('tank-clash.html', { name: nameParam });
     const memoryUrl = gameUrl('memory-match.html', { name: nameParam });
     const cyberUrl = gameUrl('cyber-jump.html', { name: nameParam });
+    const survivalUrl = gameUrl('survival.html', { name: nameParam });
 
     const embed = new EmbedBuilder()
         .setColor('#0d1fd4')
@@ -47,6 +48,7 @@ function buildGamesPanel(username = '') {
             `🛡️ [**Tank Clash — حرب دبابات تكتيكية**](${tankUrl})`,
             `🃏 [**Memory Match — تطابق البطاقات الذهني**](${memoryUrl})`,
             `🌩️ [**Cyber Jump — منصات سايبربانك**](${cyberUrl})`,
+            `🎯 [**المهمة الأخيرة — نجاة وتصويب (فردي)**](${survivalUrl})`,
             '',
             '> 💡 *إذا لم يستجب الزر في ديسكورد، اضغط على اسم اللعبة الأزرق أعلاه مباشرة.*',
         ].join('\n'))
@@ -82,7 +84,11 @@ function buildGamesPanel(username = '') {
         new ButtonBuilder()
             .setLabel('🐍 Snake — مولتي بلاير')
             .setStyle(ButtonStyle.Link)
-            .setURL(gameUrl('snake.html', { name: nameParam, mode: 'multi' }))
+            .setURL(gameUrl('snake.html', { name: nameParam, mode: 'multi' })),
+        new ButtonBuilder()
+            .setLabel('🎯 المهمة الأخيرة — فردي')
+            .setStyle(ButtonStyle.Link)
+            .setURL(survivalUrl)
     );
 
     // ── Row 3: Space + Tanks + Memory + Cyber ─────────────────
