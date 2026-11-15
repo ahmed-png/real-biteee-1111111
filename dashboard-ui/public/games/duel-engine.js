@@ -8,7 +8,7 @@
     const HEIGHT = 540;
     const GRAVITY = 1250;
     const PLAYER_SPEED = 245;
-    const JUMP_SPEED = 540;
+    const JUMP_SPEED = 590;
     const FLOOR = 502;
     const PLATFORMS = [
         { x: 110, y: 385, w: 190, h: 16 },
@@ -98,9 +98,8 @@
         const bot = game.bot;
         let botDirection = Math.abs(bot.x - game.player.x) > 250 ? Math.sign(game.player.x - bot.x) : 0;
         game.botJumpTimer -= dt;
-        const blocker = PLATFORMS.some(platform => Math.abs(bot.x - platform.x) < 70 &&
-            Math.abs(bot.y - platform.y) < 65 && bot.onGround);
-        const botJump = bot.onGround && (blocker || (game.player.y < bot.y - 70 && game.botJumpTimer <= 0));
+        const botJump = bot.onGround && (game.botJumpTimer <= 0 ||
+            (game.player.y < bot.y - 70 && game.botJumpTimer <= 0.2));
         if (botJump) game.botJumpTimer = 1.1 + game.random() * 0.8;
         moveFighter(bot, botDirection, botJump, dt);
         if (Math.abs(game.player.x - bot.x) < 560) fire(game, bot, game.player.x, game.player.y - 5);
