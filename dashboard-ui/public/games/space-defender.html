@@ -893,7 +893,7 @@ function toLobby() {
 window.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(window.location.search);
   const u = params.get('name');
-  if (u) document.getElementById('nameInp').value = decodeURIComponent(u);
+  if (u) document.getElementById('nameInp').value = u;
   const m = params.get('mode');
   if (m && ['solo','bot','multi'].includes(m)) {
     const card = document.querySelector(`.mode-card[data-mode="${m}"]`);
