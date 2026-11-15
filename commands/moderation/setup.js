@@ -5,11 +5,38 @@ const db = require('../../utils/database');
 const config = require('../../config');
 const colorRoles = require('./color-roles');
 
+async function applyRoleOverwrites(guild, role, permissions, shouldSkip = () => false) {
+    const result = { applied: 0, failed: [] };
+
+    for (const channel of guild.channels.cache.values()) {
+        if (!channel.permissionOverwrites || shouldSkip(channel)) continue;
+
+        try {
+            await channel.permissionOverwrites.edit(role.id, permissions);
+            result.applied++;
+        } catch (error) {
+            result.failed.push({ channel: channel.name, reason: error.message });
+        }
+    }
+
+    return result;
+}
+
+function reportOverwriteFailures(results, roleName, failures) {
+    if (failures.length === 0) return;
+
+    const examples = failures.slice(0, 3)
+        .map(({ channel, reason }) => `${channel}: ${reason.slice(0, 120)}`)
+        .join(' | ');
+    const remaining = failures.length > 3 ? ` | وقنوات أخرى (${failures.length - 3})` : '';
+    results.failed.push(`❌ صلاحيات ${roleName}: تعذر تحديث ${failures.length} قناة — ${examples}${remaining}`);
+}
+
 module.exports = {
     name: 'setup',
-    aliases: ['تفعيل', 'اعداد'],
+    aliases: ['تفعيل', 'تفعيل رتب', 'تفعيل-رتب', 'اعداد', 'اعداد الرتب', 'اعداد-الرتب'],
     description: 'إعداد وإنشاء الرتب الأساسية (الألوان، السجن، الكتم)',
-    usage: 'تفعيل',
+    usage: 'تفعيل [رتب]',
     permissions: [PermissionFlagsBits.Administrator],
 
     async execute(message) {
@@ -51,17 +78,13 @@ module.exports = {
                 results.skipped.push(`🔄 رتبة السجن موجودة — سيتم تحديث صلاحياتها`);
             }
 
-            // تطبيق صلاحيات السجن على جميع القنوات
-            for (const channel of guild.channels.cache.values()) {
-                if (channel.permissionOverwrites) {
-                    if (channel.name.includes('سجن') || channel.name.includes('jail')) continue;
-                    await channel.permissionOverwrites.edit(jailRole.id, {
-                        SendMessages: false,
-                        Speak: false,
-                        ViewChannel: false
-                    }).catch(() => {});
-                }
-            }
+            const jailPermissions = await applyRoleOverwrites(guild, jailRole, {
+                SendMessages: false,
+                Speak: false,
+                ViewChannel: false
+            }, channel => channel.name.toLowerCase().includes('سجن') || channel.name.toLowerCase().includes('jail'));
+            results.success.push(`✅ تم ضبط صلاحيات السجن على ${jailPermissions.applied} قناة`);
+            reportOverwriteFailures(results, 'السجن', jailPermissions.failed);
 
             db.updateGuildData(guild.id, { jailRole: jailRole.id });
 
@@ -84,7 +107,7 @@ module.exports = {
                     ViewChannel: true,
                     ReadMessageHistory: true,
                     SendMessages: false
-                }).catch(() => {});
+                });
             }
 
         } catch (e) {
@@ -112,16 +135,13 @@ module.exports = {
                 results.skipped.push(`🔄 رتبة الكتم موجودة — سيتم تحديث صلاحياتها`);
             }
 
-            // تطبيق صلاحيات الكتم على جميع القنوات
-            for (const channel of guild.channels.cache.values()) {
-                if (channel.permissionOverwrites) {
-                    await channel.permissionOverwrites.edit(muteRole.id, {
-                        SendMessages: false,
-                        Speak: false,
-                        AddReactions: false
-                    }).catch(() => {});
-                }
-            }
+            const mutePermissions = await applyRoleOverwrites(guild, muteRole, {
+                SendMessages: false,
+                Speak: false,
+                AddReactions: false
+            });
+            results.success.push(`✅ تم ضبط صلاحيات الكتم على ${mutePermissions.applied} قناة`);
+            reportOverwriteFailures(results, 'الكتم', mutePermissions.failed);
 
             db.updateGuildData(guild.id, { muteRole: muteRole.id });
         } catch (e) {
