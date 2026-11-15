@@ -897,54 +897,40 @@ function drawPlayers(players) {
     // Body glow (for me)
     if (isMe) { ctx.shadowColor = color; ctx.shadowBlur = 20; }
 
-    // ── Draw Stickman ──────────────────────────────────────
     const scaleX = p.dir || 1;
     ctx.save(); ctx.translate(px, py - 10); ctx.scale(scaleX, 1);
-
     const lc = p.dead ? '#555' : color;
-    ctx.strokeStyle = lc; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    const legSwing = Math.abs(p.vx) > 0.5 ? Math.sin(frameCount * 0.25) * 6 : 0;
+    ctx.strokeStyle = '#172535'; ctx.lineWidth = 9; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-5, 8); ctx.lineTo(-9 - legSwing, 25); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(5, 8); ctx.lineTo(9 + legSwing, 25); ctx.stroke();
+    ctx.strokeStyle = '#5c7486'; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(-9 - legSwing, 25); ctx.lineTo(-5 - legSwing, 25); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(9 + legSwing, 25); ctx.lineTo(13 + legSwing, 25); ctx.stroke();
 
-    // Head
-    ctx.beginPath(); ctx.arc(0, -32, 10, 0, Math.PI*2);
-    ctx.fillStyle = p.dead ? '#333' : `${color}33`;
-    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#172535'; roundRect(ctx, -13, -22, 26, 34, 7); ctx.fill();
+    ctx.fillStyle = lc; roundRect(ctx, -10, -20, 20, 25, 5); ctx.fill();
+    ctx.fillStyle = '#b7e5df'; ctx.fillRect(-6, -14, 12, 3);
+    ctx.fillStyle = '#172535'; ctx.fillRect(-10, 4, 20, 5);
+    ctx.fillStyle = '#ffd36e'; ctx.fillRect(-2, 4, 5, 5);
 
-    // Eyes
-    if (!p.dead) {
-      ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.arc(4, -34, 3, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = lc;
-      ctx.beginPath(); ctx.arc(5, -34, 1.5, 0, Math.PI*2); ctx.fill();
-    } else {
-      ctx.strokeStyle = '#f44'; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.moveTo(2,-36); ctx.lineTo(6,-32); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(6,-36); ctx.lineTo(2,-32); ctx.stroke();
-    }
+    ctx.strokeStyle = '#263d4c'; ctx.lineWidth = 7;
+    ctx.beginPath(); ctx.moveTo(-10, -15); ctx.lineTo(-17, -2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(9, -15); ctx.lineTo(19, -4); ctx.stroke();
+    ctx.fillStyle = '#f4c8a9'; ctx.beginPath(); ctx.arc(19, -4, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#172535'; ctx.beginPath(); ctx.arc(0, -33, 12, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = lc; ctx.beginPath(); ctx.arc(0, -35, 10, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = '#b7f3ff'; roundRect(ctx, -2, -36, 11, 6, 2); ctx.fill();
 
-    // Body
-    ctx.strokeStyle = lc; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(0,-20); ctx.lineTo(0,10); ctx.stroke();
-
-    // Arms — animated
-    const armSwing = Math.sin(frameCount * 0.2) * 10;
     if (p.weapon) {
-      // Weapon arm
-      const ws = weaponStats[p.weapon];
-      ctx.beginPath(); ctx.moveTo(0,-15); ctx.lineTo(25,0); ctx.stroke();
-      ctx.font = '14px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.globalAlpha = alpha;
-      ctx.fillText(ws?.emoji || '⚔️', 30, 0);
-      // Other arm
-      ctx.strokeStyle = lc; ctx.beginPath(); ctx.moveTo(0,-15); ctx.lineTo(-20,-5); ctx.stroke();
-    } else {
-      ctx.beginPath(); ctx.moveTo(0,-15); ctx.lineTo(20,-5+armSwing*0.3); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0,-15); ctx.lineTo(-20,-5-armSwing*0.3); ctx.stroke();
+      ctx.fillStyle = '#22323e'; roundRect(ctx, 19, -9, 20, 7, 2); ctx.fill();
+      ctx.fillStyle = '#a4b7c2'; ctx.fillRect(33, -8, p.weapon === 'rocket' ? 13 : 7, 4);
+      ctx.fillStyle = (weaponStats[p.weapon] || {}).color || '#fff';
+      ctx.fillRect(22, -8, 7, 2);
+      if (p.weapon === 'sword') {
+        ctx.fillStyle = '#d5e7ee'; ctx.fillRect(32, -10, 18, 5);
+      }
     }
-
-    // Legs — walk animation
-    const legSwing = Math.abs(p.vx) > 0.5 ? Math.sin(frameCount * 0.25) * 15 : 0;
-    ctx.beginPath(); ctx.moveTo(0,10); ctx.lineTo(-12,30 + legSwing); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,10); ctx.lineTo(12,30 - legSwing); ctx.stroke();
 
     ctx.restore();
     ctx.shadowBlur = 0;
