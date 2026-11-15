@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ساحة المبارزة — قتال منصات</title>
+<link rel="stylesheet" href="duel.css">
+<script defer src="duel-engine.js"></script>
+<script defer src="duel.js"></script>
+</head>
+<body>
+<main class="shell">
+  <header class="topbar">
+    <div><span class="eyebrow">ARCADE / PLATFORM DUEL</span><h1>ساحة المبارزة</h1><p>قاتل خصمك فوق المنصات، واقفز بين الطوابق لتفادي النيران.</p></div>
+    <button id="sound" class="secondary" type="button" aria-pressed="true">🔊 الصوت</button>
+  </header>
+  <section class="panel" aria-label="ساحة المبارزة">
+    <div class="hud" aria-live="polite">
+      <span>أنت <strong id="player-health">100</strong></span>
+      <span>الخصم <strong id="bot-health">100</strong></span>
+      <span>السلاح <strong id="weapon">بندقية</strong></span>
+      <span>الانتصارات <strong id="score">0</strong></span>
+    </div>
+    <div class="stage">
+      <canvas id="game" width="960" height="540" tabindex="-1" aria-label="ساحة قتال المنصات"></canvas>
+      <div id="overlay" class="overlay">
+        <div class="card">
+          <span class="eyebrow">DUEL ARENA</span>
+          <h2 id="overlay-title">تحدَّ خصمك</h2>
+          <p id="overlay-text">اقفز بين الطوابق، بدّل سلاحك، واهزم المقاتل المنافس.</p>
+          <p class="hint">الكمبيوتر: A/D أو الأسهم للحركة، W أو ↑ للقفز، زر الفأرة أو F للإطلاق، 1/2 لتغيير السلاح.<br>الجوال: أزرار الحركة والقفز والإطلاق مع تصويب تلقائي.</p>
+          <button id="start" type="button">ابدأ المبارزة</button>
+        </div>
+      </div>
+    </div>
+    <div class="weapons" aria-label="اختيار السلاح">
+      <button type="button" data-weapon="0" aria-pressed="true">1 · بندقية</button>
+      <button type="button" data-weapon="1" aria-pressed="false">2 · شوزن</button>
+    </div>
+    <div class="touch-controls" aria-label="تحكم الجوال">
+      <div class="move-controls">
+        <button data-key="left" aria-label="تحرك لليسار">◀</button>
+        <button data-key="right" aria-label="تحرك لليمين">▶</button>
+      </div>
+      <button data-key="jump" aria-label="قفز">قفز</button>
+      <button class="fire" data-key="fire" aria-label="إطلاق">إطلاق</button>
+    </div>
+  </section>
+  <p class="footnote">مبارزة فردية ضد خصم ذكي · تعمل على الكمبيوتر والجوال · لا تُحفظ النتائج بعد إغلاق الصفحة</p>
+</main>
+</body>
+</html>
