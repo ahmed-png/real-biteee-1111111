@@ -13,21 +13,19 @@ const {
     ButtonStyle, MessageFlags
 } = require('discord.js');
 
-const config = require('../../config');
 const dashServer = require('../../dashboard-server');
+const { buildGameUrl } = require('../../utils/game-url');
 
 // ─── Helper: Build game URL ─────────────────────────────────────
 function gameUrl(gamePath, params = {}) {
-    const base = dashServer.getDashboardUrl();
-    const query = new URLSearchParams(params).toString();
-    return `${base}/games/${gamePath}${query ? '?' + query : ''}`;
+    return buildGameUrl(dashServer.getDashboardUrl(), gamePath, params);
 }
 
 // ═══════════════════════════════════════════════════════════════
 // بناء لوحة الألعاب الرئيسية
 // ═══════════════════════════════════════════════════════════════
 function buildGamesPanel(username = '') {
-    const nameParam = username ? encodeURIComponent(username) : '';
+    const nameParam = username || '';
 
     const arenaUrl = gameUrl('battle-arena.html', { name: nameParam, mode: 'solo' });
     const snakeUrl = gameUrl('snake.html', { name: nameParam, mode: 'solo' });
@@ -128,7 +126,7 @@ function buildGamesPanel(username = '') {
 async function handleGameButton(interaction) {
     const id = interaction.customId;
     const username = interaction.user.username || interaction.user.globalName || 'لاعب';
-    const nameParam = encodeURIComponent(username);
+    const nameParam = username;
 
     // ── معلومات المولتي بلاير ─────────────────────────────────
     if (id === 'games_info') {
@@ -154,7 +152,6 @@ async function handleGameButton(interaction) {
 
     // ── إنشاء غرفة مشتركة ─────────────────────────────────────
     if (id === 'games_create_room') {
-        const baseUrl = gameUrl('battle-arena.html', { name: nameParam, mode: 'multi' });
         const embed = new EmbedBuilder()
             .setColor('#00ff88')
             .setTitle('🌐 إنشاء غرفة مشتركة')
