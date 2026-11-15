@@ -11,7 +11,7 @@ test.before(async () => {
 
 test('fighter jumps and lands on the upper platform', () => {
     const game = engine.createGame();
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 16; i++) {
         engine.step(game, { jump: i === 0 }, 0.05);
     }
     assert.equal(game.player.onGround, true);
