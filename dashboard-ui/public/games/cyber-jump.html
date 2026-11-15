@@ -518,12 +518,32 @@ function setupMultiListeners(){
   socket.on('error',d=>setErr(d.msg||'خطأ'));
 }
 function showWait(d){document.getElementById('multiOpts').style.display='none';document.getElementById('waitRoom').style.display='flex';document.getElementById('rCode').textContent=d.roomId;updatePList(d.players);}
-function updatePList(pls){document.getElementById('pList').innerHTML=(pls||[]).map(p=>`<div class="p-item"><div class="p-dot" style="background:${p.color||COLORS[0]}"></div><span style="flex:1;font-weight:700">${p.username}${p.id===myId?' (أنت)':''}</span><span style="color:var(--neon2);font-size:11px">✅</span></div>`).join('');}
+function updatePList(pls){
+  const list=document.getElementById('pList');
+  list.replaceChildren();
+  for(const player of pls||[]){
+    const item=document.createElement('div');
+    item.className='p-item';
+    const dot=document.createElement('div');
+    dot.className='p-dot';
+    dot.style.backgroundColor=/^#[\da-f]{6}$/i.test(player.color||'')?player.color:COLORS[0];
+    const name=document.createElement('span');
+    name.style.flex='1';
+    name.style.fontWeight='700';
+    name.textContent=`${player.username||'لاعب'}${player.id===myId?' (أنت)':''}`;
+    const ready=document.createElement('span');
+    ready.style.color='var(--neon2)';
+    ready.style.fontSize='11px';
+    ready.textContent='✅';
+    item.append(dot,name,ready);
+    list.append(item);
+  }
+}
 
 // URL params
 window.addEventListener('DOMContentLoaded',()=>{
   const p=new URLSearchParams(window.location.search);
-  if(p.get('name')) document.getElementById('nameInp').value=decodeURIComponent(p.get('name'));
+  if(p.get('name')) document.getElementById('nameInp').value=p.get('name');
   if(p.get('mode')){
     const mEl=document.querySelector(`[data-m="${p.get('mode')}"]`);
     if(mEl) pickMode(mEl,p.get('mode'));
