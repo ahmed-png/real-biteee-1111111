@@ -7,9 +7,13 @@ const config         = require('./config');
 const eventHandler   = require('./handlers/eventHandler');
 const commandHandler = require('./handlers/commandHandler');
 
-// ─── معالجة الأخطاء الكارثية لمنع Crash ────────────────────────────────────
-process.on('uncaughtException',  (err) => console.error('[CRASH] استثناء غير معالج:',        err?.stack || err?.message || err));
-process.on('unhandledRejection', (reason) => console.error('[UNHANDLED] رفض Promise غير معالج:', reason?.stack || reason));
+// A process with an uncaught error may be left in an unsafe state; let Render restart it.
+function exitOnFatalError(type, error) {
+    console.error(`[${type}]`, error?.stack || error?.message || error);
+    process.exit(1);
+}
+process.on('uncaughtException', error => exitOnFatalError('CRASH', error));
+process.on('unhandledRejection', reason => exitOnFatalError('UNHANDLED', reason));
 
 // ─── إنشاء Client ───────────────────────────────────────────────────────────
 const client = new Client({
