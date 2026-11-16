@@ -1,6 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAuth, apiFetch } from '../auth'
+import React, { useState, useCallback } from 'react'
 
 // ─── Toast Notification System ────────────────────────────────────────────────
 export function useToast() {
