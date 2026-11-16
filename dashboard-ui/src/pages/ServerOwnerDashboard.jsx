@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth, apiFetch } from '../auth'
-import { Sidebar, StatCard, ToggleRow, ToastContainer, useToast, ChannelSelect } from '../components/ui'
+import { Sidebar, StatCard, ToggleRow, ToastContainer, useToast, ChannelSelect, RefreshButton } from '../components/ui'
 
 // ─── Overview ─────────────────────────────────────────────────────────────────
 function Overview({ info }) {
@@ -617,20 +617,38 @@ export default function ServerOwnerDashboard() {
   const [section, setSection] = useState('overview')
   const [info, setInfo] = useState(null)
   const [channels, setChannels] = useState([])
+  const [refreshing, setRefreshing] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState(null)
+  const [loadError, setLoadError] = useState('')
   const { toasts, toast } = useToast()
 
   const selectedGuild = guilds.find(g => g.id === guildId)
 
-  const loadInfo = useCallback(async () => {
-    const [iRes, cRes] = await Promise.all([
-      apiFetch(`/server/${guildId}/info`),
-      apiFetch(`/server/${guildId}/channels`),
-    ])
-    if (iRes?.success) setInfo(iRes)
-    if (cRes?.success) setChannels(cRes.channels)
+  const loadInfo = useCallback(async (silent = false) => {
+    if (!silent) setRefreshing(true)
+    try {
+      const [iRes, cRes] = await Promise.all([
+        apiFetch(`/server/${guildId}/info`),
+        apiFetch(`/server/${guildId}/channels`),
+      ])
+      if (!iRes?.success) throw new Error(iRes?.error || 'تعذر تحميل معلومات السيرفر.')
+      if (!cRes?.success) throw new Error(cRes?.error || 'تعذر تحميل قنوات السيرفر.')
+      setInfo(iRes)
+      setChannels(cRes.channels || [])
+      setLastUpdated(new Date())
+      setLoadError('')
+    } catch (error) {
+      setLoadError(error.message || 'تعذر تحديث بيانات السيرفر.')
+    } finally {
+      if (!silent) setRefreshing(false)
+    }
   }, [guildId])
 
-  useEffect(() => { loadInfo() }, [loadInfo])
+  useEffect(() => {
+    loadInfo()
+    const interval = setInterval(() => loadInfo(true), 60000)
+    return () => clearInterval(interval)
+  }, [loadInfo])
 
   const titles = {
     overview:   '📊 نظرة عامة',
@@ -665,10 +683,17 @@ export default function ServerOwnerDashboard() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <RefreshButton busy={refreshing} lastUpdated={lastUpdated} onClick={() => loadInfo()} />
             <span className="page-badge cyan">🔑 Server Owner</span>
             <button className="btn btn-outline btn-sm" onClick={() => navigate('/guilds')}>← العودة</button>
           </div>
         </div>
+        {loadError && (
+          <div className="dashboard-load-error" role="alert">
+            <span>⚠️ {loadError}</span>
+            <button className="btn btn-outline btn-sm" onClick={() => loadInfo()} type="button">إعادة المحاولة</button>
+          </div>
+        )}
         {sections[section] || null}
       </main>
       <ToastContainer toasts={toasts} />
