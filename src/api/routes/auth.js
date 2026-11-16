@@ -178,7 +178,7 @@ router.post('/login', (req, res) => {
 // ──────────────────────────────────────────────────────────────────────────────
 router.get('/discord', (req, res) => {
     if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET) {
-        return res.status(500).json({ success: false, error: 'Discord OAuth not configured. Set DISCORD_CLIENT_ID in .env' });
+        return res.status(500).json({ success: false, error: 'Discord OAuth is not fully configured. Set DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET.' });
     }
     const state = randomBytes(32).toString('hex');
     setOAuthStateCookie(res, state);
