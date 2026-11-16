@@ -23,9 +23,6 @@ async function createPoll(message, args) {
 
     // تنسيق: سؤال | خيار1 | خيار2 | خيار3
     const parts = content.split('|').map(p => p.trim());
-    if (!parts[0] || parts.length < 3 || parts.slice(1).some(option => !option)) {
-        return message.reply('❌ أدخل السؤال وخيارين على الأقل، ولا تترك أي خيار فارغاً.');
-    }
 
     if (parts.length < 3) {
         const helpEmbed = new EmbedBuilder()
@@ -44,6 +41,10 @@ async function createPoll(message, args) {
             ].join('\n'))
             .setTimestamp();
         return message.reply({ embeds: [helpEmbed] });
+    }
+
+    if (!parts[0] || parts.slice(1).some(option => !option)) {
+        return message.reply('❌ أدخل السؤال وخيارين على الأقل، ولا تترك أي خيار فارغاً.');
     }
 
     const question = parts[0];
