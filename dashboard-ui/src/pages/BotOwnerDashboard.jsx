@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth, apiFetch } from '../auth'
 import { Sidebar, StatCard, ToggleRow, ToastContainer, useToast, RefreshButton } from '../components/ui'
 
+const EMPTY_SETTINGS = Object.freeze({})
+
 // ─── Overview ─────────────────────────────────────────────────────────────────
 function Overview({ stats }) {
   if (!stats) return (
@@ -15,7 +17,6 @@ function Overview({ stats }) {
   const up = stats.uptime || 0
   const upH = Math.floor(up / 3600)
   const upM = Math.floor((up % 3600) / 60)
-  const upS = Math.floor(up % 60)
 
   return (
     <div className="animate-fade-up">
@@ -127,7 +128,7 @@ function Overview({ stats }) {
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
 function ControlSection({ stats, toast }) {
-  const settings = stats?.botSettings || {}
+  const settings = stats?.botSettings || EMPTY_SETTINGS
   const [s, setS] = useState({
     autoMessagesEnabled: true,
     aiRandomReplyEnabled: true,
@@ -143,7 +144,7 @@ function ControlSection({ stats, toast }) {
 
   useEffect(() => {
     if (settings && Object.keys(settings).length > 0) setS(prev => ({ ...prev, ...settings }))
-  }, [stats])
+  }, [settings])
 
   const commands = Array.isArray(stats?.commands) ? stats.commands : []
   const disabledCommands = new Set((Array.isArray(s.disabledCommands) ? s.disabledCommands : []).map(name => String(name).toLowerCase()))
@@ -678,7 +679,7 @@ function ResponsesSection({ toast }) {
 
 // ─── Welcome Section (مُصلحة وكاملة) ─────────────────────────────────────────
 function WelcomeSection({ stats, toast }) {
-  const settings = stats?.botSettings || {}
+  const settings = stats?.botSettings || EMPTY_SETTINGS
   const guildChannels = stats?.guildChannels || []
 
   const [s, setS] = useState({
@@ -699,7 +700,7 @@ function WelcomeSection({ stats, toast }) {
 
   useEffect(() => {
     if (settings && Object.keys(settings).length > 0) setS(prev => ({ ...prev, ...settings }))
-  }, [stats])
+  }, [settings])
 
   const save = async () => {
     if (!s.welcomeGuildId || !s.welcomeChannelId) {
@@ -1035,7 +1036,7 @@ export default function BotOwnerDashboard() {
       } else if (data) {
         setLoadError(data.error || 'تعذر تحميل بيانات البوت.')
       }
-    } catch (error) {
+    } catch {
       setLoadError('تعذر تحميل بيانات البوت. تحقق من الاتصال وحاول مجدداً.')
     } finally {
       if (!silent) setRefreshing(false)
