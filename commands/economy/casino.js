@@ -302,7 +302,6 @@ async function playCrash(message, betAmount) {
             const newBal = db.getUserData(userId).balance;
 
             if (myResult.won > 0) {
-                db.addMoney(userId, myResult.won);
                 db.addTransaction(userId, 'crash_win', myResult.won, `Crash Cashout x${myResult.cashoutAt}`);
             } else {
                 db.addTransaction(userId, 'crash_loss', betAmount, 'Crash Loss');
@@ -356,7 +355,11 @@ async function playRoulette(message, args) {
     const userData = db.getUserData(userId);
 
     const betType = args[0]?.toLowerCase() || 'red';
-    const betAmount = parseInt(args[1]) || 100;
+    const betAmount = args[1] === undefined ? 100 : Number(args[1]);
+
+    if (!Number.isSafeInteger(betAmount) || betAmount <= 0) {
+        return message.reply('❌ يجب أن يكون مبلغ الرهان عدداً صحيحاً موجباً.');
+    }
 
     if ((userData.balance || 0) < betAmount) {
         return message.reply(`❌ رصيدك غير كافٍ!`);
