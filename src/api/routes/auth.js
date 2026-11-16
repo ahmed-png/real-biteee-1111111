@@ -10,6 +10,7 @@
 
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const { randomBytes, timingSafeEqual } = require('crypto');
 const router = express.Router();
 const { resolveRuntimeSecret } = require('../../../utils/runtime-secrets');
 
@@ -23,6 +24,8 @@ const BOT_OWNER_ID = process.env.OWNER_ID;
 const loginAttempts = new Map();
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const MAX_LOGIN_ATTEMPTS = 5;
+const MAX_LOGIN_BUCKETS = 4096;
+const OAUTH_STATE_COOKIE = 'discord_oauth_state';
 
 // Discord OAuth2
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID || '';
@@ -46,6 +49,14 @@ function allowLogin(req) {
     const address = req.ip || req.socket.remoteAddress || 'unknown';
     const current = loginAttempts.get(address);
     if (!current || now - current.startedAt > LOGIN_WINDOW_MS) {
+        if (loginAttempts.size >= MAX_LOGIN_BUCKETS) {
+            for (const [ip, attempt] of loginAttempts) {
+                if (now - attempt.startedAt > LOGIN_WINDOW_MS) loginAttempts.delete(ip);
+            }
+            while (loginAttempts.size >= MAX_LOGIN_BUCKETS) {
+                loginAttempts.delete(loginAttempts.keys().next().value);
+            }
+        }
         loginAttempts.set(address, { startedAt: now, count: 1 });
         return true;
     }
@@ -54,14 +65,31 @@ function allowLogin(req) {
     return true;
 }
 
+function safeEqualStrings(left, right) {
+    const leftBuffer = Buffer.from(left);
+    const rightBuffer = Buffer.from(right);
+    return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function getCookie(req, name) {
+    const cookies = req.headers.cookie || '';
+    const entry = cookies.split(';').map(part => part.trim()).find(part => part.startsWith(`${name}=`));
+    return entry ? entry.slice(name.length + 1) : '';
+}
+
+function setOAuthStateCookie(res, state, maxAge = 600) {
+    const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+    res.setHeader('Set-Cookie', `${OAUTH_STATE_COOKIE}=${state}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`);
+}
+
 function loginWithKey(req, res, includeAdmin = false) {
     if (!allowLogin(req)) {
         return res.status(429).json({ success: false, error: 'Too many login attempts. Try again later.' });
     }
 
-    const key = typeof req.body?.key === 'string' ? req.body.key : '';
+    const key = typeof req.body?.key === 'string' && req.body.key.length <= 256 ? req.body.key : '';
     const dashboardKey = getDashboardKey();
-    if (!dashboardKey || !key || key !== dashboardKey) {
+    if (!dashboardKey || !key || !safeEqualStrings(key, dashboardKey)) {
         return res.status(401).json({ success: false, error: 'Invalid key' });
     }
 
@@ -149,27 +177,36 @@ router.post('/login', (req, res) => {
 // 2. Discord OAuth2 — Server Owner Login
 // ──────────────────────────────────────────────────────────────────────────────
 router.get('/discord', (req, res) => {
-    if (!DISCORD_CLIENT_ID) {
+    if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET) {
         return res.status(500).json({ success: false, error: 'Discord OAuth not configured. Set DISCORD_CLIENT_ID in .env' });
     }
+    const state = randomBytes(32).toString('hex');
+    setOAuthStateCookie(res, state);
     const params = new URLSearchParams({
         client_id: DISCORD_CLIENT_ID,
         redirect_uri: DISCORD_REDIRECT_URI,
         response_type: 'code',
         scope: 'identify guilds',
+        state,
     });
     res.redirect(`https://discord.com/oauth2/authorize?${params}`);
 });
 
 router.get('/discord/callback', async (req, res) => {
     const { code, error } = req.query;
+    const state = typeof req.query.state === 'string' ? req.query.state : '';
+    const expectedState = getCookie(req, OAUTH_STATE_COOKIE);
+    setOAuthStateCookie(res, '', 0);
+
+    if (!/^[a-f0-9]{64}$/i.test(state) || !safeEqualStrings(state, expectedState)) {
+        return res.redirect('/?error=discord_state_invalid');
+    }
 
     if (error) {
         return res.redirect('/?error=discord_denied');
     }
-    if (!code) {
-        // نمرر تفاصيل req.query كرسالة خطأ لنتمكن من التشخيص
-        return res.redirect(`/?error=no_code_received_query_is_${encodeURIComponent(JSON.stringify(req.query))}`);
+    if (typeof code !== 'string' || !code || code.length > 2048) {
+        return res.redirect('/?error=discord_callback_invalid');
     }
 
     try {
@@ -186,14 +223,14 @@ router.get('/discord/callback', async (req, res) => {
             }),
         });
         const tokenData = await tokenRes.json();
-        if (!tokenData.access_token) throw new Error('No access token from Discord');
+        if (!tokenRes.ok || !tokenData.access_token) throw new Error('Discord token exchange failed');
 
         // Get user info
         const userRes = await fetch(`${DISCORD_API}/users/@me`, {
             headers: { Authorization: `Bearer ${tokenData.access_token}` },
         });
         const discordUser = await userRes.json();
-        if (!discordUser.id) throw new Error('Failed to get Discord user');
+        if (!userRes.ok || !discordUser.id) throw new Error('Discord user lookup failed');
 
         // We don't need to fetch the user's guilds from Discord API anymore.
         // We will just check the bot's cache in the /me endpoint to see which guilds they own.
@@ -218,8 +255,8 @@ router.get('/discord/callback', async (req, res) => {
         // Redirect to frontend with token
         res.redirect(`/#token=${encodeURIComponent(jwtToken)}&role=${encodeURIComponent(role)}`);
     } catch (err) {
-        console.error('[Auth] Discord OAuth error:', err.message);
-        res.redirect(`/?error=${encodeURIComponent(err.message)}`);
+        console.error('[Auth] Discord OAuth sign-in failed:', err.message);
+        res.redirect('/?error=discord_login_failed');
     }
 });
 
