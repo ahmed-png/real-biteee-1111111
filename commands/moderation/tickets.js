@@ -6,7 +6,7 @@ const ticketSystem = require('../../utils/ticket-system');
 module.exports = {
     name: 'ticket-panel',
     aliases: ['تكت', 'التكت', 'تكت-اعداد', 'ticket-setup'],
-    description: 'إنشاء أو تحديث لوحة الدعم الفني في القناة الحالية',
+    description: 'إنشاء أو تحديث قناة لوحة الدعم الفني',
     usage: 'تكت',
     permissions: PermissionFlagsBits.ManageGuild,
 
@@ -20,9 +20,9 @@ module.exports = {
         }
 
         try {
-            const result = await ticketSystem.setupTicketPanel(message.guild, message.channel);
+            const result = await ticketSystem.setupTicketPanel(message.guild);
             await message.reply(
-                `✅ تم إعداد نظام التكت. أُرسلت لوحة فتح التكت في ${message.channel}، وستُنشأ التكتات داخل ${result.category}.`
+                `✅ تم إعداد نظام التكت.\nلوحة فتح التكت: ${result.panelChannel}\nقنوات التكت الخاصة: ${result.category}`
             );
         } catch (error) {
             console.error(`[TicketSystem] Failed to set up tickets in guild ${message.guild.id}:`, error);
