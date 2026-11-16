@@ -176,8 +176,13 @@ function LogsSection({ guildId, info, channels, toast, onRefresh }) {
             <div className="badge badge-green" style={{ marginBottom: 14 }}>✅ الحالية: #{info.settings.logChannelName}</div>
           )}
           <p style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 18, lineHeight: 1.8 }}>
-            جميع الأحداث في السيرفر تُسجَّل تلقائياً مع تفاصيل دقيقة ومعرفة المنفذ.
+            تُرسل أحداث السيرفر إلى هذه القناة. تتطلب معرفة منفذ التغييرات الإدارية صلاحية عرض سجل التدقيق.
           </p>
+          {!info?.botStatus?.canViewAuditLog && (
+            <div className="info-box warning" role="status" style={{ marginBottom: 16 }}>
+              البوت لا يملك صلاحية <strong>View Audit Log</strong>؛ ستصل الأحداث الأساسية، لكن قد لا يظهر منفذ بعض التغييرات الإدارية أو تفاصيلها.
+            </div>
+          )}
           <ChannelSelect channels={channels} value={selectedChannel} onChange={setSelectedChannel} label="القناة المخصصة للسجلات" hint="⚠️ البوت يحتاج: View Channel, Send Messages, Embed Links" />
           <button className="btn btn-primary" onClick={save} disabled={loading} style={{ width: '100%' }}>
             {loading ? '⏳ جاري الحفظ...' : '💾 حفظ قناة السجلات'}
@@ -190,21 +195,27 @@ function LogsSection({ guildId, info, channels, toast, onRefresh }) {
             <div className="card-title">ما يُسجَّل تلقائياً</div>
           </div>
           {[
-            { icon: '🚪', label: 'انضمام / مغادرة الأعضاء' },
-            { icon: '🔨', label: 'الطرد والحظر والمحاولات' },
-            { icon: '⚠️', label: 'التحذيرات والعقوبات' },
-            { icon: '🗑️', label: 'حذف الرسائل' },
+            { icon: '🚪', label: 'انضمام ومغادرة الأعضاء' },
+            { icon: '🔨', label: 'الطرد والحظر وإزالة الحظر' },
+            { icon: '🗑️', label: 'حذف الرسائل والرسائل المجمعة' },
             { icon: '✏️', label: 'تعديل الرسائل' },
-            { icon: '🏷️', label: 'تغييرات الأدوار' },
-            { icon: '📁', label: 'تغييرات القنوات' },
-            { icon: '🔇', label: 'الكتم والسجن والرفع' },
-          ].map(lt => (
+            { icon: '🏷️', label: 'تغييرات الرتب وأدوار الأعضاء' },
+            { icon: '📁', label: 'إنشاء القنوات وتعديلها وحذفها' },
+            { icon: '🔊', label: 'الانتقال بين القنوات الصوتية' },
+            { icon: '🧾', label: 'الصلاحيات وWebhooks والمواضيع والفعاليات وAutoMod', requiresAuditLog: true },
+            { icon: '⚙️', label: 'تغييرات إعدادات السيرفر', requiresAuditLog: true },
+          ].map(lt => {
+            const available = !lt.requiresAuditLog || info?.botStatus?.canViewAuditLog
+            return (
             <div key={lt.label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid var(--border2)', fontSize: 13 }}>
               <span style={{ fontSize: 18 }}>{lt.icon}</span>
               <span style={{ flex: 1, color: 'var(--text2)' }}>{lt.label}</span>
-              <span className="badge badge-green" style={{ fontSize: 10 }}>مفعّل</span>
+              <span className={`badge ${available ? 'badge-green' : 'badge-red'}`} style={{ fontSize: 10 }}>
+                {available ? 'مفعّل' : 'صلاحية مطلوبة'}
+              </span>
             </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>
@@ -723,8 +734,18 @@ export default function ServerOwnerDashboard() {
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <RefreshButton busy={refreshing} lastUpdated={lastUpdated} onClick={() => loadInfo()} />
-            <span className="page-badge cyan">🔑 Server Owner</span>
-            <button className="btn btn-outline btn-sm" onClick={() => navigate('/guilds')}>← العودة</button>
+            <span className={`page-badge ${user?.role === 'bot_owner' ? 'gold' : 'cyan'}`}>
+              {user?.role === 'bot_owner' ? '👑 Bot Owner · إدارة السيرفر' : '🔑 Server Owner'}
+            </span>
+            {user?.role === 'bot_owner' ? (
+              <button className="btn btn-outline btn-sm" onClick={() => navigate('/bot-owner')} type="button">
+                👑 إدارة البوت
+              </button>
+            ) : (
+              <button className="btn btn-outline btn-sm" onClick={() => navigate('/guilds')} type="button">
+                ← العودة للسيرفرات
+              </button>
+            )}
           </div>
         </div>
         {loadError && (
