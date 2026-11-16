@@ -217,6 +217,7 @@ function _defaultGuild(guildId) {
         },
         ticketPanelChannelId: null,
         ticketPanelMessageId: null,
+        ticketPanelManaged: false,
         ticketCategoryId: null,
         ticketOpenTickets: {},
         // إعدادات أخرى
