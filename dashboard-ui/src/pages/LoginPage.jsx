@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { apiFetch } from '../auth'
+import { RadarLogo } from '../components/ui'
 
 // ─── Login Page ───────────────────────────────────────────────────────────────
 export default function LoginPage({ onLogin }) {
@@ -42,7 +42,7 @@ export default function LoginPage({ onLogin }) {
   return (
     <div className="login-page">
       <div className="login-box">
-        <div className="login-logo">🤖</div>
+        <div className="login-logo"><RadarLogo /></div>
         <h2 className="login-title">لوحة تحكم البوت</h2>
         <p className="login-subtitle">سجّل الدخول للوصول إلى لوحة التحكم</p>
 
