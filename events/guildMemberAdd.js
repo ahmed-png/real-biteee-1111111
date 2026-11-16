@@ -3,6 +3,7 @@ const welcome = require('../utils/welcome');
 const protection = require('../utils/protection');
 const logger = require('../utils/logger');
 const securityMonitor = require('../utils/security-monitor');
+const autoRole = require('../utils/auto-role');
 
 module.exports = {
     name: Events.GuildMemberAdd,
@@ -10,6 +11,7 @@ module.exports = {
         // 1. فحص البوتات الجديدة
         if (member.user.bot) {
             await securityMonitor.checkSuspiciousBot(member);
+            await autoRole.assignAutoRole(member);
             return; // البوتات لا تحتاج ترحيب
         }
 
@@ -18,12 +20,16 @@ module.exports = {
         if (kicked) return;
 
         // 3. فحص الـ Anti-Raid العام
-        await protection.checkRaid(member);
+        const kickedByRaid = await protection.checkRaid(member);
+        if (kickedByRaid) return;
 
-        // 4. ترحيب
+        // 4. منح الرتبة التلقائية بعد اجتياز فحوصات الحماية
+        await autoRole.assignAutoRole(member);
+
+        // 5. ترحيب
         await welcome.sendWelcome(member);
 
-        // 5. تسجيل
+        // 6. تسجيل
         await logger.logMemberJoin(member);
     },
 };
