@@ -1,18 +1,16 @@
 const express = require('express');
 const db = require('../../../src/database/db');
-const { verifyToken } = require('./auth');
+const { requireBotOwner } = require('./auth');
 const fs = require('fs');
 const path = require('path');
 const router = express.Router();
 
-// Apply auth middleware to all stats routes
-router.use(verifyToken);
+router.use(requireBotOwner);
 
-const logPath = path.join(__dirname, '../../../../logs/bot.log');
+const logPath = path.join(__dirname, '../../../logs/bot.log');
 
 function readDB() {
-    const _dbCache = db.loadDatabase();
-    return { users: _dbCache.users || {}, guilds: _dbCache.guilds || {} };
+    return { users: db.getAllUsers(), guilds: db.getAllGuilds() };
 }
 
 function readLogs(n = 200) {
@@ -24,7 +22,7 @@ function readLogs(n = 200) {
 }
 
 function getCommandStats() {
-    const base = path.join(__dirname, '../../../../commands');
+    const base = path.join(__dirname, '../../../commands');
     const cats = {};
     try {
         for (const cat of fs.readdirSync(base)) {
