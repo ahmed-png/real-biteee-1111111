@@ -2,6 +2,7 @@ const { Events, ActivityType } = require('discord.js');
 const autoTasks = require('../utils/auto-tasks');
 const ghostPing = require('../utils/ghost-ping');
 const logger = require('../utils/logger');
+const autoRole = require('../utils/auto-role');
 
 // ── الأنظمة الاختيارية ─────────────────────────────────────────────────────
 let analytics = null;
@@ -77,6 +78,15 @@ module.exports = {
             console.log('🤖 [AutoTasks] المهام التلقائية مفعّلة');
         } catch (err) {
             console.error('[AutoTasks] خطأ:', err.message);
+        }
+
+        try {
+            const resumedBackfills = autoRole.resumeInterruptedBackfills(client);
+            if (resumedBackfills > 0) {
+                console.log(`[AutoRole] استئناف فحص الأعضاء في ${resumedBackfills} سيرفر`);
+            }
+        } catch (err) {
+            console.error('[AutoRole] تعذر استئناف فحص الأعضاء:', err);
         }
 
         // ─── المنشن الوهمي ──────────────────────────────────────────
