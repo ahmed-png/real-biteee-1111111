@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 
 function Dashboard({ token, onLogout }) {
   const [stats, setStats] = useState(null)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('overview')
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const res = await fetch('/api/stats', {
         headers: {
@@ -20,16 +20,16 @@ function Dashboard({ token, onLogout }) {
         setError(data.error)
         if (res.status === 401) onLogout() // Token expired
       }
-    } catch (err) {
+    } catch {
       setError('Connection error')
     }
-  }
+  }, [token, onLogout])
 
   useEffect(() => {
     fetchStats()
     const interval = setInterval(fetchStats, 10000)
     return () => clearInterval(interval)
-  }, [token])
+  }, [fetchStats])
 
   const submitControl = async (endpoint, payload, successMsg) => {
     try {
@@ -47,7 +47,7 @@ function Dashboard({ token, onLogout }) {
       } else {
         alert('❌ خطأ: ' + (data.error || 'حدث خطأ'))
       }
-    } catch (err) {
+    } catch {
       alert('❌ خطأ في الاتصال بالخادم')
     }
   }
@@ -190,8 +190,8 @@ function Dashboard({ token, onLogout }) {
                 }}>
                   <div className="input-box">
                     <label>اختر الأمر</label>
-                    <select name="command" required>
-                      <option value="" disabled selected>-- اختر أمراً --</option>
+                    <select name="command" required defaultValue="">
+                      <option value="" disabled>-- اختر أمراً --</option>
                       {Object.values(stats.cmdStats).flat().map(c => {
                         const cmdName = c.replace('.js', '')
                         return <option key={cmdName} value={cmdName}>{cmdName}</option>
