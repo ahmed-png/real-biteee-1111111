@@ -188,6 +188,11 @@ async function _handleSelectMenu(interaction) {
 async function _handleButton(interaction) {
     const id = interaction.customId;
 
+    // 🎫 Ticket system
+    if (id.startsWith('ticket_')) {
+        return _require('../utils/ticket-system')?.handleTicketInteraction(interaction);
+    }
+
     // 🏠 Room Creator
     if (id.startsWith('room_') || id.startsWith('quickroom_')) {
         return _require('../commands/moderation/room-creator')?.handleRoomInteraction(interaction);
