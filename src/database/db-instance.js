@@ -4,28 +4,35 @@
  * نقطة وصول واحدة لكائن MongoDB (Mongoose)
  */
 const mongoose = require('mongoose');
-const { get } = require('../../utils/bot-settings');
 
 let _isConnected = false;
 
 async function connectDb() {
-    if (_isConnected) return;
+    if (_isConnected && mongoose.connection.readyState === 1) return true;
+    _isConnected = false;
     
     // استخدام MONGODB_URI من البيئة
     const uri = process.env.MONGODB_URI;
     if (!uri) {
-        console.error('[DB] ❌ FATAL: MONGODB_URI is not set in .env');
-        process.exit(1);
+        const error = new Error('MONGODB_URI is not configured.');
+        if (process.env.NODE_ENV === 'production') throw error;
+        console.warn('[DB] ⚠️ MONGODB_URI غير مضبوط — سيتم استخدام تخزين الذاكرة في بيئة التطوير.');
+        return false;
     }
 
     try {
         await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
         _isConnected = true;
         console.log('[DB] ✅ Connected to MongoDB Atlas');
+        return true;
     } catch (err) {
+        if (process.env.NODE_ENV === 'production') {
+            throw new Error(`MongoDB connection failed: ${err.message}`, { cause: err });
+        }
         console.warn('[DB] ⚠️ فشل الاتصال بقاعدة MongoDB Atlas:', err.message);
-        console.warn('[DB] ⚡ سيتم تشغيل البوت محلياً (وضع الذاكرة المؤقتة In-Memory Cache) بدون إيقاف البوت.');
+        console.warn('[DB] ⚡ سيتم استخدام تخزين الذاكرة في بيئة التطوير.');
         _isConnected = false;
+        return false;
     }
 }
 
