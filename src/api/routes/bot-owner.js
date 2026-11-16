@@ -12,7 +12,7 @@ const { ChannelType, PermissionsBitField } = require('discord.js');
 const express = require('express');
 const { requireBotOwner } = require('./auth');
 const dConf = require('../../../utils/dashboard-config');
-const botSettings = require('../../database/bot-settings-db');
+const botSettings = require('../../../utils/bot-settings');
 const db = require('../../database/db');
 const fs = require('fs');
 const path = require('path');
@@ -38,6 +38,19 @@ router.get('/stats', async (req, res) => {
         }
     } catch {}
     const totalCmds = Object.values(cmdStats).reduce((s, v) => s + v.length, 0);
+    const storedDisabledCommands = botSettings.get('disabledCommands');
+    const disabledCommands = new Set(
+        (Array.isArray(storedDisabledCommands) ? storedDisabledCommands : []).map(name => String(name).toLowerCase())
+    );
+    const commands = client?.commands
+        ? [...client.commands.values()].map(command => ({
+            name: command.name,
+            aliases: Array.isArray(command.aliases) ? command.aliases : [],
+            description: typeof command.description === 'string' ? command.description : '',
+            ownerOnly: Boolean(command.ownerOnly),
+            disabled: disabledCommands.has(command.name.toLowerCase()),
+        }))
+        : [];
 
     // Leaderboard
     const topUsers = db.getLeaderboard ? db.getLeaderboard('balance', 10).map(u => ({
@@ -108,6 +121,7 @@ router.get('/stats', async (req, res) => {
         stats: {
             totalCmds,
             cmdStats,
+            commands,
             topUsers,
             discordGuilds: fullGuilds.length,
             discordUsers: client?.users?.cache?.size ?? 0,
@@ -236,11 +250,23 @@ router.post('/economy', (req, res) => {
 // ──────────────────────────────────────────────────────────────────────────────
 router.post('/command', (req, res) => {
     const { command, action } = req.body;
-    if (!command || !action) return res.status(400).json({ success: false, error: 'Missing data' });
-    if (action === 'disable') botSettings.disableCommand(command);
-    else if (action === 'enable') botSettings.enableCommand(command);
-    else return res.status(400).json({ success: false, error: 'Invalid action' });
-    res.json({ success: true });
+    if (typeof command !== 'string' || !command.trim() || !action) {
+        return res.status(400).json({ success: false, error: 'Missing data' });
+    }
+    if (action !== 'disable' && action !== 'enable') {
+        return res.status(400).json({ success: false, error: 'Invalid action' });
+    }
+
+    const client = req.app.get('client');
+    if (!client?.commands) return res.status(503).json({ success: false, error: 'Command registry unavailable' });
+    const normalizedCommand = command.trim().toLowerCase();
+    if (!client.commands.has(normalizedCommand)) {
+        return res.status(404).json({ success: false, error: 'Command not found' });
+    }
+
+    if (action === 'disable') botSettings.disableCommand(normalizedCommand);
+    else botSettings.enableCommand(normalizedCommand);
+    res.json({ success: true, command: normalizedCommand, disabled: action === 'disable' });
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
