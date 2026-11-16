@@ -26,8 +26,48 @@ export function ToastContainer({ toasts }) {
   )
 }
 
+export function RadarLogo({ className = '' }) {
+  return (
+    <svg
+      className={`radar-logo-mark ${className}`}
+      viewBox="0 0 64 64"
+      role="img"
+      aria-label="رادار البوت"
+    >
+      <circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" strokeOpacity=".24" strokeWidth="1.5" />
+      <circle cx="32" cy="32" r="19" fill="none" stroke="currentColor" strokeOpacity=".2" strokeWidth="1" />
+      <circle cx="32" cy="32" r="9" fill="none" stroke="currentColor" strokeOpacity=".2" strokeWidth="1" />
+      <path d="M4 32h56M32 4v56" stroke="currentColor" strokeOpacity=".14" strokeWidth="1" />
+      <g className="radar-sweep">
+        <path d="M32 32V4a28 28 0 0 1 24 14L32 32Z" fill="currentColor" fillOpacity=".22" />
+        <path d="M32 32 56 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </g>
+      <circle className="radar-target radar-target-one" cx="44" cy="25" r="2.5" fill="currentColor" />
+      <circle className="radar-target radar-target-two" cx="21" cy="42" r="2" fill="currentColor" />
+      <circle cx="32" cy="32" r="3" fill="currentColor" />
+    </svg>
+  )
+}
+
+export function RefreshButton({ busy, lastUpdated, onClick }) {
+  return (
+    <div className="dashboard-refresh">
+      <span className="dashboard-refresh-time">
+        {lastUpdated
+          ? `آخر تحديث ${lastUpdated.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}`
+          : 'لم يتم التحديث بعد'}
+      </span>
+      <button className="btn btn-outline btn-sm" onClick={onClick} disabled={busy} type="button">
+        <span aria-hidden="true">{busy ? '◌' : '↻'}</span>
+        {busy ? 'جاري التحديث' : 'تحديث البيانات'}
+      </button>
+    </div>
+  )
+}
+
 // ─── Sidebar Component ─────────────────────────────────────────────────────────
 export function Sidebar({ activeSection, onSection, role, user, onLogout, selectedGuild }) {
+  const [mobileOpen, setMobileOpen] = useState(false)
   const isBotOwner = role === 'bot_owner'
 
   const botOwnerMenu = [
@@ -55,9 +95,27 @@ export function Sidebar({ activeSection, onSection, role, user, onLogout, select
   const menu = isBotOwner ? botOwnerMenu : serverOwnerMenu
 
   return (
-    <aside className="sidebar">
+    <>
+      <button
+        className="mobile-menu-toggle"
+        type="button"
+        aria-label={mobileOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
+        aria-expanded={mobileOpen}
+        onClick={() => setMobileOpen(open => !open)}
+      >
+        {mobileOpen ? '×' : '☰'}
+      </button>
+      {mobileOpen && (
+        <button
+          className="sidebar-backdrop"
+          type="button"
+          aria-label="إغلاق القائمة"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+      <aside className={`sidebar${mobileOpen ? ' sidebar-open' : ''}`}>
       <div className="sidebar-header">
-        <div className="sidebar-logo">🤖</div>
+        <div className="sidebar-logo"><RadarLogo /></div>
         <div>
           <div className="sidebar-title">لوحة التحكم</div>
           <div className="sidebar-subtitle">{isBotOwner ? 'Bot Owner' : selectedGuild?.name || 'Server Owner'}</div>
@@ -71,7 +129,8 @@ export function Sidebar({ activeSection, onSection, role, user, onLogout, select
             <button
               key={item.id}
               className={`sidebar-item${activeSection === item.id ? ' active' : ''}`}
-              onClick={() => onSection(item.id)}
+              aria-current={activeSection === item.id ? 'page' : undefined}
+              onClick={() => { onSection(item.id); setMobileOpen(false) }}
             >
               <span className="si-icon">{item.icon}</span>
               {item.label}
@@ -81,11 +140,11 @@ export function Sidebar({ activeSection, onSection, role, user, onLogout, select
 
         <div className="sidebar-section">
           <div className="sidebar-section-label">روابط</div>
-          <a href="/store" className="sidebar-item">
+          <a href="/store" className="sidebar-item" onClick={() => setMobileOpen(false)}>
             <span className="si-icon">🛒</span>
             المتجر
           </a>
-          <a href="/auction" className="sidebar-item">
+          <a href="/auction" className="sidebar-item" onClick={() => setMobileOpen(false)}>
             <span className="si-icon">🏛️</span>
             المزاد
           </a>
@@ -104,12 +163,13 @@ export function Sidebar({ activeSection, onSection, role, user, onLogout, select
               {isBotOwner ? '👑 Bot Owner' : '🔑 Server Owner'}
             </div>
           </div>
-          <button onClick={onLogout} title="تسجيل خروج" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: 'var(--muted)' }}>
+          <button onClick={onLogout} title="تسجيل خروج" aria-label="تسجيل خروج" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: 'var(--muted)' }}>
             🚪
           </button>
         </div>
       </div>
-    </aside>
+      </aside>
+    </>
   )
 }
 
