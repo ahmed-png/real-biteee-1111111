@@ -16,6 +16,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 
@@ -70,6 +71,7 @@ app.use('/games', express.static(gamesPath));
 
 // ─── Serve Vite Frontend ───────────────────────────────────────────────────────
 const distPath = path.join(__dirname, '../../dashboard-ui/dist');
+const dashboardEntryPath = path.join(distPath, 'index.html');
 app.use(express.static(distPath));
 
 // SPA Fallback — React Router يتولى الـ routing في الـ client side
@@ -78,7 +80,11 @@ app.use((req, res) => {
     if (req.path.startsWith('/api/') || req.path.startsWith('/auth/') || req.path.startsWith('/games/')) {
         return res.status(404).json({ success: false, error: 'Not found' });
     }
-    res.sendFile(path.join(distPath, 'index.html'));
+    if (!fs.existsSync(dashboardEntryPath)) {
+        console.error(`[Dashboard] Frontend build is missing: ${dashboardEntryPath}. Run "npm run build:dashboard".`);
+        return res.status(503).type('text/plain').send('Dashboard frontend is not built. Rebuild the service to restore it.');
+    }
+    return res.sendFile(dashboardEntryPath);
 });
 
 module.exports = app;
