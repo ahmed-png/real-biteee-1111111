@@ -6,6 +6,24 @@ const { sendPunishmentToChannel } = require('./punishments');
 const channelResolver = require('./channel-resolver');
 const botSettings = require('./bot-settings');
 
+function getProtectionSettings(guildId, key, defaultEnabled, legacyFlag) {
+    const guildData = db.getGuildData(guildId);
+    const saved = guildData.protectionSettings?.[key] || {};
+    return {
+        ...saved,
+        enabled: typeof saved.enabled === 'boolean'
+            ? saved.enabled
+            : legacyFlag && typeof guildData[legacyFlag] === 'boolean'
+                ? guildData[legacyFlag]
+                : defaultEnabled,
+    };
+}
+
+function getBoundedNumber(settings, key, fallback, min, max) {
+    const value = Number(settings[key]);
+    return Number.isInteger(value) ? Math.min(max, Math.max(min, value)) : fallback;
+}
+
 // نظام Anti-Spam
 const spamMap = new Map();
 const SPAM_THRESHOLD = 18; // عدد الرسائل
@@ -16,7 +34,12 @@ async function checkSpam(message) {
     if (!message.guild) return false; // تجاهل الرسائل الخاصة
     if (!message.member || message.member.permissions.has(PermissionFlagsBits.Administrator)) return false;
 
-    const userId = message.author.id;
+    const settings = getProtectionSettings(message.guild.id, 'antiSpam', true, 'antiSpamEnabled');
+    if (!settings.enabled) return false;
+
+    const userId = `${message.guild.id}:${message.author.id}`;
+    const threshold = getBoundedNumber(settings, 'threshold', SPAM_THRESHOLD, 3, 100);
+    const duration = getBoundedNumber(settings, 'duration', 5, 1, 1440);
     const now = Date.now();
 
     if (!spamMap.has(userId)) {
@@ -30,23 +53,22 @@ async function checkSpam(message) {
     const recentMessages = userMessages.filter(time => now - time < SPAM_TIME);
     spamMap.set(userId, recentMessages);
 
-    if (recentMessages.length >= SPAM_THRESHOLD) {
+    if (recentMessages.length >= threshold) {
         // اكتشاف سبام!
         try {
             await message.delete();
 
-            const warning = await message.channel.send(`⚠️ ${message.author} يخوي وقفت! مو راح تنفعك هذي. تم كتم صوتك 5 دقايق 🔇`);
+            const warning = await message.channel.send(`⚠️ ${message.author} تم رصد رسائل متكررة بسرعة، وتم إيقافك مؤقتاً لمدة ${duration} دقيقة.`);
             setTimeout(() => warning.delete().catch(() => { }), 5000);
 
-            // إعطاء تايم أوت 5 دقائق
-            await message.member.timeout(5 * 60 * 1000, 'Spam detection');
+            await message.member.timeout(duration * 60 * 1000, 'Spam detection');
 
             // لوق الحماية
             logProtection(message.guild, {
                 type: 'Anti-Spam',
                 user: message.author,
-                action: 'Timeout 5 minutes',
-                reason: 'Sending too many messages quickly'
+                action: `Timeout ${duration} minutes`,
+                reason: `Sending ${recentMessages.length} messages in ${SPAM_TIME / 1000} seconds`
             });
 
             spamMap.delete(userId);
@@ -79,6 +101,7 @@ async function checkBadWords(message) {
     if (message.author.bot) return false;
     if (!message.guild) return false; // تجاهل الرسائل الخاصة
     if (!message.member || message.member.permissions.has(PermissionFlagsBits.Administrator)) return false;
+    if (!getProtectionSettings(message.guild.id, 'antiBadWords', true).enabled) return false;
 
     const content = message.content.toLowerCase();
     const normalizedContent = content.replace(/[ًٌٍَُِّْ]/g, '');
@@ -146,6 +169,9 @@ const RAID_TIME = 10000; // في 10 ثوان
 
 async function checkRaid(member) {
     const guildId = member.guild.id;
+    const settings = getProtectionSettings(guildId, 'antiRaid', true, 'antiRaidEnabled');
+    if (!settings.enabled) return false;
+    const threshold = getBoundedNumber(settings, 'threshold', RAID_THRESHOLD, 2, 100);
     const now = Date.now();
 
     if (!joinMap.has(guildId)) {
@@ -159,7 +185,7 @@ async function checkRaid(member) {
     const recentJoins = joins.filter(time => now - time < RAID_TIME);
     joinMap.set(guildId, recentJoins);
 
-    if (recentJoins.length >= RAID_THRESHOLD) {
+    if (recentJoins.length >= threshold) {
         // اكتشاف raid!
         try {
             // طرد العضو
@@ -187,6 +213,7 @@ async function checkLinks(message) {
     if (message.author.bot) return false;
     if (!message.guild) return false;
     if (!message.member || message.member.permissions.has(PermissionFlagsBits.Administrator)) return false;
+    if (!getProtectionSettings(message.guild.id, 'antiLink', false, 'antiLinkEnabled').enabled) return false;
 
     const linkPatterns = [
         /discord\.gg\/\w+/gi,
@@ -224,6 +251,8 @@ async function checkCaps(message) {
     if (message.author.bot) return false;
     if (!message.guild) return false;
     if (!message.member || message.member.permissions.has(PermissionFlagsBits.Administrator)) return false;
+    const settings = getProtectionSettings(message.guild.id, 'antiCaps', true, 'antiCapsEnabled');
+    if (!settings.enabled) return false;
     if (message.content.length < 10) return false;
 
     const capsCount = (message.content.match(/[A-Z]/g) || []).length;
@@ -232,7 +261,8 @@ async function checkCaps(message) {
     if (totalLetters > 0) {
         const capsPercentage = (capsCount / totalLetters) * 100;
 
-        if (capsPercentage > 70) {
+        const threshold = getBoundedNumber(settings, 'threshold', 70, 50, 100);
+        if (capsPercentage > threshold) {
             try {
                 await message.delete();
 
@@ -261,10 +291,13 @@ async function checkMentionSpam(message) {
     if (message.author.bot) return false;
     if (!message.guild) return false;
     if (!message.member || message.member.permissions.has(PermissionFlagsBits.Administrator)) return false;
+    const settings = getProtectionSettings(message.guild.id, 'antiMentionSpam', true);
+    if (!settings.enabled) return false;
 
     const mentions = message.mentions.users.size + message.mentions.roles.size;
+    const threshold = getBoundedNumber(settings, 'threshold', 5, 2, 100);
 
-    if (mentions >= 5) {
+    if (mentions >= threshold) {
         try {
             await message.delete();
 
@@ -295,10 +328,13 @@ async function checkEmojiSpam(message) {
     if (message.author.bot) return false;
     if (!message.guild) return false;
     if (!message.member || message.member.permissions.has(PermissionFlagsBits.Administrator)) return false;
+    const settings = getProtectionSettings(message.guild.id, 'antiEmojiSpam', true);
+    if (!settings.enabled) return false;
 
     const emojiCount = (message.content.match(/<a?:\w+:\d+>|[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}]/gu) || []).length;
+    const threshold = getBoundedNumber(settings, 'threshold', 10, 2, 100);
 
-    if (emojiCount >= 10) {
+    if (emojiCount >= threshold) {
         try {
             await message.delete();
 
@@ -406,8 +442,11 @@ _cleanup.unref?.();
 async function checkDuplicateMessages(message) {
     if (!message.guild) return false;
     if (!message.member || message.member.permissions.has(PermissionFlagsBits.Administrator)) return false;
+    const settings = getProtectionSettings(message.guild.id, 'antiDuplicate', true);
+    if (!settings.enabled) return false;
 
-    const userId = message.author.id;
+    const userId = `${message.guild.id}:${message.author.id}`;
+    const threshold = getBoundedNumber(settings, 'threshold', 3, 2, 20);
     const messageContent = message.content.toLowerCase().trim();
 
     // تجاهل الرسائل القصيرة جداً
@@ -423,9 +462,9 @@ async function checkDuplicateMessages(message) {
     const recentMessages = history.filter(msg => now - msg.time < 60000);
     userMessageHistory.set(userId, recentMessages);
 
-    const duplicateCount = recentMessages.filter(msg => msg.content === messageContent).length;
+    const duplicateCount = recentMessages.filter(msg => msg.content === messageContent).length + 1;
 
-    if (duplicateCount >= 3) {
+    if (duplicateCount >= threshold) {
         try {
             await message.delete();
             await message.member.timeout(5 * 60 * 1000, 'Duplicate messages');
@@ -453,22 +492,25 @@ async function checkDuplicateMessages(message) {
 // 2. Account Age Filter - فلتر عمر الحساب
 async function checkAccountAge(member) {
     if (botSettings.get('antiRaidAccountAgeEnabled') === false) return false;
+    const settings = getProtectionSettings(member.guild.id, 'antiAccountAge', true);
+    if (!settings.enabled) return false;
 
-    const minAccountAge = 7 * 24 * 60 * 60 * 1000; // 7 أيام
+    const minDays = getBoundedNumber(settings, 'minDays', 7, 1, 365);
+    const minAccountAge = minDays * 24 * 60 * 60 * 1000;
     const accountAge = Date.now() - member.user.createdTimestamp;
 
     if (accountAge < minAccountAge) {
         const daysOld = Math.floor(accountAge / (24 * 60 * 60 * 1000));
 
         try {
-            await member.send(`⚠️ حسابك جديد جداً (${daysOld} يوم). الحد الأدنى: 7 أيام.`);
+            await member.send(`⚠️ حسابك جديد جداً (${daysOld} يوم). الحد الأدنى: ${minDays} أيام.`);
             await member.kick('New account protection');
 
             logProtection(member.guild, {
                 type: 'Anti-Raid (Account Age)',
                 user: member.user,
                 action: 'Kick',
-                reason: `Account age: ${daysOld} days (Min: 7 days)`
+                reason: `Account age: ${daysOld} days (Min: ${minDays} days)`
             });
 
             return true;
