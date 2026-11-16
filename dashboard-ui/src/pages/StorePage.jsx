@@ -162,7 +162,7 @@ function AuctionPage({ toast, userBalance, onBalanceUpdate }) {
       if (res.userBalance !== undefined) onBalanceUpdate(res.userBalance)
     }
     setLoading(false)
-  }, [])
+  }, [onBalanceUpdate])
 
   useEffect(() => {
     load()
