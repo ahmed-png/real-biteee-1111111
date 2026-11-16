@@ -17,6 +17,7 @@ test.beforeEach(() => {
     guildData = {
         ticketPanelChannelId: '456789012345678901',
         ticketPanelMessageId: '567890123456789012',
+        ticketPanelManaged: true,
         ticketCategoryId: '678901234567890123',
         ticketOpenTickets: {
             [ownerId]: { channelId, acceptedBy: null, createdAt: 1 },
@@ -44,6 +45,68 @@ test('ticket panel has an open-ticket button and private-support instructions', 
 test('only administrators and server managers can accept tickets', () => {
     assert.equal(tickets.isTicketStaff({ permissions: { has: bit => bit === PermissionFlagsBits.ManageGuild } }), true);
     assert.equal(tickets.isTicketStaff({ permissions: { has: () => false } }), false);
+});
+
+test('ticket setup creates a dedicated read-only panel channel instead of using the command channel', async () => {
+    guildData = {
+        ticketPanelChannelId: null,
+        ticketPanelMessageId: null,
+        ticketPanelManaged: false,
+        ticketCategoryId: null,
+        ticketOpenTickets: {},
+    };
+    const categoryId = '678901234567890124';
+    const panelId = '678901234567890125';
+    const writableRoleId = '678901234567890126';
+    const category = { id: categoryId, type: ChannelType.GuildCategory, toString: () => `<#${categoryId}>` };
+    const panelChannel = {
+        id: panelId,
+        type: ChannelType.GuildText,
+        toString: () => `<#${panelId}>`,
+        messages: { fetch: async () => null },
+        send: async () => ({ id: '678901234567890127' }),
+    };
+    const channels = new Collection();
+    const roles = new Collection([[
+        writableRoleId,
+        {
+            id: writableRoleId,
+            managed: false,
+            permissions: { has: bit => bit === PermissionFlagsBits.SendMessages },
+        },
+    ]]);
+    const createOptions = [];
+    const guild = {
+        id: guildId,
+        members: {
+            me: { id: '789012345678901234', permissions: { has: bit => bit === PermissionFlagsBits.ManageChannels } },
+        },
+        roles: { cache: roles },
+        channels: {
+            cache: channels,
+            create: async options => {
+                createOptions.push(options);
+                const created = options.type === ChannelType.GuildCategory ? category : panelChannel;
+                channels.set(created.id, created);
+                return created;
+            },
+        },
+    };
+
+    const result = await tickets.setupTicketPanel(guild);
+
+    assert.equal(createOptions.length, 2);
+    assert.equal(createOptions[0].type, ChannelType.GuildCategory);
+    assert.equal(createOptions[1].type, ChannelType.GuildText);
+    assert.equal(createOptions[1].name, '🎫・الدعم-الفني');
+    assert.equal(createOptions[1].permissionOverwrites[0].id, guildId);
+    assert.ok(createOptions[1].permissionOverwrites[0].deny.includes(PermissionFlagsBits.SendMessages));
+    assert.ok(createOptions[1].permissionOverwrites.some(overwrite =>
+        overwrite.id === writableRoleId && overwrite.deny.includes(PermissionFlagsBits.SendMessages)
+    ));
+    assert.equal(result.panelChannel, panelChannel);
+    assert.equal(guildData.ticketPanelChannelId, panelId);
+    assert.equal(guildData.ticketPanelManaged, true);
 });
 
 test('opening a ticket creates a private room and prevents duplicate open tickets', async () => {
@@ -136,13 +199,28 @@ test('ticket acceptance records the moderator and announces the acceptance in th
 test('ticket close deletes the room and clears the open-ticket record', async () => {
     let deleted = false;
     let reply;
+    const permissionEdits = [];
+    const staffRoleId = '678901234567890128';
     const interaction = {
         customId: 'ticket_close',
         guild: { id: guildId },
         channelId,
         member: { permissions: { has: () => false } },
         user: { id: ownerId, tag: 'Member#0001' },
-        channel: { delete: async () => { deleted = true; } },
+        channel: {
+            permissionOverwrites: {
+                cache: new Collection([
+                    [guildId, { id: guildId, allow: { has: () => false } }],
+                    [ownerId, { id: ownerId, allow: { has: () => true } }],
+                    [staffRoleId, {
+                        id: staffRoleId,
+                        allow: { has: bit => bit === PermissionFlagsBits.SendMessages },
+                    }],
+                ]),
+                edit: async (id, permissions) => permissionEdits.push({ id, permissions }),
+            },
+            delete: async () => { deleted = true; },
+        },
         deferReply: async () => {},
         editReply: async content => { reply = content; },
         reply: async message => { throw new Error(`Unexpected reply: ${message.content}`); },
@@ -152,5 +230,8 @@ test('ticket close deletes the room and clears the open-ticket record', async ()
 
     assert.equal(deleted, true);
     assert.equal(guildData.ticketOpenTickets[ownerId], undefined);
+    assert.ok(permissionEdits.some(edit => edit.id === guildId && edit.permissions.SendMessages === false));
+    assert.ok(permissionEdits.some(edit => edit.id === ownerId && edit.permissions.SendMessages === false));
+    assert.ok(permissionEdits.some(edit => edit.id === staffRoleId && edit.permissions.SendMessages === false));
     assert.match(reply, /تم حذف الروم المؤقت/);
 });
