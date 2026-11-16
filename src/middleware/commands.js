@@ -46,6 +46,32 @@ function _resolveCommand(tokens, client) {
     return { command: null, wordCount: 0 };
 }
 
+async function _canExecuteCommand(message, command) {
+    const botSettings = require('../../utils/bot-settings');
+    const owner = isOwner(message.author.id);
+
+    if (botSettings.isCommandDisabled(command.name) && !owner) {
+        await message.reply('⛔ هذا الأمر معطل حالياً من قِبل الإدارة.').catch(() => {});
+        return false;
+    }
+
+    if (command.ownerOnly && !owner) {
+        await message.reply('❌ هذا الأمر للمالك فقط!').catch(() => {});
+        return false;
+    }
+
+    if (command.permissions) {
+        if (!message.member || (!owner && !(Array.isArray(command.permissions)
+            ? command.permissions.every(permission => message.member.permissions.has(permission))
+            : message.member.permissions.has(command.permissions)))) {
+            await message.reply('❌ ليس لديك صلاحية لاستخدام هذا الأمر!').catch(() => {});
+            return false;
+        }
+    }
+
+    return true;
+}
+
 module.exports = async function commandsMiddleware(message) {
     const content = message.content.trim();
     const lowMsg = content.toLowerCase().trim();
@@ -55,6 +81,7 @@ module.exports = async function commandsMiddleware(message) {
     if (NUKE_CLAN_TRIGGERS.some(t => lowMsg === t || lowMsg.startsWith(t + ' '))) {
         try {
             const nukeClanCmd = require('../../commands/social/nuke-clans');
+            if (!await _canExecuteCommand(message, nukeClanCmd)) return false;
             await nukeClanCmd.execute(message);
         } catch (e) { console.error('[NukeClans]', e.message); }
         return false;
@@ -64,6 +91,7 @@ module.exports = async function commandsMiddleware(message) {
     if (CLAN_TRIGGERS.some(t => lowMsg === t || lowMsg.startsWith(t + ' '))) {
         try {
             const clansCmd = require('../../commands/social/clans');
+            if (!await _canExecuteCommand(message, clansCmd)) return false;
             const clanArgs = content.trim().split(/ +/).slice(1);
             if (lowMsg.startsWith('تفعيل كلان') || lowMsg.startsWith('تفعيل-كلان')) {
                 await clansCmd.execute(message, ['setup']);
@@ -79,6 +107,7 @@ module.exports = async function commandsMiddleware(message) {
     if (setupAction === 'reset-server') {
         try {
             const serverSetup = require('../../commands/moderation/server-setup');
+            if (!await _canExecuteCommand(message, serverSetup)) return false;
             await serverSetup.execute(message, [], { isReset: true });
         } catch (e) { console.error('[ResetServer]', e.message); }
         return false;
@@ -87,6 +116,7 @@ module.exports = async function commandsMiddleware(message) {
     if (setupAction === 'server') {
         try {
             const serverSetup = require('../../commands/moderation/server-setup');
+            if (!await _canExecuteCommand(message, serverSetup)) return false;
             await serverSetup.execute(message, []);
         } catch (e) { console.error('[ServerSetup]', e.message); }
         return false;
@@ -95,6 +125,7 @@ module.exports = async function commandsMiddleware(message) {
     if (setupAction === 'roles') {
         try {
             const setupCmd = require('../../commands/moderation/setup');
+            if (!await _canExecuteCommand(message, setupCmd)) return false;
             await setupCmd.execute(message, []);
         } catch (e) { console.error('[Setup]', e.message); }
         return false;
@@ -104,6 +135,7 @@ module.exports = async function commandsMiddleware(message) {
     if (ROOM_COMMANDS.some(cmd => lowMsg === cmd || lowMsg.startsWith(cmd + ' '))) {
         try {
             const roomCreator = require('../../commands/moderation/room-creator');
+            if (!await _canExecuteCommand(message, roomCreator)) return false;
             const roomArgs = content.split(/ +/).slice(lowMsg.startsWith('غرفة جديدة') ? 2 : 1);
             await roomCreator.execute(message, roomArgs);
         } catch (e) { console.error('[RoomCreator]', e.message); }
@@ -114,6 +146,7 @@ module.exports = async function commandsMiddleware(message) {
     if (POLL_PREFIXES.some(p => lowMsg.startsWith(p))) {
         try {
             const pollCmd = require('../../commands/social/poll');
+            if (!await _canExecuteCommand(message, pollCmd)) return false;
             const pollArgs = content.split(/ +/).slice(1);
             await pollCmd.execute(message, pollArgs);
         } catch (e) { console.error('[Poll]', e.message); }
@@ -127,6 +160,7 @@ module.exports = async function commandsMiddleware(message) {
         } else if (message.mentions.users.size > 0) {
             try {
                 const repCmd = require('../../commands/social/reputation');
+                if (!await _canExecuteCommand(message, repCmd)) return false;
                 const repArgs = content.split(/ +/).slice(1);
                 await repCmd.execute(message, repArgs);
             } catch (e) { console.error('[Reputation]', e.message); }
@@ -138,6 +172,7 @@ module.exports = async function commandsMiddleware(message) {
     if (lowMsg === 'تحديات' || lowMsg === 'تحدياتي' || lowMsg === 'challenges') {
         try {
             const challengesCmd = require('../../commands/main/challenges');
+            if (!await _canExecuteCommand(message, challengesCmd)) return false;
             await challengesCmd.execute(message, []);
         } catch (e) { console.error('[Challenges]', e.message); }
         return false;
@@ -147,6 +182,7 @@ module.exports = async function commandsMiddleware(message) {
     if (lowMsg.startsWith('قول ') || lowMsg.startsWith('قل ')) {
         const sayCmd = message.client.commands.get('say');
         if (sayCmd) {
+            if (!await _canExecuteCommand(message, sayCmd)) return false;
             const sayArgs = content.trim().split(/ +/).slice(1);
             await sayCmd.execute(message, sayArgs);
             return false;
@@ -169,21 +205,24 @@ module.exports = async function commandsMiddleware(message) {
 
         if (musicCmd) {
             let musicHandled = false;
+            let musicArgs = [];
             const cmdToken = tokens[0].toLowerCase();
             for (const mc of MUSIC_CMDS_MULTI) {
                 if (lowMsg.startsWith(mc)) {
-                    const musicArgs = content.slice(mc.length).trim().split(/ +/);
-                    await musicCmd.execute(message, musicArgs);
+                    musicArgs = content.slice(mc.length).trim().split(/ +/);
                     musicHandled = true;
                     break;
                 }
             }
             if (!musicHandled && MUSIC_CMDS.includes(cmdToken)) {
-                const musicArgs = tokens.slice(1);
-                await musicCmd.execute(message, musicArgs);
+                musicArgs = tokens.slice(1);
                 musicHandled = true;
             }
-            if (musicHandled) return false;
+            if (musicHandled) {
+                if (!await _canExecuteCommand(message, musicCmd)) return false;
+                await musicCmd.execute(message, musicArgs);
+                return false;
+            }
         }
 
         const { command: found, wordCount } = _resolveCommand(tokens, message.client);
@@ -197,25 +236,7 @@ module.exports = async function commandsMiddleware(message) {
     if (isCommand) {
         const command = _lookupCommand(commandName, message.client);
         if (command) {
-            const botSettings = require('../../utils/bot-settings');
-            if (botSettings.isCommandDisabled(command.name)) {
-                if (message.author.id !== config.ownerId) {
-                    message.reply('⛔ هذا الأمر معطل حالياً من قِبل الإدارة.').catch(() => {});
-                    return false;
-                }
-            }
-
-            if (command.ownerOnly && message.author.id !== config.ownerId) {
-                message.reply('❌ هذا الأمر للمالك فقط!').catch(() => { });
-                return false;
-            }
-
-            if (command.permissions && message.member &&
-                !isOwner(message.author.id) &&
-                !message.member.permissions.has(command.permissions)) {
-                message.reply('❌ ليس لديك صلاحية لاستخدام هذا الأمر!');
-                return false;
-            }
+            if (!await _canExecuteCommand(message, command)) return false;
 
             try {
                 const startTime = Date.now();
