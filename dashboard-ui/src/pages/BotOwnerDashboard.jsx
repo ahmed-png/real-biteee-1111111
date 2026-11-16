@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useAuth, apiFetch } from '../auth'
-import { Sidebar, StatCard, ToggleRow, ToastContainer, useToast } from '../components/ui'
+import { Sidebar, StatCard, ToggleRow, ToastContainer, useToast, RefreshButton } from '../components/ui'
 
 // ─── Overview ─────────────────────────────────────────────────────────────────
 function Overview({ stats }) {
@@ -932,16 +932,34 @@ export default function BotOwnerDashboard() {
   const { user, logout } = useAuth()
   const [section, setSection] = useState('overview')
   const [stats, setStats] = useState(null)
+  const [refreshing, setRefreshing] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState(null)
+  const [loadError, setLoadError] = useState('')
   const { toasts, toast } = useToast()
 
-  useEffect(() => {
-    apiFetch('/bot-owner/stats').then(d => { if (d?.success) setStats(d.stats) })
-    // تحديث كل دقيقة
-    const interval = setInterval(() => {
-      apiFetch('/bot-owner/stats').then(d => { if (d?.success) setStats(d.stats) })
-    }, 60000)
-    return () => clearInterval(interval)
+  const loadStats = useCallback(async (silent = false) => {
+    if (!silent) setRefreshing(true)
+    try {
+      const data = await apiFetch('/bot-owner/stats')
+      if (data?.success) {
+        setStats(data.stats)
+        setLastUpdated(new Date())
+        setLoadError('')
+      } else if (data) {
+        setLoadError(data.error || 'تعذر تحميل بيانات البوت.')
+      }
+    } catch (error) {
+      setLoadError('تعذر تحميل بيانات البوت. تحقق من الاتصال وحاول مجدداً.')
+    } finally {
+      if (!silent) setRefreshing(false)
+    }
   }, [])
+
+  useEffect(() => {
+    loadStats()
+    const interval = setInterval(() => loadStats(true), 60000)
+    return () => clearInterval(interval)
+  }, [loadStats])
 
   const sectionTitles = {
     overview:   '📊 نظرة عامة',
@@ -974,6 +992,7 @@ export default function BotOwnerDashboard() {
         <div className="page-header">
           <h1 className="page-title">{sectionTitles[section] || 'الداشبورد'}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <RefreshButton busy={refreshing} lastUpdated={lastUpdated} onClick={() => loadStats()} />
             {stats && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--green)' }}>
                 <span className="status-dot online" />
@@ -983,6 +1002,12 @@ export default function BotOwnerDashboard() {
             <span className="page-badge gold">👑 Bot Owner</span>
           </div>
         </div>
+        {loadError && (
+          <div className="dashboard-load-error" role="alert">
+            <span>⚠️ {loadError}</span>
+            <button className="btn btn-outline btn-sm" onClick={() => loadStats()} type="button">إعادة المحاولة</button>
+          </div>
+        )}
         {sections[section] || null}
       </main>
       <ToastContainer toasts={toasts} />
