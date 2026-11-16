@@ -31,8 +31,10 @@ test('projectiles damage the opponent and declare a winner', () => {
     const game = engine.createGame(() => 0.5);
     game.bot.x = 190;
     game.bot.y = game.player.y;
+    game.bot.hp = 16;
     game.bot.cooldown = 10;
-    for (let i = 0; i < 7; i++) {
+    game.botJumpTimer = 10;
+    for (let i = 0; i < 3; i++) {
         engine.step(game, { fire: true, aimX: 810, aimY: game.player.y }, 0.05);
     }
     assert.equal(game.status, 'over');
