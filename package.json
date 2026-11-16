@@ -9,7 +9,7 @@
     "dev": "nodemon index.js",
     "dashboard": "node dashboard-server.js",
     "dev:all": "nodemon index.js",
-    "build:dashboard": "npm --prefix dashboard-ui ci && npm --prefix dashboard-ui run build",
+    "build:dashboard": "npm --prefix dashboard-ui install --no-audit --no-fund && npm --prefix dashboard-ui run build",
     "lint:dashboard": "npm --prefix dashboard-ui run lint",
     "test": "node --test tests/*.test.js"
   },
