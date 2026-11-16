@@ -23,7 +23,7 @@ function Login({ onLogin }) {
       } else {
         setError(data.error || 'Invalid key')
       }
-    } catch (err) {
+    } catch {
       setError('Connection error')
     } finally {
       setLoading(false)
