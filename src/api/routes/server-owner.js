@@ -14,6 +14,8 @@ const { PermissionsBitField, ChannelType } = require('discord.js');
 const { requireServerOwner } = require('./auth');
 const db = require('../../database/db');
 const botSettings = require('../../database/bot-settings-db');
+const autoRole = require('../../../utils/auto-role');
+const { AUTO_ROLE_PERMISSION_OPTIONS, AUTO_ROLE_PERMISSION_NAMES } = require('../../../utils/auto-role-permissions');
 const router = express.Router({ mergeParams: true });
 
 const DEFAULT_PROTECTION = {
@@ -510,6 +512,221 @@ router.get('/members/leaderboard', async (req, res) => {
 // ──────────────────────────────────────────────────────────────────────────────
 // Roles
 // ──────────────────────────────────────────────────────────────────────────────
+router.get('/auto-role', async (req, res) => {
+    const { guildId } = req.params;
+    const client = req.app.get('client');
+    if (!client?.isReady()) {
+        return res.status(503).json({ success: false, error: 'البوت غير متصل بديسكورد' });
+    }
+
+    try {
+        const guild = await client.guilds.fetch(guildId);
+        const guildData = db.getGuildData(guildId);
+        let botMember = guild.members.me;
+        if (!botMember) {
+            try {
+                botMember = await guild.members.fetchMe();
+            } catch (err) {
+                console.error(`[ServerOwner/auto-role] Failed to fetch bot member in guild ${guildId}:`, err);
+                return res.status(503).json({ success: false, error: 'تعذر التحقق من صلاحيات البوت' });
+            }
+        }
+        const roleId = guildData.autoRoleId || null;
+        let role = roleId ? guild.roles.cache.get(roleId) || null : null;
+        if (roleId && !role) {
+            try {
+                role = await guild.roles.fetch(roleId);
+            } catch (err) {
+                console.error(`[ServerOwner/auto-role] Failed to fetch configured role in guild ${guildId}:`, err);
+                return res.status(500).json({ success: false, error: 'تعذر التحقق من الرتبة المحفوظة' });
+            }
+        }
+        const canManageRoles = botMember?.permissions.has(PermissionsBitField.Flags.ManageRoles) ?? false;
+        const roleCanBeManaged = Boolean(
+            role && role.id !== guild.id && !role.managed && botMember &&
+            role.comparePositionTo(botMember.roles.highest) < 0
+        );
+        const storedPermissions = Array.isArray(guildData.autoRolePermissions)
+            ? guildData.autoRolePermissions.filter(name => AUTO_ROLE_PERMISSION_NAMES.has(name))
+            : [];
+        const rolePermissions = role
+            ? role.permissions.toArray().filter(name => AUTO_ROLE_PERMISSION_NAMES.has(name))
+            : storedPermissions;
+        let backfill = guildData.autoRoleBackfill || {};
+        if (backfill.status === 'running' && !autoRole.isBackfillRunning(guildId)) {
+            backfill = {
+                ...backfill,
+                status: 'failed',
+                error: 'انقطع تنفيذ التوزيع قبل اكتماله. أعد الفحص لإكماله.',
+                finishedAt: new Date().toISOString(),
+            };
+            db.updateGuildData(guildId, { autoRoleBackfill: backfill });
+        }
+
+        res.json({
+            success: true,
+            enabled: Boolean(guildData.autoRoleEnabled),
+            roleId: role?.id || roleId,
+            roleName: role?.name || guildData.autoRoleName || 'عضو جديد',
+            roleExists: Boolean(role),
+            roleCanBeManaged,
+            canManageRoles,
+            permissions: rolePermissions,
+            permissionOptions: AUTO_ROLE_PERMISSION_OPTIONS,
+            backfill,
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+router.post('/auto-role', async (req, res) => {
+    const { guildId } = req.params;
+    const { enabled, roleName, permissions } = req.body;
+
+    if (typeof enabled !== 'boolean') {
+        return res.status(400).json({ success: false, error: 'حالة الرتبة التلقائية غير صالحة' });
+    }
+    if (!enabled) {
+        const guildData = db.getGuildData(guildId);
+        const backfill = guildData.autoRoleBackfill || {};
+        const updates = { autoRoleEnabled: false };
+        if (backfill.status === 'running') {
+            updates.autoRoleBackfill = {
+                ...backfill,
+                status: 'stopped',
+                error: 'تم إيقاف التوزيع يدوياً',
+                finishedAt: new Date().toISOString(),
+            };
+        }
+        db.updateGuildData(guildId, updates);
+        return res.json({
+            success: true,
+            enabled: false,
+            backfill: db.getGuildData(guildId).autoRoleBackfill,
+            message: 'تم إيقاف الرتبة التلقائية',
+        });
+    }
+
+    const normalizedName = typeof roleName === 'string' ? roleName.trim() : '';
+    if (!normalizedName || normalizedName.length > 100) {
+        return res.status(400).json({ success: false, error: 'اسم الرتبة مطلوب ويجب ألا يتجاوز 100 حرف' });
+    }
+    if (!Array.isArray(permissions) ||
+        permissions.some(name => typeof name !== 'string' || !AUTO_ROLE_PERMISSION_NAMES.has(name))) {
+        return res.status(400).json({ success: false, error: 'قائمة صلاحيات الرتبة تحتوي على قيمة غير مدعومة' });
+    }
+
+    const client = req.app.get('client');
+    if (!client?.isReady()) {
+        return res.status(503).json({ success: false, error: 'البوت غير متصل بديسكورد' });
+    }
+
+    try {
+        const guild = await client.guilds.fetch(guildId).catch(() => null);
+        if (!guild) return res.status(404).json({ success: false, error: 'السيرفر غير موجود أو غير متاح للبوت' });
+
+        let botMember = guild.members.me;
+        if (!botMember) {
+            try {
+                botMember = await guild.members.fetchMe();
+            } catch (err) {
+                console.error(`[ServerOwner/auto-role] Failed to fetch bot member in guild ${guildId}:`, err);
+                return res.status(503).json({ success: false, error: 'تعذر التحقق من صلاحيات البوت' });
+            }
+        }
+        if (!botMember) return res.status(503).json({ success: false, error: 'تعذر التحقق من عضو البوت في السيرفر' });
+        if (!botMember.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
+            return res.status(403).json({ success: false, error: 'يحتاج البوت إلى صلاحية Manage Roles' });
+        }
+
+        const guildData = db.getGuildData(guildId);
+        const wasEnabled = Boolean(guildData.autoRoleEnabled);
+        const previousBackfillStatus = guildData.autoRoleBackfill?.status || 'not_started';
+        let role = guildData.autoRoleId ? guild.roles.cache.get(guildData.autoRoleId) : null;
+        if (guildData.autoRoleId && !role) {
+            try {
+                role = await guild.roles.fetch(guildData.autoRoleId);
+            } catch (err) {
+                console.error(`[ServerOwner/auto-role] Failed to fetch configured role in guild ${guildId}:`, err);
+                return res.status(500).json({ success: false, error: 'تعذر التحقق من الرتبة المحفوظة' });
+            }
+        }
+
+        if (role && (role.guild?.id !== guildId || role.managed ||
+            role.comparePositionTo(botMember.roles.highest) >= 0)) {
+            return res.status(403).json({ success: false, error: 'الرتبة الحالية مُدارة أو أعلى من رتبة البوت' });
+        }
+
+        const rolePermissions = [...new Set(permissions)]
+            .map(name => PermissionsBitField.Flags[name]);
+        const reason = 'إعداد الرتبة التلقائية من لوحة مالك السيرفر';
+        let createdRole = false;
+        if (role) {
+            role = await role.edit({ name: normalizedName, permissions: rolePermissions, reason });
+        } else {
+            role = await guild.roles.create({ name: normalizedName, permissions: rolePermissions, reason });
+            createdRole = true;
+        }
+
+        if (role.id === guild.id || role.managed ||
+            role.comparePositionTo(botMember.roles.highest) >= 0) {
+            if (createdRole) await role.delete('إزالة رتبة تلقائية لا يستطيع البوت إدارتها');
+            return res.status(403).json({ success: false, error: 'يجب أن تكون رتبة البوت أعلى من الرتبة التلقائية' });
+        }
+
+        db.updateGuildData(guildId, {
+            autoRoleEnabled: true,
+            autoRoleId: role.id,
+            autoRoleName: role.name,
+            autoRolePermissions: [...new Set(permissions)],
+        });
+        const shouldStartBackfill = createdRole || !wasEnabled || previousBackfillStatus !== 'completed';
+        if (shouldStartBackfill) autoRole.startBackfill(client, guildId);
+        const backfill = db.getGuildData(guildId).autoRoleBackfill;
+
+        res.json({
+            success: true,
+            enabled: true,
+            roleId: role.id,
+            roleName: role.name,
+            permissions: [...new Set(permissions)],
+            backfill,
+            message: 'تم حفظ الرتبة التلقائية وإعداد صلاحياتها ✅',
+        });
+    } catch (err) {
+        console.error('[ServerOwner/auto-role]', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+router.post('/auto-role/backfill', (req, res) => {
+    const { guildId } = req.params;
+    const guildData = db.getGuildData(guildId);
+    if (!guildData.autoRoleEnabled || !guildData.autoRoleId) {
+        return res.status(400).json({ success: false, error: 'فعّل الرتبة التلقائية واحفظها أولاً' });
+    }
+
+    const client = req.app.get('client');
+    if (!client?.isReady()) {
+        return res.status(503).json({ success: false, error: 'البوت غير متصل بديسكورد' });
+    }
+
+    const result = autoRole.startBackfill(client, guildId);
+    if (!result.started && result.status === 'running') {
+        return res.status(409).json({ success: false, error: 'توزيع الرتبة على الأعضاء جارٍ بالفعل' });
+    }
+    if (!result.started) {
+        return res.status(400).json({ success: false, error: 'تعذر بدء فحص الأعضاء' });
+    }
+
+    res.json({
+        success: true,
+        backfill: db.getGuildData(guildId).autoRoleBackfill,
+        message: 'بدأ فحص أعضاء السيرفر وتوزيع الرتبة عليهم',
+    });
+});
+
 router.get('/roles', async (req, res) => {
     const { guildId } = req.params;
     const client = req.app.get('client');
@@ -517,6 +734,7 @@ router.get('/roles', async (req, res) => {
         const guild = await client.guilds.fetch(guildId);
         const botMember = guild.members.me;
         const botTopRole = botMember?.roles?.highest?.position ?? 0;
+        const canManageRoles = botMember?.permissions.has(PermissionsBitField.Flags.ManageRoles) ?? false;
 
         const roles = guild.roles.cache
             .filter(r => r.id !== guild.id)
@@ -528,12 +746,65 @@ router.get('/roles', async (req, res) => {
                 position: r.position,
                 managed: r.managed,
                 mentionable: r.mentionable,
-                canManage: r.position < botTopRole && !r.managed,
+                canManage: canManageRoles && r.position < botTopRole && !r.managed,
                 memberCount: r.members.size,
             }));
 
-        res.json({ success: true, roles });
+        res.json({ success: true, roles, canManageRoles });
     } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+router.post('/roles/manage', async (req, res) => {
+    const { guildId } = req.params;
+    const { roleId, userId, action } = req.body;
+
+    if (typeof roleId !== 'string' || typeof userId !== 'string' ||
+        !/^\d{17,20}$/.test(roleId) || !/^\d{17,20}$/.test(userId) ||
+        !['add', 'remove'].includes(action)) {
+        return res.status(400).json({ success: false, error: 'بيانات الدور أو العضو غير صالحة' });
+    }
+
+    const client = req.app.get('client');
+    if (!client?.isReady()) {
+        return res.status(503).json({ success: false, error: 'البوت غير متصل بديسكورد' });
+    }
+
+    try {
+        const guild = await client.guilds.fetch(guildId);
+        const role = await guild.roles.fetch(roleId).catch(() => null);
+        const member = await guild.members.fetch(userId).catch(() => null);
+        const botMember = guild.members.me || await guild.members.fetchMe();
+
+        if (!role || role.guild.id !== guildId) {
+            return res.status(404).json({ success: false, error: 'الدور غير موجود في هذا السيرفر' });
+        }
+        if (!member) {
+            return res.status(404).json({ success: false, error: 'العضو غير موجود في هذا السيرفر' });
+        }
+        if (!botMember.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
+            return res.status(403).json({ success: false, error: 'البوت لا يملك صلاحية إدارة الأدوار' });
+        }
+        if (role.id === guild.id || role.managed || role.comparePositionTo(botMember.roles.highest) >= 0) {
+            return res.status(403).json({ success: false, error: 'لا يستطيع البوت تعديل هذا الدور بسبب ترتيبه أو كونه مُداراً' });
+        }
+        if (member.id === guild.ownerId || member.roles.highest.comparePositionTo(botMember.roles.highest) >= 0) {
+            return res.status(403).json({ success: false, error: 'لا يستطيع البوت إدارة أدوار هذا العضو بسبب ترتيب العضو' });
+        }
+
+        if (action === 'add') await member.roles.add(role, 'إدارة الدور من لوحة السيرفر');
+        else await member.roles.remove(role, 'إدارة الدور من لوحة السيرفر');
+
+        res.json({
+            success: true,
+            action,
+            member: member.user.tag,
+            role: role.name,
+            message: action === 'add' ? 'تمت إضافة الدور للعضو ✅' : 'تمت إزالة الدور من العضو ✅',
+        });
+    } catch (err) {
+        console.error('[ServerOwner/roles/manage]', err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
