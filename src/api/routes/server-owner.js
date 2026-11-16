@@ -13,7 +13,37 @@ const express = require('express');
 const { PermissionsBitField, ChannelType } = require('discord.js');
 const { requireServerOwner } = require('./auth');
 const db = require('../../database/db');
+const botSettings = require('../../database/bot-settings-db');
 const router = express.Router({ mergeParams: true });
+
+const DEFAULT_PROTECTION = {
+    antiSpam:        { enabled: true, threshold: 18, duration: 5 },
+    antiRaid:        { enabled: true, threshold: 5 },
+    antiBadWords:    { enabled: true },
+    antiLink:        { enabled: false },
+    antiCaps:        { enabled: true, threshold: 70 },
+    antiMentionSpam: { enabled: true, threshold: 5 },
+    antiEmojiSpam:   { enabled: true, threshold: 10 },
+    antiDuplicate:   { enabled: true, threshold: 3 },
+    antiAccountAge:  { enabled: true, minDays: 7 },
+};
+
+const PROTECTION_RANGES = {
+    antiSpam: { threshold: [3, 100], duration: [1, 1440] },
+    antiRaid: { threshold: [2, 100] },
+    antiCaps: { threshold: [50, 100] },
+    antiMentionSpam: { threshold: [2, 100] },
+    antiEmojiSpam: { threshold: [2, 100] },
+    antiDuplicate: { threshold: [2, 20] },
+    antiAccountAge: { minDays: [1, 365] },
+};
+
+const LEGACY_PROTECTION_FLAGS = {
+    antiSpam: 'antiSpamEnabled',
+    antiLink: 'antiLinkEnabled',
+    antiCaps: 'antiCapsEnabled',
+    antiRaid: 'antiRaidEnabled',
+};
 
 // جميع الـ routes تتطلب Server Owner لهذا الـ guild بالذات
 router.use(requireServerOwner);
@@ -243,52 +273,59 @@ router.get('/protection', (req, res) => {
     const { guildId } = req.params;
     const guildData = db.getGuildData(guildId);
 
-    const DEFAULT_PROTECTION = {
-        antiSpam:        { enabled: true,  action: 'timeout', threshold: 5, duration: 5 },
-        antiRaid:        { enabled: true,  action: 'kick',    threshold: 5 },
-        antiBadWords:    { enabled: true,  action: 'jail',    duration: 10 },
-        antiLink:        { enabled: false, action: 'delete',  whitelist: [] },
-        antiCaps:        { enabled: true,  action: 'delete',  threshold: 70 },
-        antiMentionSpam: { enabled: true,  action: 'timeout', threshold: 5, duration: 10 },
-        antiEmojiSpam:   { enabled: true,  action: 'delete',  threshold: 10 },
-        antiDuplicate:   { enabled: true,  action: 'timeout', threshold: 3, duration: 5 },
-        antiAccountAge:  { enabled: true,  minDays: 7 },
-        antiNuke:        { enabled: false },
-        antiBotJoin:     { enabled: false, action: 'kick' },
-        antiWebhook:     { enabled: false, action: 'delete' },
-        antiEveryone:    { enabled: false, action: 'delete' },
-        antiMassMention: { enabled: false, action: 'timeout', threshold: 5 },
-    };
-
     const saved = guildData.protectionSettings || {};
     const merged = {};
     for (const [key, def] of Object.entries(DEFAULT_PROTECTION)) {
         merged[key] = { ...def, ...(saved[key] || {}) };
+        const legacyFlag = LEGACY_PROTECTION_FLAGS[key];
+        if (typeof saved[key]?.enabled !== 'boolean' && typeof guildData[legacyFlag] === 'boolean') {
+            merged[key].enabled = guildData[legacyFlag];
+        }
     }
 
-    res.json({ success: true, protection: merged, defaults: DEFAULT_PROTECTION });
+    res.json({
+        success: true,
+        protection: merged,
+        defaults: DEFAULT_PROTECTION,
+        restrictions: {
+            antiAccountAge: botSettings.get('antiRaidAccountAgeEnabled') === false,
+        },
+    });
 });
 
 router.post('/protection', (req, res) => {
     const { guildId } = req.params;
     const { protection } = req.body;
-    if (!protection || typeof protection !== 'object') {
+    if (!protection || typeof protection !== 'object' || Array.isArray(protection)) {
         return res.status(400).json({ success: false, error: 'Invalid protection settings' });
     }
 
-    // حفظ الإعدادات
-    db.updateGuildData(guildId, { protectionSettings: protection });
+    const saved = db.getGuildData(guildId).protectionSettings || {};
+    const normalized = {};
+    for (const [key, defaults] of Object.entries(DEFAULT_PROTECTION)) {
+        const incoming = protection[key] ?? saved[key] ?? defaults;
+        if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming) || typeof incoming.enabled !== 'boolean') {
+            return res.status(400).json({ success: false, error: `Invalid ${key} settings` });
+        }
+
+        normalized[key] = { enabled: incoming.enabled };
+        for (const [field, [min, max]] of Object.entries(PROTECTION_RANGES[key] || {})) {
+            const value = incoming[field] ?? defaults[field];
+            if (!Number.isInteger(value) || value < min || value > max) {
+                return res.status(400).json({ success: false, error: `Invalid ${key}.${field}` });
+            }
+            normalized[key][field] = value;
+        }
+    }
+
+    db.updateGuildData(guildId, { protectionSettings: normalized });
 
     // تحديث الـ flags المنفصلة للتوافق مع الكود القديم
     const updates = {};
-    if (protection.antiSpam !== undefined)
-        updates.antiSpamEnabled = protection.antiSpam.enabled;
-    if (protection.antiLink !== undefined)
-        updates.antiLinkEnabled = protection.antiLink.enabled;
-    if (protection.antiCaps !== undefined)
-        updates.antiCapsEnabled = protection.antiCaps.enabled;
-    if (protection.antiRaid !== undefined)
-        updates.antiRaidEnabled = protection.antiRaid.enabled;
+    updates.antiSpamEnabled = normalized.antiSpam.enabled;
+    updates.antiLinkEnabled = normalized.antiLink.enabled;
+    updates.antiCapsEnabled = normalized.antiCaps.enabled;
+    updates.antiRaidEnabled = normalized.antiRaid.enabled;
 
     if (Object.keys(updates).length > 0) {
         db.updateGuildData(guildId, updates);
