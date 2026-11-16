@@ -439,6 +439,7 @@ router.get('/status', (req, res) => {
         online: client?.isReady() ?? false,
         ping: client?.ws?.ping ?? 0,
         guilds: client?.guilds?.cache?.size ?? 0,
+        clientId: client?.user?.id ?? null,
     });
 });
 
