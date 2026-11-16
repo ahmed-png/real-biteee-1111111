@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth, apiFetch } from '../auth'
 import { ToastContainer, useToast } from '../components/ui'
@@ -7,8 +7,23 @@ import { ToastContainer, useToast } from '../components/ui'
 export default function GuildSelector() {
   const { user, guilds, logout } = useAuth()
   const navigate = useNavigate()
-  const { toasts, toast } = useToast()
+  const { toasts } = useToast()
   const [botStatus, setBotStatus] = useState(null)
+  const [search, setSearch] = useState('')
+  const isBotOwner = user?.role === 'bot_owner'
+  const availableGuilds = useMemo(
+    () => isBotOwner ? guilds.filter(guild => guild.isOwner) : guilds,
+    [guilds, isBotOwner]
+  )
+  const filteredGuilds = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase()
+    return query
+      ? availableGuilds.filter(guild => guild.name.toLocaleLowerCase().includes(query))
+      : availableGuilds
+  }, [availableGuilds, search])
+  const inviteUrl = botStatus?.clientId
+    ? `https://discord.com/oauth2/authorize?client_id=${encodeURIComponent(botStatus.clientId)}&scope=bot%20applications.commands&permissions=0`
+    : null
 
   useEffect(() => {
     apiFetch('/public/status').then(d => setBotStatus(d))
@@ -27,11 +42,20 @@ export default function GuildSelector() {
               }
               <div>
                 <div style={{ fontSize: 18, fontWeight: 900 }}>مرحباً، {user?.username || 'مستخدم'}</div>
-                <div className="badge badge-blue" style={{ marginTop: 4 }}>🔑 Server Owner</div>
+                <div className={`badge ${isBotOwner ? 'badge-gold' : 'badge-blue'}`} style={{ marginTop: 4 }}>
+                  {isBotOwner ? '👑 Bot Owner · وضع إدارة السيرفر' : '🔑 Server Owner'}
+                </div>
               </div>
             </div>
           </div>
-          <button className="btn btn-outline btn-sm" onClick={logout}>🚪 خروج</button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            {isBotOwner && (
+              <button className="btn btn-outline btn-sm" onClick={() => navigate('/bot-owner')} type="button">
+                👑 العودة لإدارة البوت
+              </button>
+            )}
+            <button className="btn btn-outline btn-sm" onClick={logout} type="button">🚪 خروج</button>
+          </div>
         </div>
 
         {/* Bot Status */}
@@ -43,45 +67,86 @@ export default function GuildSelector() {
           </div>
         )}
 
-        <h2 style={{ fontSize: 20, fontWeight: 900, marginBottom: 6 }}>🌐 اختر سيرفرك</h2>
+        <h2 style={{ fontSize: 20, fontWeight: 900, marginBottom: 6 }}>🌐 اختر سيرفرك للإدارة</h2>
         <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 20 }}>
-          السيرفرات التي تملكها والبوت موجود فيها
+          {isBotOwner
+            ? 'تظهر هنا السيرفرات التي تملكها والبوت موجود فيها؛ صلاحياتك كمالك بوت لا تتغير.'
+            : 'السيرفرات التي تملكها والبوت موجود فيها'}
         </p>
 
-        {guilds.length === 0 ? (
+        {availableGuilds.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 40, background: 'var(--card)', borderRadius: 16, border: '1px solid var(--border)' }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>😕</div>
-            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>لا يوجد سيرفرات</div>
+            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>لا توجد سيرفرات متاحة</div>
             <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 20 }}>
-              أنت لا تملك أي سيرفر يعمل فيه البوت.
+              لا يوجد سيرفر تملكه والبوت موجود فيه حالياً.
             </div>
-            <a
-              href="https://discord.com/oauth2/authorize"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-primary"
-            >
-              ➕ دعوة البوت لسيرفرك
-            </a>
+            {inviteUrl
+              ? (
+                <>
+                  <a
+                    href={inviteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-primary"
+                  >
+                    ➕ دعوة البوت لسيرفرك
+                  </a>
+                  <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 12 }}>
+                    يمنح رابط الدعوة أقل صلاحية ممكنة؛ امنح البوت الصلاحيات التي تحتاجها ميزاتك بعد إضافته.
+                  </p>
+                </>
+              )
+              : <p className="guild-empty" role="status">رابط الدعوة غير متاح الآن؛ تعذر تحميل معرّف البوت.</p>
+            }
           </div>
         ) : (
-          <div className="guild-grid">
-            {guilds.map(g => (
-              <div
-                key={g.id}
-                className="guild-card"
-                onClick={() => navigate(`/server/${g.id}`)}
-              >
-                {g.icon
-                  ? <img className="guild-icon" src={g.icon} alt={g.name} />
-                  : <div className="guild-icon-placeholder">🌐</div>
-                }
-                <div className="guild-name">{g.name}</div>
-                <div className="guild-members">👥 {(g.memberCount || 0).toLocaleString()} عضو</div>
-                {g.isOwner && <div className="badge badge-gold" style={{ marginTop: 8 }}>👑 مالك</div>}
+          <>
+            <div className="guild-selector-toolbar">
+              <label className="guild-search">
+                <span aria-hidden="true">⌕</span>
+                <input
+                  className="form-input"
+                  type="search"
+                  value={search}
+                  onChange={event => setSearch(event.target.value)}
+                  placeholder="ابحث باسم السيرفر..."
+                  aria-label="ابحث باسم السيرفر"
+                />
+              </label>
+              <span className="badge">{filteredGuilds.length} سيرفر</span>
+            </div>
+            {filteredGuilds.length === 0 ? (
+              <div className="guild-empty" role="status">لا توجد نتائج تطابق البحث.</div>
+            ) : (
+              <div className="guild-grid">
+                {filteredGuilds.map(g => (
+                  <div
+                    key={g.id}
+                    className="guild-card"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`إدارة سيرفر ${g.name}`}
+                    onClick={() => navigate(`/server/${g.id}`)}
+                    onKeyDown={event => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault()
+                        navigate(`/server/${g.id}`)
+                      }
+                    }}
+                  >
+                      {g.icon
+                        ? <img className="guild-icon" src={g.icon} alt={g.name} />
+                        : <div className="guild-icon-placeholder">🌐</div>
+                      }
+                      <div className="guild-name">{g.name}</div>
+                      <div className="guild-members">👥 {(g.memberCount || 0).toLocaleString()} عضو</div>
+                      {g.isOwner && <div className="badge badge-gold" style={{ marginTop: 8 }}>👑 مالك</div>}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
       <ToastContainer toasts={toasts} />
