@@ -103,6 +103,7 @@ const guildSchema = new mongoose.Schema({
     },
     ticketPanelChannelId: { type: String, default: null },
     ticketPanelMessageId: { type: String, default: null },
+    ticketPanelManaged: { type: Boolean, default: false },
     ticketCategoryId: { type: String, default: null },
     ticketOpenTickets: { type: Object, default: () => ({}) },
 
