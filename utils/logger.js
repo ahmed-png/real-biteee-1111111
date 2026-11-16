@@ -3,6 +3,83 @@ const db = require('./database');
 const config = require('../config');
 const channelResolver = require('./channel-resolver');
 
+const specializedAuditActions = new Set([
+    AuditLogEvent.GuildUpdate,
+    AuditLogEvent.ChannelCreate,
+    AuditLogEvent.ChannelUpdate,
+    AuditLogEvent.ChannelDelete,
+    AuditLogEvent.MemberKick,
+    AuditLogEvent.MemberBanAdd,
+    AuditLogEvent.MemberBanRemove,
+    AuditLogEvent.MemberUpdate,
+    AuditLogEvent.MemberRoleUpdate,
+    AuditLogEvent.MemberMove,
+    AuditLogEvent.MemberDisconnect,
+    AuditLogEvent.RoleCreate,
+    AuditLogEvent.RoleUpdate,
+    AuditLogEvent.RoleDelete,
+    AuditLogEvent.InviteCreate,
+    AuditLogEvent.InviteDelete,
+    AuditLogEvent.EmojiCreate,
+    AuditLogEvent.EmojiDelete,
+    AuditLogEvent.MessageDelete,
+]);
+
+const auditActionLabels = {
+    [AuditLogEvent.ChannelOverwriteCreate]: 'إضافة صلاحيات لقناة',
+    [AuditLogEvent.ChannelOverwriteUpdate]: 'تعديل صلاحيات قناة',
+    [AuditLogEvent.ChannelOverwriteDelete]: 'حذف صلاحيات قناة',
+    [AuditLogEvent.ChannelPositionUpdate]: 'تغيير ترتيب القنوات',
+    [AuditLogEvent.MemberPrune]: 'إزالة أعضاء غير نشطين',
+    [AuditLogEvent.BotAdd]: 'إضافة بوت',
+    [AuditLogEvent.RolePositionUpdate]: 'تغيير ترتيب الرتب',
+    [AuditLogEvent.InviteUpdate]: 'تعديل دعوة',
+    [AuditLogEvent.WebhookCreate]: 'إنشاء Webhook',
+    [AuditLogEvent.WebhookUpdate]: 'تعديل Webhook',
+    [AuditLogEvent.WebhookDelete]: 'حذف Webhook',
+    [AuditLogEvent.EmojiUpdate]: 'تعديل إيموجي',
+    [AuditLogEvent.MessageBulkDelete]: 'حذف مجموعة رسائل',
+    [AuditLogEvent.MessagePin]: 'تثبيت رسالة',
+    [AuditLogEvent.MessageUnpin]: 'إلغاء تثبيت رسالة',
+    [AuditLogEvent.IntegrationCreate]: 'إضافة تكامل',
+    [AuditLogEvent.IntegrationUpdate]: 'تعديل تكامل',
+    [AuditLogEvent.IntegrationDelete]: 'حذف تكامل',
+    [AuditLogEvent.StageInstanceCreate]: 'إنشاء جلسة Stage',
+    [AuditLogEvent.StageInstanceUpdate]: 'تعديل جلسة Stage',
+    [AuditLogEvent.StageInstanceDelete]: 'إنهاء جلسة Stage',
+    [AuditLogEvent.StickerCreate]: 'إضافة ملصق',
+    [AuditLogEvent.StickerUpdate]: 'تعديل ملصق',
+    [AuditLogEvent.StickerDelete]: 'حذف ملصق',
+    [AuditLogEvent.GuildScheduledEventCreate]: 'إنشاء فعالية',
+    [AuditLogEvent.GuildScheduledEventUpdate]: 'تعديل فعالية',
+    [AuditLogEvent.GuildScheduledEventDelete]: 'حذف فعالية',
+    [AuditLogEvent.ThreadCreate]: 'إنشاء موضوع',
+    [AuditLogEvent.ThreadUpdate]: 'تعديل موضوع',
+    [AuditLogEvent.ThreadDelete]: 'حذف موضوع',
+    [AuditLogEvent.ApplicationCommandPermissionUpdate]: 'تعديل صلاحيات أمر',
+    [AuditLogEvent.SoundboardSoundCreate]: 'إضافة صوت للوحة الأصوات',
+    [AuditLogEvent.SoundboardSoundUpdate]: 'تعديل صوت بلوحة الأصوات',
+    [AuditLogEvent.SoundboardSoundDelete]: 'حذف صوت من لوحة الأصوات',
+    [AuditLogEvent.AutoModerationRuleCreate]: 'إنشاء قاعدة AutoMod',
+    [AuditLogEvent.AutoModerationRuleUpdate]: 'تعديل قاعدة AutoMod',
+    [AuditLogEvent.AutoModerationRuleDelete]: 'حذف قاعدة AutoMod',
+    [AuditLogEvent.AutoModerationBlockMessage]: 'حظر رسالة عبر AutoMod',
+    [AuditLogEvent.AutoModerationFlagToChannel]: 'إرسال تنبيه عبر AutoMod',
+    [AuditLogEvent.AutoModerationUserCommunicationDisabled]: 'إيقاف عضو عبر AutoMod',
+    [AuditLogEvent.AutoModerationQuarantineUser]: 'عزل عضو عبر AutoMod',
+    [AuditLogEvent.OnboardingPromptCreate]: 'إضافة سؤال إعداد السيرفر',
+    [AuditLogEvent.OnboardingPromptUpdate]: 'تعديل سؤال إعداد السيرفر',
+    [AuditLogEvent.OnboardingPromptDelete]: 'حذف سؤال إعداد السيرفر',
+    [AuditLogEvent.OnboardingCreate]: 'تفعيل إعدادات المجتمع',
+    [AuditLogEvent.OnboardingUpdate]: 'تعديل إعدادات المجتمع',
+    [AuditLogEvent.HomeSettingsCreate]: 'إنشاء إعدادات صفحة المجتمع',
+    [AuditLogEvent.HomeSettingsUpdate]: 'تعديل إعدادات صفحة المجتمع',
+    [AuditLogEvent.VoiceChannelStatusCreate]: 'تغيير حالة قناة صوتية',
+    [AuditLogEvent.VoiceChannelStatusDelete]: 'مسح حالة قناة صوتية',
+};
+
+const missingChannelWarnings = new Set();
+
 // ─── استثناء البوت من السجلات ───────────────────────────────────────────────
 // لا يجب أن يُسجَّل البوت كـ executor لمخالفة في سجلات الحماية
 // هذا يمنع "البوت يرى نفسه مخالفاً" عند تنفيذ أوامر مثل حذف رسالة سبام
@@ -30,7 +107,7 @@ function _isBotAction(executor) {
 
 // ─── إرسال Log إلى قناة السجلات ───────────────────────────────────────────────
 async function sendLog(guild, embed) {
-    if (!guild) return;
+    if (!guild) return false;
 
     let logChannel = null;
 
@@ -41,28 +118,40 @@ async function sendLog(guild, embed) {
         if (logId) {
             logChannel = guild.channels.cache.get(logId) || null;
         }
-    } catch { }
+    } catch (error) {
+        console.error(`[Logger] تعذر قراءة قناة السجلات للسيرفر ${guild.id}:`, error.message);
+    }
 
     // 2. Fallback — channel-resolver بالاسم
     if (!logChannel) {
-        logChannel = channelResolver.resolve(guild, 'logChannel');
+        try {
+            logChannel = channelResolver.resolve(guild, 'logChannel');
+        } catch (error) {
+            console.error(`[Logger] تعذر العثور على قناة السجلات للسيرفر ${guild.id}:`, error.message);
+        }
     }
 
-    if (!logChannel) return;
+    if (!logChannel) {
+        if (!missingChannelWarnings.has(guild.id)) {
+            console.warn(`[Logger] لا توجد قناة سجلات مضبوطة للسيرفر ${guild.id}.`);
+            missingChannelWarnings.add(guild.id);
+        }
+        return false;
+    }
 
     try {
-        await logChannel.send({ embeds: [embed] });
+        await logChannel.send({ embeds: [embed], allowedMentions: { parse: [] } });
+        missingChannelWarnings.delete(guild.id);
+        return true;
     } catch (error) {
-        // 50001 = Missing Access — تجاهل بصمت
-        if (error.code !== 50001 && error.code !== 50013) {
-            console.error('[Logger] خطأ غير متوقع في السجلات:', error.message);
-        }
+        console.error(`[Logger] تعذر إرسال سجل السيرفر ${guild.id} إلى #${logChannel.name || logChannel.id}:`, error.message);
+        return false;
     }
 }
 
 // ─── Helper: جلب المنفذ من Audit Log بدقة ────────────────────────────────────
 async function getExecutor(guild, type, targetId = null, windowMs = 15000) {
-    if (!guild || !guild.members.me.permissions.has('ViewAuditLog')) return null;
+    if (!guild?.members?.me?.permissions?.has('ViewAuditLog')) return null;
 
     // Retry mechanism: جرب 3 مرات لضمان التقاط الحدث من Audit Log
     for (let i = 0; i < 3; i++) {
@@ -84,6 +173,114 @@ async function getExecutor(guild, type, targetId = null, windowMs = 15000) {
     return null;
 }
 
+function clipAuditValue(value, maxLength = 220) {
+    if (value === null || value === undefined || value === '') return '—';
+    let text;
+    try {
+        const serialized = typeof value === 'string' ? value : JSON.stringify(value);
+        text = serialized === undefined ? String(value) : serialized;
+    } catch {
+        text = String(value);
+    }
+    if (text.length > maxLength) return `${text.slice(0, maxLength - 3)}...`;
+    return text;
+}
+
+function formatLogValue(value) {
+    return clipAuditValue(value, 140).replace(/`/g, "'").replace(/\r?\n/g, ' ');
+}
+
+function addLogChange(changes, label, before, after) {
+    const beforeText = formatLogValue(before);
+    const afterText = formatLogValue(after);
+    if (beforeText !== afterText) {
+        changes.push(`**${label}:** \`${beforeText}\` → \`${afterText}\``);
+    }
+}
+
+async function logAuditEntry(entry, guild) {
+    if (!entry || !guild || specializedAuditActions.has(entry.action)) return false;
+
+    const actionName = AuditLogEvent[entry.action] || `إجراء غير معروف (${entry.action})`;
+    const actionLabel = auditActionLabels[entry.action]
+        || actionName.replace(/([a-z])([A-Z])/g, '$1 $2');
+    const executorName = entry.executor?.tag || entry.executor?.username || 'غير معروف';
+    const executorId = entry.executor?.id || entry.executorId;
+    const targetName = typeof entry.target === 'string'
+        ? entry.target
+        : entry.target?.name || entry.target?.tag || entry.target?.username || '';
+    const targetValue = [targetName, entry.targetId].filter((value, index, values) => value && values.indexOf(value) === index).join(' · ')
+        || 'غير محدد';
+
+    const embed = new EmbedBuilder()
+        .setColor('#5865F2')
+        .setTitle(`🧾 ${actionLabel}`.slice(0, 256))
+        .setDescription('تم رصد تغيير أو إجراء إداري في السيرفر.')
+        .addFields(
+            { name: '👮 المنفذ', value: clipAuditValue(executorId ? `${executorName} (${executorId})` : executorName, 250), inline: true },
+            { name: '🎯 الهدف', value: clipAuditValue(targetValue, 250), inline: true },
+        )
+        .setTimestamp(entry.createdAt || new Date())
+        .setFooter({ text: `Audit ID: ${entry.id || 'غير متاح'} • Action: ${entry.action}` });
+
+    if (entry.reason) {
+        embed.addFields({ name: '📋 السبب', value: clipAuditValue(entry.reason, 900), inline: false });
+    }
+
+    if (Array.isArray(entry.changes) && entry.changes.length > 0) {
+        const changes = entry.changes.slice(0, 7).map(change => {
+            const before = change.old === undefined ? '—' : clipAuditValue(change.old, 150);
+            const after = change.new === undefined ? '—' : clipAuditValue(change.new, 150);
+            return `• **${clipAuditValue(change.key, 80)}**\nقبل: ${before}\nبعد: ${after}`;
+        }).join('\n');
+        const remaining = entry.changes.length > 7 ? `\n… و${entry.changes.length - 7} تغيير آخر` : '';
+        embed.addFields({ name: '🔎 التفاصيل', value: `${changes}${remaining}`.slice(0, 1024), inline: false });
+    }
+
+    if (entry.extra) {
+        embed.addFields({ name: 'ℹ️ معلومات إضافية', value: clipAuditValue(entry.extra, 900), inline: false });
+    }
+
+    return sendLog(guild, embed);
+}
+
+async function logAutoModerationExecution(execution) {
+    if (!execution?.guild) return false;
+
+    const user = execution.user || execution.member?.user;
+    const actionNames = {
+        1: 'حظر الرسالة',
+        2: 'إرسال تنبيه',
+        3: 'إيقاف العضو مؤقتاً',
+        4: 'منع التفاعل',
+    };
+    const ruleName = execution.autoModerationRule?.name || execution.ruleId || 'قاعدة غير معروفة';
+    const channelName = execution.channel ? `#${execution.channel.name}` : execution.channelId || 'غير محددة';
+    const embed = new EmbedBuilder()
+        .setColor('#FEE75C')
+        .setTitle('🛡️ تنفيذ إجراء AutoMod')
+        .setDescription(`تم تطبيق قاعدة **${clipAuditValue(ruleName, 200)}**.`)
+        .addFields(
+            { name: '👤 العضو', value: user ? `${clipAuditValue(user.tag || user.username, 160)} (${user.id})` : `ID: ${execution.userId || 'غير معروف'}`, inline: true },
+            { name: '⚡ الإجراء', value: actionNames[execution.action?.type] || 'إجراء غير معروف', inline: true },
+            { name: '📍 القناة', value: clipAuditValue(channelName, 200), inline: true },
+        )
+        .setTimestamp()
+        .setFooter({ text: `Rule ID: ${execution.ruleId || 'غير متاح'}` });
+
+    if (execution.matchedKeyword) {
+        embed.addFields({ name: '🔎 الكلمة المطابقة', value: clipAuditValue(execution.matchedKeyword, 500), inline: true });
+    }
+    if (execution.matchedContent) {
+        embed.addFields({ name: '🧩 النص المطابق', value: clipAuditValue(execution.matchedContent, 900), inline: false });
+    }
+    if (execution.content) {
+        embed.addFields({ name: '📝 محتوى الرسالة', value: clipAuditValue(execution.content, 900), inline: false });
+    }
+
+    return sendLog(execution.guild, embed);
+}
+
 // === سجلات الصوت ===
 
 // تحديث حالة الصوت (انضمام، مغادرة، انتقال)
@@ -94,6 +291,21 @@ async function logVoiceState(oldState, newState) {
     const guild = member.guild;
     let embed = new EmbedBuilder().setTimestamp().setFooter({ text: `ID: ${member.id}` });
     let action = '';
+    const stateChanges = [];
+
+    for (const [property, label] of [
+        ['selfMute', 'كتم ذاتي'],
+        ['serverMute', 'كتم من الإدارة'],
+        ['selfDeaf', 'صمم ذاتي'],
+        ['serverDeaf', 'صمم من الإدارة'],
+        ['streaming', 'بث مباشر'],
+        ['selfVideo', 'كاميرا'],
+        ['suppress', 'كتم Stage'],
+    ]) {
+        if (oldState[property] !== newState[property]) {
+            stateChanges.push(`**${label}:** ${oldState[property] ? 'مفعّل' : 'معطّل'} → ${newState[property] ? 'مفعّل' : 'معطّل'}`);
+        }
+    }
 
     // حالة الانضمام
     if (!oldState.channelId && newState.channelId) {
@@ -132,7 +344,15 @@ async function logVoiceState(oldState, newState) {
                 { name: 'بواسطة', value: executor ? `${executor} (سحب)` : 'بنفسه', inline: true }
             );
     }
-    // حالات أخرى (Mute/Deafen) يمكن إضافتها هنا إذا لزم الأمر
+    if (stateChanges.length > 0) {
+        action ||= 'state-change';
+        if (!embed.data.title) {
+            embed.setColor('#5865F2')
+                .setTitle('🎙️ تغيير حالة عضو صوتياً')
+                .setDescription(`${member} تغيّرت حالته الصوتية.`);
+        }
+        embed.addFields({ name: 'التغييرات', value: stateChanges.join('\n').slice(0, 1000) });
+    }
 
     if (action) {
         await sendLog(guild, embed);
@@ -172,7 +392,16 @@ async function logMessageDelete(message) {
         .setFooter({ text: `Message ID: ${message.id}` });
 
     if (message.attachments.size > 0) {
-        embed.addFields({ name: '📎 المرفقات', value: `${message.attachments.size} ملف(ات)`, inline: false });
+        const attachments = [...message.attachments.values()]
+            .slice(0, 5)
+            .map(attachment => `${attachment.name || 'ملف'} — ${attachment.url}`)
+            .join('\n');
+        const remaining = message.attachments.size > 5 ? `\nو${message.attachments.size - 5} مرفق إضافي` : '';
+        embed.addFields({
+            name: `📎 المرفقات (${message.attachments.size})`,
+            value: `${attachments}${remaining}`.slice(0, 1024),
+            inline: false,
+        });
     }
 
     await sendLog(message.guild, embed);
@@ -250,6 +479,10 @@ async function logMemberLeave(member) {
 async function logMemberUpdate(oldMember, newMember) {
     const changes = [];
 
+    if (oldMember.user.globalName !== newMember.user.globalName) {
+        changes.push(`**الاسم العام:** \`${oldMember.user.globalName || 'لا يوجد'}\` → \`${newMember.user.globalName || 'لا يوجد'}\``);
+    }
+
     // تغيير الاسم
     if (oldMember.nickname !== newMember.nickname) {
         changes.push(`**الاسم المستعار:** \`${oldMember.nickname || 'لا يوجد'}\` → \`${newMember.nickname || 'لا يوجد'}\``);
@@ -271,11 +504,20 @@ async function logMemberUpdate(oldMember, newMember) {
 
     if (changes.length === 0) return;
 
+    const hasRoleChanges = addedRoles.size > 0 || removedRoles.size > 0;
+    const executor = await getExecutor(
+        newMember.guild,
+        hasRoleChanges ? AuditLogEvent.MemberRoleUpdate : AuditLogEvent.MemberUpdate,
+        newMember.id
+    );
     const embed = new EmbedBuilder()
         .setColor('#0099FF')
         .setTitle('👤 تحديث عضو')
         .setDescription(`**العضو:** ${newMember}`)
-        .addFields({ name: 'التغييرات', value: changes.join('\n') })
+        .addFields(
+            { name: 'التغييرات', value: changes.join('\n').slice(0, 1000) },
+            { name: '👮 بواسطة', value: executor ? `${executor.tag || executor.username} (${executor.id})` : 'غير معروف', inline: true },
+        )
         .setThumbnail(newMember.user.displayAvatarURL())
         .setTimestamp()
         .setFooter({ text: `ID: ${newMember.id}` });
@@ -492,16 +734,21 @@ async function logChannelUpdate(oldChannel, newChannel) {
     if (!newChannel.guild) return;
     const changes = [];
 
-    if (oldChannel.name !== newChannel.name) {
-        changes.push(`**الاسم:** \`${oldChannel.name}\` ➔ \`${newChannel.name}\``);
-    }
-    if (oldChannel.topic !== newChannel.topic) {
-        const oldTopic = oldChannel.topic || '*لا يوجد*';
-        const newTopic = newChannel.topic || '*لا يوجد*';
-        changes.push(`**الوصف:** \`${oldTopic.substring(0, 50)}\` ➔ \`${newTopic.substring(0, 50)}\``);
-    }
-    if (oldChannel.rateLimitPerUser !== newChannel.rateLimitPerUser) {
-        changes.push(`**Slow Mode:** ${oldChannel.rateLimitPerUser}ث ➔ ${newChannel.rateLimitPerUser}ث`);
+    const channelFields = [
+        ['name', 'الاسم'],
+        ['topic', 'الوصف'],
+        ['position', 'الترتيب'],
+        ['parentId', 'الفئة'],
+        ['nsfw', 'محتوى +18'],
+        ['rateLimitPerUser', 'Slow Mode'],
+        ['bitrate', 'جودة الصوت'],
+        ['userLimit', 'حد الأعضاء'],
+        ['rtcRegion', 'منطقة الصوت'],
+        ['defaultAutoArchiveDuration', 'مدة أرشفة المواضيع'],
+        ['defaultThreadRateLimitPerUser', 'Slow Mode للمواضيع'],
+    ];
+    for (const [property, label] of channelFields) {
+        addLogChange(changes, label, oldChannel[property], newChannel[property]);
     }
 
     if (changes.length === 0) return;
@@ -514,7 +761,7 @@ async function logChannelUpdate(oldChannel, newChannel) {
         .setTitle('📝 قناة تم تعديلها')
         .setDescription(`**القناة:** ${newChannel}`)
         .addFields(
-            { name: '📋 التغييرات', value: changes.join('\n'), inline: false },
+            { name: '📋 التغييرات', value: changes.join('\n').slice(0, 1000), inline: false },
             { name: '👮 بواسطة', value: executorText, inline: true }
         )
         .setTimestamp()
@@ -527,17 +774,27 @@ async function logChannelUpdate(oldChannel, newChannel) {
 async function logRoleUpdate(oldRole, newRole) {
     const changes = [];
 
-    if (oldRole.name !== newRole.name) {
-        changes.push(`**الاسم:** \`${oldRole.name}\` ➔ \`${newRole.name}\``);
+    for (const [property, label] of [
+        ['name', 'الاسم'],
+        ['hexColor', 'اللون'],
+        ['hoist', 'الظهور المنفصل'],
+        ['mentionable', 'قابل للمنشن'],
+        ['position', 'الترتيب'],
+        ['icon', 'الأيقونة'],
+        ['unicodeEmoji', 'إيموجي الرتبة'],
+    ]) {
+        addLogChange(changes, label, oldRole[property], newRole[property]);
     }
-    if (oldRole.hexColor !== newRole.hexColor) {
-        changes.push(`**اللون:** \`${oldRole.hexColor}\` ➔ \`${newRole.hexColor}\``);
+
+    const oldPermissions = new Set(oldRole.permissions.toArray());
+    const newPermissions = new Set(newRole.permissions.toArray());
+    const addedPermissions = [...newPermissions].filter(permission => !oldPermissions.has(permission));
+    const removedPermissions = [...oldPermissions].filter(permission => !newPermissions.has(permission));
+    if (addedPermissions.length) {
+        changes.push(`**صلاحيات مضافة:** ${addedPermissions.join(', ')}`);
     }
-    if (oldRole.hoist !== newRole.hoist) {
-        changes.push(`**الظهور المنفصل:** ${oldRole.hoist ? 'نعم' : 'لا'} ➔ ${newRole.hoist ? 'نعم' : 'لا'}`);
-    }
-    if (oldRole.mentionable !== newRole.mentionable) {
-        changes.push(`**قابل للمنشن:** ${oldRole.mentionable ? 'نعم' : 'لا'} ➔ ${newRole.mentionable ? 'نعم' : 'لا'}`);
+    if (removedPermissions.length) {
+        changes.push(`**صلاحيات محذوفة:** ${removedPermissions.join(', ')}`);
     }
 
     if (changes.length === 0) return;
@@ -550,7 +807,7 @@ async function logRoleUpdate(oldRole, newRole) {
         .setTitle('🎭 رتبة تم تعديلها')
         .setDescription(`**الرتبة:** ${newRole}`)
         .addFields(
-            { name: '📋 التغييرات', value: changes.join('\n'), inline: false },
+            { name: '📋 التغييرات', value: changes.join('\n').slice(0, 1000), inline: false },
             { name: '👮 بواسطة', value: executorText, inline: true }
         )
         .setTimestamp()
@@ -640,14 +897,38 @@ async function logInviteDelete(invite) {
 async function logGuildUpdate(oldGuild, newGuild) {
     const changes = [];
 
-    if (oldGuild.name !== newGuild.name) {
-        changes.push(`**الاسم:** \`${oldGuild.name}\` ➔ \`${newGuild.name}\``);
-    }
+    addLogChange(changes, 'الاسم', oldGuild.name, newGuild.name);
     if (oldGuild.icon !== newGuild.icon) {
         changes.push(`**الأيقونة:** تم تغيير الصورة`);
     }
     if (oldGuild.banner !== newGuild.banner) {
         changes.push(`**البانر:** تم تغيير البانر`);
+    }
+    if (oldGuild.splash !== newGuild.splash) {
+        changes.push('**صورة الدعوة:** تم تغيير الصورة');
+    }
+    for (const [property, label] of [
+        ['description', 'الوصف'],
+        ['verificationLevel', 'مستوى التحقق'],
+        ['explicitContentFilter', 'فلتر المحتوى'],
+        ['defaultMessageNotifications', 'إشعارات الرسائل'],
+        ['preferredLocale', 'اللغة'],
+        ['vanityURLCode', 'رابط الدعوة المخصص'],
+        ['afkChannelId', 'قناة AFK'],
+        ['afkTimeout', 'مهلة AFK'],
+        ['systemChannelId', 'قناة النظام'],
+        ['rulesChannelId', 'قناة القوانين'],
+        ['publicUpdatesChannelId', 'قناة تحديثات المجتمع'],
+        ['safetyAlertsChannelId', 'قناة تنبيهات السلامة'],
+        ['widgetEnabled', 'عرض الودجت'],
+        ['widgetChannelId', 'قناة الودجت'],
+        ['premiumProgressBarEnabled', 'شريط التعزيز'],
+        ['premiumTier', 'مستوى التعزيز'],
+        ['premiumSubscriptionCount', 'عدد التعزيزات'],
+        ['nsfwLevel', 'مستوى المحتوى'],
+        ['features', 'ميزات السيرفر'],
+    ]) {
+        addLogChange(changes, label, oldGuild[property], newGuild[property]);
     }
 
     if (changes.length === 0) return;
@@ -659,7 +940,7 @@ async function logGuildUpdate(oldGuild, newGuild) {
         .setColor('#3498DB')
         .setTitle('⚙️ إعدادات السيرفر تم تعديلها')
         .addFields(
-            { name: '📋 التغييرات', value: changes.join('\n'), inline: false },
+            { name: '📋 التغييرات', value: changes.join('\n').slice(0, 1000), inline: false },
             { name: '👮 بواسطة', value: executorText, inline: true }
         )
         .setThumbnail(newGuild.iconURL())
@@ -670,7 +951,7 @@ async function logGuildUpdate(oldGuild, newGuild) {
 }
 
 module.exports = {
-    sendLog, setBotId,
+    sendLog, setBotId, logAuditEntry, logAutoModerationExecution,
     logMessageDelete,
     logMessageUpdate,
     logMemberJoin,
