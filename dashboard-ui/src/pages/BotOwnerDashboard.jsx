@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth, apiFetch } from '../auth'
 import { Sidebar, StatCard, ToggleRow, ToastContainer, useToast, RefreshButton } from '../components/ui'
 
@@ -930,6 +931,7 @@ function ModerationSection({ toast }) {
 // ─── Main Bot Owner Dashboard ─────────────────────────────────────────────────
 export default function BotOwnerDashboard() {
   const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const [section, setSection] = useState('overview')
   const [stats, setStats] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
@@ -993,6 +995,9 @@ export default function BotOwnerDashboard() {
           <h1 className="page-title">{sectionTitles[section] || 'الداشبورد'}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <RefreshButton busy={refreshing} lastUpdated={lastUpdated} onClick={() => loadStats()} />
+            <button className="btn btn-outline btn-sm" onClick={() => navigate('/guilds')} type="button">
+              🏠 إدارة سيرفري
+            </button>
             {stats && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--green)' }}>
                 <span className="status-dot online" />
