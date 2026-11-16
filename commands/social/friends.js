@@ -1,6 +1,5 @@
 const { PremiumEmbedBuilder } = require('../../utils/embed-builder');
-
-const friendships = new Map(); // Note: In a real bot, use DB.
+const db = require('../../utils/database');
 
 module.exports = {
     name: 'friends',
@@ -23,22 +22,34 @@ async function addFriend(message) {
     if (!friend) return message.reply('❌ منشن الشخص!');
     if (friend.id === message.author.id) return message.reply('❌ لا يمكنك إضافة نفسك!');
 
-    const key = [message.author.id, friend.id].sort().join('-');
-    if (friendships.has(key)) return message.reply('✅ أنتما أصدقاء بالفعل!');
+    const userId = message.author.id;
+    const userData = db.getUserData(userId);
+    const userFriends = Array.isArray(userData.friends) ? userData.friends : [];
+    if (userFriends.some(entry => entry.userId === friend.id)) {
+        return message.reply('✅ أنتما أصدقاء بالفعل!');
+    }
 
-    friendships.set(key, { since: Date.now() });
+    const since = Date.now();
+    db.updateUserData(userId, {
+        friends: [...userFriends, { userId: friend.id, since }]
+    });
+
+    const friendData = db.getUserData(friend.id);
+    const friendFriends = Array.isArray(friendData.friends) ? friendData.friends : [];
+    if (!friendFriends.some(entry => entry.userId === userId)) {
+        db.updateUserData(friend.id, {
+            friends: [...friendFriends, { userId, since }]
+        });
+    }
     return message.reply(`✅ تم إضافة ${friend} إلى قائمة أصدقائك!`);
 }
 
 async function listFriends(message) {
-    const userFriends = [];
-    for (const [key, data] of friendships.entries()) {
-        const ids = key.split('-');
-        if (ids.includes(message.author.id)) {
-            const fId = ids.find(id => id !== message.author.id);
-            userFriends.push(`<@${fId}>`);
-        }
-    }
+    const userData = db.getUserData(message.author.id);
+    const userFriends = (Array.isArray(userData.friends) ? userData.friends : [])
+        .map(entry => entry.userId)
+        .filter(Boolean)
+        .map(userId => `<@${userId}>`);
     if (userFriends.length === 0) return message.reply('❌ ليس لديك أصدقاء بعد!');
     const embed = PremiumEmbedBuilder.info('👥 قائمة أصدقائك', userFriends.join('\n'));
     return message.reply({ embeds: [embed] });
