@@ -93,30 +93,63 @@ function cleanTicketName(username, userId) {
     return `ticket-${safeName || 'member'}-${userId.slice(-4)}`;
 }
 
-async function setupTicketPanel(guild, panelChannel) {
-    if (panelChannel.type !== ChannelType.GuildText) {
-        throw new Error('شغّل الأمر داخل قناة نصية عادية.');
+function buildPanelOverwrites(guild, botMember) {
+    const writableRoles = guild.roles.cache.filter(role =>
+        role.id !== guild.id
+        && !role.managed
+        && role.permissions.has(PermissionFlagsBits.SendMessages)
+    );
+    if (writableRoles.size + 2 > 100) {
+        throw new Error('لدى السيرفر عدد كبير من الرتب التي تستطيع الكتابة؛ قلّلها قبل إعداد لوحة التكت.');
     }
 
-    const botMember = guild.members.me || await guild.members.fetchMe();
-    if (!botMember.permissions.has(PermissionFlagsBits.ManageChannels)) {
-        throw new Error('يحتاج البوت إلى صلاحية إدارة القنوات لإنشاء قنوات التكت.');
+    return [
+        {
+            id: guild.id,
+            allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory],
+            deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.SendMessagesInThreads],
+        },
+        {
+            id: botMember.id,
+            allow: [
+                PermissionFlagsBits.ViewChannel,
+                PermissionFlagsBits.SendMessages,
+                PermissionFlagsBits.ReadMessageHistory,
+                PermissionFlagsBits.EmbedLinks,
+                PermissionFlagsBits.ManageChannels,
+            ],
+        },
+        ...writableRoles.map(role => ({
+            id: role.id,
+            deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.SendMessagesInThreads],
+        })),
+    ];
+}
+
+async function fetchChannelOrNull(guild, channelId) {
+    if (!channelId) return null;
+    const cachedChannel = guild.channels.cache.get(channelId);
+    if (cachedChannel) return cachedChannel;
+    try {
+        return await guild.channels.fetch(channelId);
+    } catch (error) {
+        if (error.code === 10003) return null;
+        throw error;
     }
+}
 
-    const channelPermissions = panelChannel.permissionsFor(botMember);
-    if (
-        !channelPermissions?.has(PermissionFlagsBits.ViewChannel)
-        || !channelPermissions.has(PermissionFlagsBits.SendMessages)
-        || !channelPermissions.has(PermissionFlagsBits.EmbedLinks)
-    ) {
-        throw new Error('يحتاج البوت إلى عرض القناة وإرسال الرسائل والروابط المضمنة فيها.');
+async function fetchMessageOrNull(channel, messageId) {
+    if (!channel || !messageId) return null;
+    try {
+        return await channel.messages.fetch(messageId);
+    } catch (error) {
+        if (error.code === 10008) return null;
+        throw error;
     }
+}
 
-    const guildData = db.getGuildData(guild.id);
-    let category = guildData.ticketCategoryId
-        ? guild.channels.cache.get(guildData.ticketCategoryId)
-        : null;
-
+async function ensureTicketCategory(guild, categoryId) {
+    let category = await fetchChannelOrNull(guild, categoryId);
     if (!category || category.type !== ChannelType.GuildCategory) {
         category = await guild.channels.create({
             name: '🎫 تذاكر الدعم',
@@ -125,15 +158,52 @@ async function setupTicketPanel(guild, panelChannel) {
         });
         db.updateGuildData(guild.id, { ticketCategoryId: category.id });
     }
+    return category;
+}
 
-    const panelMessage = await panelChannel.send(buildTicketPanel(guild));
+async function setupTicketPanel(guild) {
+    const botMember = guild.members.me || await guild.members.fetchMe();
+    if (!botMember.permissions.has(PermissionFlagsBits.ManageChannels)) {
+        throw new Error('يحتاج البوت إلى صلاحية إدارة القنوات لإنشاء قنوات التكت.');
+    }
+
+    const guildData = db.getGuildData(guild.id);
+    const category = await ensureTicketCategory(guild, guildData.ticketCategoryId);
+
+    const panelOverwrites = buildPanelOverwrites(guild, botMember);
+    let panelChannel = guildData.ticketPanelManaged
+        ? await fetchChannelOrNull(guild, guildData.ticketPanelChannelId)
+        : null;
+
+    if (!panelChannel || panelChannel.type !== ChannelType.GuildText) {
+        panelChannel = await guild.channels.create({
+            name: '🎫・الدعم-الفني',
+            type: ChannelType.GuildText,
+            permissionOverwrites: panelOverwrites,
+            reason: 'إنشاء قناة لوحة نظام التكت',
+        });
+    } else {
+        await panelChannel.permissionOverwrites.set(
+            panelOverwrites,
+            'تحديث صلاحيات قناة لوحة نظام التكت'
+        );
+    }
+
+    let panelMessage = await fetchMessageOrNull(panelChannel, guildData.ticketPanelMessageId);
+    if (panelMessage) {
+        panelMessage = await panelMessage.edit(buildTicketPanel(guild));
+    } else {
+        panelMessage = await panelChannel.send(buildTicketPanel(guild));
+    }
+
     db.updateGuildData(guild.id, {
         ticketPanelChannelId: panelChannel.id,
         ticketPanelMessageId: panelMessage.id,
+        ticketPanelManaged: true,
         ticketCategoryId: category.id,
     });
 
-    return { category, panelMessage };
+    return { category, panelChannel, panelMessage };
 }
 
 async function findExistingTicket(guild, ownerId, openTickets) {
@@ -198,9 +268,7 @@ async function openTicket(interaction) {
         }
 
         const data = db.getGuildData(interaction.guild.id);
-        const category = data.ticketCategoryId
-            ? interaction.guild.channels.cache.get(data.ticketCategoryId)
-            : null;
+        const category = await ensureTicketCategory(interaction.guild, data.ticketCategoryId);
         const staffRoles = interaction.guild.roles.cache.filter(role =>
             role.id !== interaction.guild.id
             && !role.managed
@@ -248,7 +316,7 @@ async function openTicket(interaction) {
         ticketChannel = await interaction.guild.channels.create({
             name: cleanTicketName(interaction.user.username, interaction.user.id),
             type: ChannelType.GuildText,
-            parent: category?.type === ChannelType.GuildCategory ? category.id : undefined,
+            parent: category.id,
             topic: `تذكرة دعم | العضو: ${interaction.user.id}`,
             permissionOverwrites,
             reason: `فتح تكت دعم بواسطة ${interaction.user.tag || interaction.user.id}`,
@@ -360,10 +428,28 @@ async function closeTicket(interaction) {
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     try {
+        const closedPermissions = {
+            SendMessages: false,
+            SendMessagesInThreads: false,
+        };
+        await interaction.channel.permissionOverwrites.edit(interaction.guild.id, closedPermissions);
+        await interaction.channel.permissionOverwrites.edit(ticket.ownerId, closedPermissions);
+        for (const overwrite of interaction.channel.permissionOverwrites.cache.values()) {
+            if (
+                overwrite.id !== interaction.guild.id
+                && overwrite.id !== ticket.ownerId
+                && (
+                    overwrite.allow.has(PermissionFlagsBits.SendMessages)
+                    || overwrite.allow.has(PermissionFlagsBits.SendMessagesInThreads)
+                )
+            ) {
+                await interaction.channel.permissionOverwrites.edit(overwrite.id, closedPermissions);
+            }
+        }
         await interaction.channel.delete(`انتهت التذكرة بواسطة ${interaction.user.tag || interaction.user.id}`);
     } catch (error) {
-        console.error(`[TicketSystem] Failed to close ticket ${interaction.channelId}:`, error);
-        await interaction.editReply('❌ تعذّر حذف روم التكت. تحقق من صلاحية إدارة القنوات وحاول مجدداً.')
+        console.error(`[TicketSystem] Failed to lock or delete ticket ${interaction.channelId}:`, error);
+        await interaction.editReply('❌ تعذّر إغلاق التكت وحذف الروم. تحقق من صلاحية إدارة القنوات وحاول مجدداً.')
             .catch(replyError => console.error('[TicketSystem] Failed to report ticket close error:', replyError));
         return;
     }
@@ -402,6 +488,7 @@ module.exports = {
     buildTicketPanel,
     buildTicketMessage,
     isTicketStaff,
+    buildPanelOverwrites,
     setupTicketPanel,
     handleTicketInteraction,
 };
