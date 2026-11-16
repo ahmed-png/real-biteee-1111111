@@ -19,6 +19,10 @@ const userSchema = new mongoose.Schema({
     muteTime: { type: Number, default: null },
     marriedTo: { type: String, default: null },
     marriedSince: { type: Number, default: null },
+    friends: [{
+        userId: { type: String, required: true },
+        since: { type: Number, default: Date.now }
+    }],
     color: { type: String, default: null },
     birthday: { type: String, default: null },
     reputation: { type: Number, default: 0 },
