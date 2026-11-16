@@ -76,6 +76,22 @@ function channelInfo(channel, botMember) {
     };
 }
 
+async function getGuildTextChannel(guild, channelId) {
+    let channel = guild.channels.cache.get(channelId);
+    if (!channel) {
+        try {
+            channel = await guild.channels.fetch(channelId);
+        } catch (error) {
+            if (error.code === 10003) return null;
+            throw error;
+        }
+    }
+
+    return channel?.guildId === guild.id && channel.type === ChannelType.GuildText
+        ? channel
+        : null;
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // معلومات السيرفر
 // ──────────────────────────────────────────────────────────────────────────────
@@ -385,9 +401,29 @@ router.post('/welcome-settings', async (req, res) => {
         welcomeAvatarSize, welcomeAvatarRadius
     } = req.body;
 
+    if (welcomeEnabled !== undefined && typeof welcomeEnabled !== 'boolean') {
+        return res.status(400).json({ success: false, error: 'قيمة تفعيل الترحيب غير صالحة' });
+    }
+
     const updates = {};
-    if (welcomeEnabled !== undefined) updates.welcomeEnabled = Boolean(welcomeEnabled);
-    if (channelId !== undefined) updates.welcomeChannel = channelId || null;
+    if (welcomeEnabled !== undefined) updates.welcomeEnabled = welcomeEnabled;
+    if (channelId !== undefined) {
+        if (channelId === null || channelId === '') {
+            updates.welcomeChannel = null;
+        } else {
+            if (typeof channelId !== 'string' || !/^\d{17,20}$/.test(channelId)) {
+                return res.status(400).json({ success: false, error: 'معرف قناة الترحيب غير صالح' });
+            }
+            const client = req.app.get('client');
+            const guild = req.guild || await client?.guilds.fetch(guildId);
+            if (!guild) return res.status(404).json({ success: false, error: 'السيرفر غير موجود أو غير متاح للبوت' });
+            const channel = await getGuildTextChannel(guild, channelId);
+            if (!channel) {
+                return res.status(400).json({ success: false, error: 'يجب اختيار قناة نصية من هذا السيرفر' });
+            }
+            updates.welcomeChannel = channel.id;
+        }
+    }
     if (welcomeAvatarX !== undefined) updates.welcomeAvatarX = Number(welcomeAvatarX) || 960;
     if (welcomeAvatarY !== undefined) updates.welcomeAvatarY = Number(welcomeAvatarY) || 540;
     if (welcomeAvatarSize !== undefined) updates.welcomeAvatarSize = Number(welcomeAvatarSize) || 256;
@@ -436,17 +472,16 @@ router.post('/test-welcome', async (req, res) => {
     }
 
     try {
-        const channel = await client.channels.fetch(channelId).catch(() => null);
-        if (!channel || !channel.isTextBased()) {
-            return res.status(404).json({ success: false, error: 'القناة غير موجودة أو ليست نصية' });
-        }
-
-        const guild = await client.guilds.fetch(guildId).catch(() => null);
+        const guild = req.guild || await client.guilds.fetch(guildId).catch(() => null);
         if (!guild) return res.status(404).json({ success: false, error: 'السيرفر غير موجود' });
+        const channel = await getGuildTextChannel(guild, channelId);
+        if (!channel) {
+            return res.status(404).json({ success: false, error: 'قناة الترحيب ليست قناة نصية في هذا السيرفر' });
+        }
 
         const { PermissionsBitField } = require('discord.js');
         const botMember = guild.members.me;
-        if (!botMember?.permissions.has(PermissionsBitField.Flags.SendMessages)) {
+        if (!channel.permissionsFor(botMember)?.has(PermissionsBitField.Flags.SendMessages)) {
             return res.status(403).json({
                 success: false,
                 error: `❌ البوت لا يملك صلاحية الإرسال في #${channel.name}`
