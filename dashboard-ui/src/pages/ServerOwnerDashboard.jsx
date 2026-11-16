@@ -564,46 +564,408 @@ function WelcomeSection({ guildId, channels, toast }) {
   )
 }
 
-// ─── Roles ────────────────────────────────────────────────────────────────────
-function RolesSection({ guildId }) {
-  const [roles, setRoles] = useState([])
-  const [loading, setLoading] = useState(true)
+// ─── Automatic member role ───────────────────────────────────────────────────
+function AutoRoleSection({ guildId, toast }) {
+  const [loaded, setLoaded] = useState(null)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    apiFetch(`/server/${guildId}/roles`).then(d => { if (d?.success) setRoles(d.roles); setLoading(false) })
-  }, [guildId])
+    let active = true
+    apiFetch(`/server/${guildId}/auto-role`)
+      .then(result => {
+        if (!active) return
+        if (!result?.success) {
+          setLoaded({ guildId, error: result?.error || 'تعذر تحميل إعدادات الرتبة التلقائية' })
+          return
+        }
+        setLoaded({ guildId, data: result })
+      })
+      .catch(error => {
+        if (active) setLoaded({ guildId, error: error.message || 'تعذر تحميل إعدادات الرتبة التلقائية' })
+      })
+    return () => { active = false }
+  }, [guildId, toast])
 
-  if (loading) return <div className="loading-screen"><div className="spinner" /></div>
+  const current = loaded?.guildId === guildId ? loaded : null
+  const settings = current?.data
+  const updateSettings = updates => {
+    setLoaded(previous => previous?.guildId === guildId && previous.data
+      ? { ...previous, data: { ...previous.data, ...updates } }
+      : previous)
+  }
+
+  useEffect(() => {
+    if (loaded?.guildId !== guildId || loaded.data?.backfill?.status !== 'running') return
+    let active = true
+    let timer
+    const poll = async () => {
+      try {
+        const result = await apiFetch(`/server/${guildId}/auto-role`)
+        if (!result?.success) {
+          if (active) toast(result?.error || 'تعذر تحديث حالة فحص الأعضاء', 'error')
+          return
+        }
+        if (!active) return
+        setLoaded(previous => previous?.guildId === guildId && previous.data
+          ? { ...previous, data: { ...previous.data, backfill: result.backfill } }
+          : previous)
+        timer = setTimeout(poll, 3000)
+      } catch (error) {
+        if (active) toast(error.message || 'تعذر تحديث حالة فحص الأعضاء', 'error')
+      }
+    }
+    timer = setTimeout(poll, 3000)
+    return () => {
+      active = false
+      clearTimeout(timer)
+    }
+  }, [guildId, loaded?.guildId, loaded?.data?.backfill?.status, toast])
+
+  const save = async () => {
+    if (!settings) return
+    setSaving(true)
+    try {
+      const payload = settings.enabled
+        ? { enabled: true, roleName: settings.roleName, permissions: settings.permissions }
+        : { enabled: false }
+      const result = await apiFetch(`/server/${guildId}/auto-role`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      if (!result?.success) {
+        toast(result?.error || 'تعذر حفظ إعدادات الرتبة التلقائية', 'error')
+        return
+      }
+      if (settings.enabled) {
+        updateSettings({
+          roleId: result.roleId,
+          roleName: result.roleName,
+          roleExists: true,
+          roleCanBeManaged: true,
+          permissions: result.permissions,
+          backfill: result.backfill || settings.backfill,
+        })
+      } else {
+        updateSettings({ enabled: false, backfill: result.backfill || settings.backfill })
+      }
+      toast(result.message || 'تم حفظ الإعدادات ✅', 'success')
+    } catch (error) {
+      toast(error.message || 'تعذر حفظ إعدادات الرتبة التلقائية', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const rerunBackfill = async () => {
+    setSaving(true)
+    try {
+      const result = await apiFetch(`/server/${guildId}/auto-role/backfill`, { method: 'POST' })
+      if (!result?.success) {
+        toast(result?.error || 'تعذر بدء فحص الأعضاء', 'error')
+        return
+      }
+      updateSettings({ backfill: result.backfill })
+      toast(result.message || 'بدأ فحص أعضاء السيرفر', 'success')
+    } catch (error) {
+      toast(error.message || 'تعذر بدء فحص الأعضاء', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (!current) return <div className="loading-screen"><div className="spinner" /></div>
+  if (!settings) {
+    return (
+      <div className="card">
+        <div className="info-box warning">{current.error}</div>
+      </div>
+    )
+  }
+
+  const groups = [
+    { id: 'text', label: '💬 صلاحيات القنوات النصية' },
+    { id: 'voice', label: '🔊 صلاحيات القنوات الصوتية' },
+    { id: 'interaction', label: '⚡ صلاحيات التفاعل' },
+  ]
+  const canSave = !settings.enabled ||
+    (settings.canManageRoles && (!settings.roleExists || settings.roleCanBeManaged))
+  const backfill = settings.backfill || {}
+  const backfillStatusLabels = {
+    not_started: 'لم يبدأ الفحص',
+    running: 'جارٍ فحص الأعضاء وإسناد الرتبة',
+    completed: 'اكتمل فحص الأعضاء',
+    partial: 'اكتمل الفحص مع تعذّر إسناد الرتبة لبعض الأعضاء',
+    failed: 'تعذّر إكمال فحص الأعضاء',
+    stopped: 'تم إيقاف فحص الأعضاء',
+  }
+  const backfillPercent = backfill.total
+    ? Math.min(100, Math.floor((backfill.processed / backfill.total) * 100))
+    : backfill.status === 'completed' ? 100 : 0
 
   return (
-    <div className="animate-fade-up table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>الدور</th>
-            <th>الأعضاء</th>
-            <th>اللون</th>
-            <th>قابل للإشارة</th>
-            <th>مُدار</th>
-          </tr>
-        </thead>
-        <tbody>
-          {roles.map(r => (
-            <tr key={r.id}>
-              <td>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 12, height: 12, borderRadius: '50%', background: r.color === '#000000' ? '#333' : r.color, border: '1px solid var(--border)' }} />
-                  <span style={{ fontWeight: 700, fontSize: 13 }}>{r.name}</span>
+    <div className="animate-fade-up">
+      <div className="card">
+        <div className="card-header">
+          <span className="card-icon">🎟️</span>
+          <div>
+            <div className="card-title">الرتبة التلقائية للأعضاء الجدد</div>
+            <div className="card-subtitle">إنشاء رتبة مخصصة وتوزيعها على الأعضاء الحاليين والجدد</div>
+          </div>
+        </div>
+
+        <ToggleRow
+          label="تفعيل توزيع الرتبة التلقائي"
+          description="تُمنح للحسابات البشرية والآلية التي يستطيع البوت إدارتها"
+          checked={Boolean(settings.enabled)}
+          onChange={enabled => updateSettings({ enabled })}
+        />
+
+        {settings.enabled && (
+          <>
+            {!settings.canManageRoles && (
+              <div className="info-box warning" style={{ marginBottom: 12 }}>
+                امنح البوت صلاحية Manage Roles حتى يتمكن من إنشاء الرتبة وإدارتها.
+              </div>
+            )}
+            {settings.roleExists && !settings.roleCanBeManaged && (
+              <div className="info-box warning" style={{ marginBottom: 12 }}>
+                رتبة البوت يجب أن تكون أعلى من الرتبة التلقائية. ارفع رتبة البوت في إعدادات السيرفر ثم أعد الحفظ.
+              </div>
+            )}
+
+            <div className="form-group">
+              <label className="form-label">🏷️ اسم الرتبة</label>
+              <input
+                className="form-input"
+                maxLength={100}
+                value={settings.roleName || ''}
+                onChange={event => updateSettings({ roleName: event.target.value })}
+                placeholder="عضو جديد"
+                disabled={!settings.canManageRoles || (settings.roleExists && !settings.roleCanBeManaged)}
+              />
+              {settings.roleId && (
+                <div className="form-hint">ID الرتبة: <code>{settings.roleId}</code></div>
+              )}
+            </div>
+
+            <div className="card-header" style={{ padding: '12px 0 8px' }}>
+              <div>
+                <div className="card-title">صلاحيات الرتبة</div>
+                <div className="card-subtitle">اختر الصلاحيات التي يحتاجها العضو فقط</div>
+              </div>
+            </div>
+            {groups.map(group => {
+              const options = (settings.permissionOptions || []).filter(option => option.group === group.id)
+              if (!options.length) return null
+              return (
+                <div key={group.id} style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>{group.label}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 8 }}>
+                    {options.map(option => (
+                      <label key={option.name} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 11px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--card2)', cursor: settings.canManageRoles ? 'pointer' : 'not-allowed', opacity: settings.canManageRoles ? 1 : 0.6 }}>
+                        <input
+                          type="checkbox"
+                          checked={(settings.permissions || []).includes(option.name)}
+                          disabled={!settings.canManageRoles || (settings.roleExists && !settings.roleCanBeManaged)}
+                          onChange={event => updateSettings({
+                            permissions: event.target.checked
+                              ? [...new Set([...(settings.permissions || []), option.name])]
+                              : (settings.permissions || []).filter(name => name !== option.name),
+                          })}
+                        />
+                        <span style={{ fontSize: 12 }}>{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </td>
-              <td><span style={{ color: 'var(--accent2)', fontWeight: 600 }}>{r.memberCount}</span></td>
-              <td><code>{r.color}</code></td>
-              <td>{r.mentionable ? <span className="badge badge-green">نعم</span> : <span className="badge badge-red">لا</span>}</td>
-              <td>{r.managed ? <span className="badge badge-yellow">بوت</span> : '—'}</td>
+              )
+            })}
+          </>
+        )}
+
+        <div className="info-box warning" style={{ marginTop: 12 }}>
+          لا تتضمن القائمة صلاحية Administrator أو صلاحيات الإشراف. تغيير صلاحيات هذه الرتبة يؤثر أيضاً على الأعضاء الذين يحملونها حالياً.
+        </div>
+        <button className="btn btn-primary" onClick={save} disabled={saving || !canSave} style={{ width: '100%', marginTop: 12 }}>
+          {saving ? '⏳ جارٍ الحفظ...' : settings.enabled ? (settings.roleExists ? '💾 حفظ الرتبة والصلاحيات' : '➕ إنشاء وحفظ الرتبة') : '⏸️ إيقاف التوزيع التلقائي'}
+        </button>
+
+        <div style={{ marginTop: 20, padding: 14, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--card2)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontWeight: 700 }}>📦 توزيع الرتبة على الأعضاء الحاليين</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
+                يبدأ تلقائياً عند أول حفظ، ويمكن إعادة الفحص لمعالجة الأعضاء الذين تعذر إسناد الرتبة لهم.
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>
+                يتم تجاوز من لديه الرتبة مسبقاً أو من تعلو رتبته رتبة البوت.
+              </div>
+            </div>
+            <span className={`badge ${backfill.status === 'completed' ? 'badge-green' : backfill.status === 'running' ? 'badge-blue' : backfill.status === 'partial' || backfill.status === 'failed' ? 'badge-yellow' : 'badge-purple'}`}>
+              {backfillStatusLabels[backfill.status] || 'حالة الفحص غير معروفة'}
+            </span>
+          </div>
+          <div style={{ marginTop: 12, height: 8, overflow: 'hidden', borderRadius: 99, background: 'var(--bg)' }} role="progressbar" aria-valuenow={backfillPercent} aria-valuemin={0} aria-valuemax={100}>
+            <div style={{ width: `${backfillPercent}%`, height: '100%', background: backfill.status === 'partial' || backfill.status === 'failed' ? 'var(--yellow)' : 'var(--accent)', transition: 'width 0.3s ease' }} />
+          </div>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12, color: 'var(--text2)', marginTop: 9 }}>
+            <span>تم فحص: {backfill.processed || 0} / {backfill.total || 0}</span>
+            <span>تم الإسناد: {backfill.assigned || 0}</span>
+            <span>تم التجاوز: {backfill.skipped || 0}</span>
+            <span>تعذّر: {backfill.failed || 0}</span>
+          </div>
+          {backfill.error && <div className="info-box warning" style={{ marginTop: 10, whiteSpace: 'pre-wrap' }}>{backfill.error}</div>}
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={rerunBackfill}
+            disabled={saving || !settings.enabled || !settings.roleExists || !settings.canManageRoles || !settings.roleCanBeManaged || backfill.status === 'running'}
+            style={{ marginTop: 12 }}
+          >
+            {backfill.status === 'running' ? '⏳ الفحص جارٍ...' : '🔄 إعادة فحص وإسناد الأعضاء الحاليين'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Roles ────────────────────────────────────────────────────────────────────
+function RolesSection({ guildId, toast }) {
+  const [roles, setRoles] = useState([])
+  const [rolesGuildId, setRolesGuildId] = useState('')
+  const [canManageRoles, setCanManageRoles] = useState(false)
+  const [userId, setUserId] = useState('')
+  const [roleId, setRoleId] = useState('')
+  const [action, setAction] = useState('add')
+  const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    apiFetch(`/server/${guildId}/roles`)
+      .then(d => {
+        if (!active) return
+        if (d?.success) {
+          setRoles(d.roles || [])
+          setCanManageRoles(Boolean(d.canManageRoles))
+          setRoleId(d.roles?.find(role => role.canManage)?.id || '')
+        } else {
+          toast(d?.error || 'تعذر تحميل الأدوار', 'error')
+          setRoles([])
+          setCanManageRoles(false)
+          setRoleId('')
+        }
+        setRolesGuildId(guildId)
+      })
+      .catch(error => {
+        if (!active) return
+        toast(error.message || 'تعذر تحميل الأدوار', 'error')
+        setRoles([])
+        setCanManageRoles(false)
+        setRoleId('')
+        setRolesGuildId(guildId)
+      })
+    return () => { active = false }
+  }, [guildId, toast])
+
+  const manageRole = async event => {
+    event.preventDefault()
+    if (!/^\d{17,20}$/.test(userId.trim())) return toast('أدخل Discord ID صحيحاً للعضو', 'error')
+    if (!roleId) return toast('اختر دوراً قابلاً للإدارة', 'error')
+
+    setSubmitting(true)
+    try {
+      const result = await apiFetch(`/server/${guildId}/roles/manage`, {
+        method: 'POST',
+        body: JSON.stringify({ userId: userId.trim(), roleId, action }),
+      })
+      if (result?.success) {
+        toast(result.message || 'تم تحديث الدور ✅', 'success')
+        setUserId('')
+      } else {
+        toast(result?.error || 'تعذر تحديث الدور', 'error')
+      }
+    } catch (error) {
+      toast(error.message || 'تعذر تحديث الدور', 'error')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (rolesGuildId !== guildId) return <div className="loading-screen"><div className="spinner" /></div>
+
+  return (
+    <div className="animate-fade-up">
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card-header">
+          <span className="card-icon">🎭</span>
+          <div>
+            <div className="card-title">إدارة أدوار الأعضاء</div>
+            <div className="card-subtitle">أضف دوراً لعضو أو أزله باستخدام Discord ID</div>
+          </div>
+        </div>
+        {!canManageRoles && (
+          <div className="info-box warning" style={{ marginBottom: 12 }}>
+            يحتاج البوت إلى صلاحية Manage Roles، ويجب أن يكون دوره أعلى من الدور المراد تعديله.
+          </div>
+        )}
+        <form onSubmit={manageRole} style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'end' }}>
+          <div className="form-group" style={{ flex: '1 1 180px', marginBottom: 0 }}>
+            <label className="form-label">🆔 Discord ID للعضو</label>
+            <input className="form-input" inputMode="numeric" placeholder="123456789012345678" value={userId} onChange={event => setUserId(event.target.value)} required />
+          </div>
+          <div className="form-group" style={{ flex: '1 1 180px', marginBottom: 0 }}>
+            <label className="form-label">🏷️ الدور</label>
+            <select className="form-select" value={roleId} onChange={event => setRoleId(event.target.value)} required disabled={!canManageRoles}>
+              <option value="">— اختر دوراً —</option>
+              {roles.filter(role => role.canManage).map(role => (
+                <option key={role.id} value={role.id}>{role.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group" style={{ flex: '1 1 140px', marginBottom: 0 }}>
+            <label className="form-label">⚡ الإجراء</label>
+            <select className="form-select" value={action} onChange={event => setAction(event.target.value)}>
+              <option value="add">إضافة الدور</option>
+              <option value="remove">إزالة الدور</option>
+            </select>
+          </div>
+          <button className="btn btn-primary" type="submit" disabled={!canManageRoles || submitting} style={{ minHeight: 40 }}>
+            {submitting ? '⏳ جارٍ التنفيذ' : 'تنفيذ'}
+          </button>
+        </form>
+      </div>
+
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>الدور</th>
+              <th>الأعضاء</th>
+              <th>اللون</th>
+              <th>قابل للإشارة</th>
+              <th>مُدار</th>
+              <th>إمكانية التعديل</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {roles.map(r => (
+              <tr key={r.id}>
+                <td>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 12, height: 12, borderRadius: '50%', background: r.color === '#000000' ? '#333' : r.color, border: '1px solid var(--border)' }} />
+                    <span style={{ fontWeight: 700, fontSize: 13 }}>{r.name}</span>
+                  </div>
+                </td>
+                <td><span style={{ color: 'var(--accent2)', fontWeight: 600 }}>{r.memberCount}</span></td>
+                <td><code>{r.color}</code></td>
+                <td>{r.mentionable ? <span className="badge badge-green">نعم</span> : <span className="badge badge-red">لا</span>}</td>
+                <td>{r.managed ? <span className="badge badge-yellow">بوت</span> : '—'}</td>
+                <td>{r.canManage ? <span className="badge badge-green">نعم</span> : <span className="badge badge-yellow">مقيّد</span>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
@@ -706,6 +1068,7 @@ export default function ServerOwnerDashboard() {
     logs:       '📋 قناة السجلات',
     welcome:    '👋 إعدادات الترحيب',
     protection: '🛡️ الحماية',
+    'auto-role': '🎟️ الرتبة التلقائية',
     roles:      '🏷️ الأدوار',
     leaderboard:'🏆 المتصدرون',
   }
@@ -716,7 +1079,8 @@ export default function ServerOwnerDashboard() {
     logs:        <LogsSection guildId={guildId} info={info} channels={channels} toast={toast} onRefresh={loadInfo} />,
     welcome:     <WelcomeSection guildId={guildId} channels={channels} toast={toast} />,
     protection:  <ProtectionSection guildId={guildId} toast={toast} />,
-    roles:       <RolesSection guildId={guildId} />,
+    'auto-role': <AutoRoleSection guildId={guildId} toast={toast} />,
+    roles:       <RolesSection guildId={guildId} toast={toast} />,
     leaderboard: <LeaderboardSection guildId={guildId} />,
   }
 
