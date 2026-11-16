@@ -23,7 +23,7 @@ class TournamentSystem {
             id: tournamentId,
             guildId: guild.id,
             game: options.game || 'mixed', // 'slots', 'blackjack', 'trivia', 'mixed'
-            entryFee: entryFee || 1000,
+            entryFee,
             prizePool: 0,
             maxPlayers: options.maxPlayers || 16,
             participants: [],
@@ -275,7 +275,7 @@ async function createTournamentCommand(message, args) {
     if (!Number.isSafeInteger(parsedEntryFee) || parsedEntryFee < 0) {
         return message.reply('❌ رسوم الاشتراك يجب ألا تكون سالبة وأن تكون عدداً صحيحاً.');
     }
-    const entryFee = parsedEntryFee || 1000;
+    const entryFee = parsedEntryFee;
     const maxPlayers = parseInt(args[2]) || 16;
     const delayMinutes = parseInt(args[3]) || 30;
 
