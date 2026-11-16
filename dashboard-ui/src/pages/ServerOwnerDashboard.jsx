@@ -216,37 +216,71 @@ function ProtectionSection({ guildId, toast }) {
   const [protection, setProtection] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [loadError, setLoadError] = useState('')
+  const [restrictions, setRestrictions] = useState({})
 
-  useEffect(() => {
-    apiFetch(`/server/${guildId}/protection`).then(d => { if (d?.success) setProtection(d.protection); setLoading(false) })
+  const loadProtection = useCallback(async () => {
+    setLoading(true)
+    setLoadError('')
+    try {
+      const data = await apiFetch(`/server/${guildId}/protection`)
+      if (data?.success) {
+        setProtection(data.protection)
+        setRestrictions(data.restrictions || {})
+      }
+      else setLoadError(data?.error || 'تعذر تحميل إعدادات الحماية.')
+    } catch (error) {
+      setLoadError(error.message || 'تعذر تحميل إعدادات الحماية.')
+    } finally {
+      setLoading(false)
+    }
   }, [guildId])
+
+  useEffect(() => { loadProtection() }, [loadProtection])
 
   const toggle = (key, field, value) => setProtection(p => ({ ...p, [key]: { ...p[key], [field]: value } }))
 
   const save = async () => {
     setSaving(true)
-    const res = await apiFetch(`/server/${guildId}/protection`, { method: 'POST', body: JSON.stringify({ protection }) })
-    setSaving(false)
-    if (res?.success) toast('تم حفظ إعدادات الحماية ✅', 'success')
-    else toast(res?.error || 'خطأ', 'error')
+    try {
+      const res = await apiFetch(`/server/${guildId}/protection`, { method: 'POST', body: JSON.stringify({ protection }) })
+      if (res?.success) {
+        toast('تم حفظ إعدادات الحماية ✅', 'success')
+        await loadProtection()
+      } else {
+        toast(res?.error || 'تعذر حفظ إعدادات الحماية.', 'error')
+      }
+    } catch (error) {
+      toast(error.message || 'تعذر حفظ إعدادات الحماية.', 'error')
+    } finally {
+      setSaving(false)
+    }
   }
 
-  if (loading || !protection) return <div className="loading-screen"><div className="spinner" /></div>
+  if (loading) return <div className="loading-screen"><div className="spinner" /></div>
+  if (!protection) {
+    return (
+      <div className="card" role="alert">
+        <p>{loadError || 'تعذر تحميل إعدادات الحماية.'}</p>
+        <button className="btn btn-primary" onClick={loadProtection} type="button">إعادة المحاولة</button>
+      </div>
+    )
+  }
 
   const protectionCards = [
-    { key: 'antiSpam', icon: '🚫', name: 'Anti-Spam', desc: 'حماية من الفلد والسبام' },
-    { key: 'antiRaid', icon: '⚔️', name: 'Anti-Raid', desc: 'حماية من هجمات الريد' },
-    { key: 'antiBadWords', icon: '🤬', name: 'Anti-Bad Words', desc: 'فلترة الكلمات المسيئة' },
-    { key: 'antiLink', icon: '🔗', name: 'Anti-Link', desc: 'منع الروابط غير المرخصة' },
-    { key: 'antiCaps', icon: '🔠', name: 'Anti-Caps', desc: 'منع الكتابة بالكبير بالكامل' },
-    { key: 'antiMentionSpam', icon: '📣', name: 'Anti-Mention Spam', desc: 'حماية من منشن سبام' },
-    { key: 'antiAccountAge', icon: '👶', name: 'Anti-New Account', desc: 'حظر الحسابات الجديدة جداً' },
-    { key: 'antiNuke', icon: '💣', name: 'Anti-Nuke', desc: 'حماية من تدمير السيرفر' },
-    { key: 'antiBotJoin', icon: '🤖', name: 'Anti-Bot Join', desc: 'منع دخول البوتات تلقائياً' },
-    { key: 'antiEveryone', icon: '📢', name: 'Anti-Everyone', desc: 'منع منشن @everyone من العامة' },
+    { key: 'antiSpam', icon: '🚫', name: 'مكافحة التكرار السريع', desc: 'حذف الرسائل المتقاربة وإيقاف العضو مؤقتاً.', fields: [{ key: 'threshold', label: 'الرسائل خلال 5 ثوانٍ', min: 3, max: 100 }, { key: 'duration', label: 'مدة الإيقاف بالدقائق', min: 1, max: 1440 }] },
+    { key: 'antiRaid', icon: '⚔️', name: 'مكافحة دخول الريد', desc: 'طرد الحسابات عند تجاوز عدد الانضمامات في نافذة 10 ثوانٍ.', fields: [{ key: 'threshold', label: 'عدد الانضمامات', min: 2, max: 100 }] },
+    { key: 'antiBadWords', icon: '🤬', name: 'فلترة الألفاظ المسيئة', desc: 'حذف الرسالة؛ ويُطبّق السجن إذا كان دوره مضبوطاً.' },
+    { key: 'antiLink', icon: '🔗', name: 'مكافحة الروابط', desc: 'حذف الروابط المنشورة من غير الإداريين.' },
+    { key: 'antiCaps', icon: '🔠', name: 'مكافحة الصراخ بالأحرف', desc: 'حذف الرسائل التي تتجاوز نسبة الأحرف الكبيرة.', fields: [{ key: 'threshold', label: 'الحد الأقصى للأحرف الكبيرة (%)', min: 50, max: 100 }] },
+    { key: 'antiMentionSpam', icon: '📣', name: 'مكافحة إغراق المنشن', desc: 'حذف الرسالة وإيقاف العضو عند تجاوز الحد.', fields: [{ key: 'threshold', label: 'الحد الأدنى للمنشن', min: 2, max: 100 }] },
+    { key: 'antiEmojiSpam', icon: '😵', name: 'مكافحة إغراق الإيموجي', desc: 'حذف الرسائل التي تتجاوز حد الإيموجي.', fields: [{ key: 'threshold', label: 'الحد الأدنى للإيموجي', min: 2, max: 100 }] },
+    { key: 'antiDuplicate', icon: '🔁', name: 'مكافحة الرسائل المكررة', desc: 'حذف الرسائل المكررة وإيقاف العضو مؤقتاً.', fields: [{ key: 'threshold', label: 'عدد التكرارات خلال دقيقة', min: 2, max: 20 }] },
+    { key: 'antiAccountAge', icon: '👶', name: 'فلتر الحسابات الحديثة', desc: 'طرد الحسابات الأصغر من العمر المحدد عند الانضمام.', fields: [{ key: 'minDays', label: 'أقل عمر للحساب بالأيام', min: 1, max: 365 }] },
   ]
 
-  const enabledCount = protectionCards.filter(pc => protection[pc.key]?.enabled).length
+  const isRestricted = key => key === 'antiAccountAge' && restrictions.antiAccountAge
+  const enabledCount = protectionCards.filter(pc => protection[pc.key]?.enabled && !isRestricted(pc.key)).length
 
   return (
     <div className="animate-fade-up">
@@ -264,31 +298,36 @@ function ProtectionSection({ guildId, toast }) {
         {protectionCards.map(pc => {
           const p = protection[pc.key] || {}
           const enabled = p.enabled || false
+          const restricted = isRestricted(pc.key)
+          const effectiveEnabled = enabled && !restricted
           return (
-            <div key={pc.key} className={`protection-card ${enabled ? 'enabled' : 'disabled'}`}>
+            <div key={pc.key} className={`protection-card ${effectiveEnabled ? 'enabled' : 'disabled'}`}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                 <span style={{ fontSize: 22 }}>{pc.icon}</span>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 800, fontSize: 14 }}>{pc.name}</div>
                   <div style={{ fontSize: 11, color: 'var(--muted)' }}>{pc.desc}</div>
+                  {restricted && <div role="status" style={{ fontSize: 11, color: 'var(--warning, #f0ad4e)', marginTop: 4 }}>موقوفة من إعدادات مالك البوت</div>}
                 </div>
                 <label className="toggle">
-                  <input type="checkbox" checked={enabled} onChange={e => toggle(pc.key, 'enabled', e.target.checked)} />
+                  <input type="checkbox" checked={enabled} disabled={restricted} onChange={e => toggle(pc.key, 'enabled', e.target.checked)} />
                   <span className="toggle-slider" />
                 </label>
               </div>
-              {enabled && p.action && (
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <select className="form-select" style={{ fontSize: 12 }} value={p.action || 'delete'} onChange={e => toggle(pc.key, 'action', e.target.value)}>
-                    <option value="delete">حذف الرسالة</option>
-                    <option value="warn">تحذير</option>
-                    <option value="timeout">توقف مؤقت</option>
-                    <option value="kick">طرد</option>
-                    <option value="ban">حظر</option>
-                    <option value="jail">سجن</option>
-                  </select>
-                </div>
-              )}
+              {enabled && pc.fields?.map(field => (
+                <label key={field.key} className="protection-setting">
+                  <span>{field.label}</span>
+                  <input
+                    className="form-input"
+                    type="number"
+                    min={field.min}
+                    max={field.max}
+                    step="1"
+                    value={p[field.key] ?? ''}
+                    onChange={e => toggle(pc.key, field.key, e.target.value === '' ? '' : Number(e.target.value))}
+                  />
+                </label>
+              ))}
             </div>
           )
         })}
