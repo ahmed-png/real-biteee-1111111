@@ -12,13 +12,18 @@ class TournamentSystem {
 
     // إنشاء بطولة جديدة
     async createTournament(guild, options = {}) {
+        const entryFee = options.entryFee === undefined ? 1000 : options.entryFee;
+        if (!Number.isSafeInteger(entryFee) || entryFee < 0) {
+            throw new RangeError('رسوم الاشتراك يجب ألا تكون سالبة وأن تكون عدداً صحيحاً.');
+        }
+
         const tournamentId = `tournament_${Date.now()}`;
 
         const tournament = {
             id: tournamentId,
             guildId: guild.id,
             game: options.game || 'mixed', // 'slots', 'blackjack', 'trivia', 'mixed'
-            entryFee: options.entryFee || 1000,
+            entryFee: entryFee || 1000,
             prizePool: 0,
             maxPlayers: options.maxPlayers || 16,
             participants: [],
@@ -50,12 +55,17 @@ class TournamentSystem {
         }
 
         const userData = db.getUserData(userId);
+        if (!Number.isSafeInteger(tournament.entryFee) || tournament.entryFee < 0) {
+            return { success: false, error: 'رسوم الاشتراك في هذه البطولة غير صالحة.' };
+        }
         if (userData.balance < tournament.entryFee) {
             return { success: false, error: 'ليس لديك رصيد كافٍ!' };
         }
 
         // خصم رسوم الدخول
-        db.removeMoney(userId, tournament.entryFee);
+        if (tournament.entryFee > 0 && !db.removeMoney(userId, tournament.entryFee)) {
+            return { success: false, error: 'تعذر خصم رسوم الاشتراك. حاول مرة أخرى.' };
+        }
         tournament.prizePool += tournament.entryFee;
 
         tournament.participants.push({
@@ -261,7 +271,11 @@ async function listTournaments(message) {
 
 async function createTournamentCommand(message, args) {
     const game = args[0] || 'mixed';
-    const entryFee = parseInt(args[1]) || 1000;
+    const parsedEntryFee = args[1] === undefined ? 1000 : Number(args[1]);
+    if (!Number.isSafeInteger(parsedEntryFee) || parsedEntryFee < 0) {
+        return message.reply('❌ رسوم الاشتراك يجب ألا تكون سالبة وأن تكون عدداً صحيحاً.');
+    }
+    const entryFee = parsedEntryFee || 1000;
     const maxPlayers = parseInt(args[2]) || 16;
     const delayMinutes = parseInt(args[3]) || 30;
 
