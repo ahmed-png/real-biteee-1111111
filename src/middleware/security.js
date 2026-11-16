@@ -10,6 +10,7 @@ module.exports = async function securityMiddleware(message) {
     if (await securityMonitor.checkTokenSniffing(message)) return false;
     if (await securityMonitor.checkPhishing(message)) return false;
     if (await protection.checkSpam(message)) return false;
+    if (await protection.checkLinks(message)) return false;
     if (await protection.checkBadWords(message)) return false;
 
     if (message.member && !message.member.permissions.has('Administrator')) {
