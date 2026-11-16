@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 
 const AuthContext = createContext(null)
 
@@ -34,31 +34,51 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [guilds, setGuilds] = useState([])
   const [loading, setLoading] = useState(true)
+  const authRequestId = useRef(0)
 
   const loadUser = useCallback(async () => {
+    const requestId = ++authRequestId.current
     const token = localStorage.getItem('token')
-    if (!token) { setLoading(false); return }
+    if (!token) {
+      setUser(null)
+      setGuilds([])
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
     try {
       const res = await fetch(`${API}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       })
+      if (requestId !== authRequestId.current || token !== localStorage.getItem('token')) return
+
       if (res.status === 401 || res.status === 403) {
         localStorage.removeItem('token')
         localStorage.removeItem('role')
+        setUser(null)
+        setGuilds([])
         setLoading(false)
         return
       }
       const data = await res.json()
+      if (requestId !== authRequestId.current || token !== localStorage.getItem('token')) return
+
       if (data?.success) {
         setUser(data.user)
         setGuilds(data.guilds || [])
       } else {
         localStorage.removeItem('token')
+        localStorage.removeItem('role')
+        setUser(null)
+        setGuilds([])
       }
     } catch (e) {
-      console.error('[Dashboard] Could not verify the current session:', e.message)
+      if (requestId === authRequestId.current) {
+        console.error('[Dashboard] Could not verify the current session:', e.message)
+      }
     } finally {
-      setLoading(false)
+      if (requestId === authRequestId.current) setLoading(false)
     }
   }, [])
 
@@ -85,18 +105,20 @@ export function AuthProvider({ children }) {
     loadUser()
   }, [loadUser])
 
-  const login = (token, role) => {
+  const login = useCallback((token, role) => {
     localStorage.setItem('token', token)
     if (role) localStorage.setItem('role', role)
     loadUser()
-  }
+  }, [loadUser])
 
-  const logout = () => {
+  const logout = useCallback(() => {
+    authRequestId.current += 1
     localStorage.removeItem('token')
     localStorage.removeItem('role')
     setUser(null)
     setGuilds([])
-  }
+    setLoading(false)
+  }, [])
 
   return (
     <AuthContext.Provider value={{ user, guilds, loading, login, logout, reload: loadUser }}>
