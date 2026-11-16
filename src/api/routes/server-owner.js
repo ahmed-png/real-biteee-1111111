@@ -113,6 +113,7 @@ router.get('/info', async (req, res) => {
                 online: true,
                 permissions: guild.members.me?.permissions.toArray() || [],
                 isAdmin: guild.members.me?.permissions.has(PermissionsBitField.Flags.Administrator) ?? false,
+                canViewAuditLog: guild.members.me?.permissions.has(PermissionsBitField.Flags.ViewAuditLog) ?? false,
             },
         });
     } catch (err) {
