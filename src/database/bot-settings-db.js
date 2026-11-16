@@ -35,6 +35,9 @@ const cache = new Map();
 async function loadBotSettings() {
     const mongoose = require('mongoose');
     if (mongoose.connection.readyState !== 1) {
+        if (process.env.NODE_ENV === 'production') {
+            throw new Error('MongoDB is not connected; refusing to load non-persistent production settings.');
+        }
         console.warn('[BotSettingsDB] ⚠️ MongoDB غير متصل — استخدام الإعدادات الافتراضية.');
         return;
     }
@@ -46,6 +49,9 @@ async function loadBotSettings() {
         }
         console.log(`[BotSettingsDB] ✅ Loaded ${settings.length} settings into memory.`);
     } catch (err) {
+        if (process.env.NODE_ENV === 'production') {
+            throw new Error(`Failed to load persistent bot settings: ${err.message}`, { cause: err });
+        }
         console.warn('[BotSettingsDB] ⚠️ تعذر تحميل الإعدادات من MongoDB:', err.message);
     }
 }
