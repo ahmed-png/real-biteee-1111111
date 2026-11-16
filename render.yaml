@@ -6,7 +6,7 @@ services:
     name: my-real-bot
     env: node
     plan: free
-    buildCommand: npm ci && npm run build:dashboard
+    buildCommand: npm ci
     startCommand: npm start
     healthCheckPath: /health
 
