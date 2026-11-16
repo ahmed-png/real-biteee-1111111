@@ -138,10 +138,20 @@ function ControlSection({ stats, toast }) {
     ...settings,
   })
   const [saving, setSaving] = useState(false)
+  const [commandSearch, setCommandSearch] = useState('')
+  const [commandBusy, setCommandBusy] = useState('')
 
   useEffect(() => {
     if (settings && Object.keys(settings).length > 0) setS(prev => ({ ...prev, ...settings }))
   }, [stats])
+
+  const commands = Array.isArray(stats?.commands) ? stats.commands : []
+  const disabledCommands = new Set((Array.isArray(s.disabledCommands) ? s.disabledCommands : []).map(name => String(name).toLowerCase()))
+  const filteredCommands = commands.filter(command => {
+    const query = commandSearch.trim().toLowerCase()
+    return !query || command.name.toLowerCase().includes(query) ||
+      (command.aliases || []).some(alias => alias.toLowerCase().includes(query))
+  })
 
   const save = async () => {
     setSaving(true)
@@ -149,6 +159,32 @@ function ControlSection({ stats, toast }) {
     setSaving(false)
     if (res?.success) toast('تم حفظ الإعدادات ✅', 'success')
     else toast('خطأ في الحفظ', 'error')
+  }
+
+  const toggleCommand = async command => {
+    const currentlyDisabled = disabledCommands.has(command.name.toLowerCase())
+    setCommandBusy(command.name)
+    try {
+      const res = await apiFetch('/bot-owner/command', {
+        method: 'POST',
+        body: JSON.stringify({ command: command.name, action: currentlyDisabled ? 'enable' : 'disable' }),
+      })
+      if (!res?.success) {
+        toast(res?.error || 'تعذر تحديث الأمر', 'error')
+        return
+      }
+      setS(prev => ({
+        ...prev,
+        disabledCommands: currentlyDisabled
+          ? (Array.isArray(prev.disabledCommands) ? prev.disabledCommands : []).filter(name => String(name).toLowerCase() !== command.name.toLowerCase())
+          : [...(Array.isArray(prev.disabledCommands) ? prev.disabledCommands : []), command.name],
+      }))
+      toast(currentlyDisabled ? 'تم تفعيل الأمر ✅' : 'تم تعطيل الأمر', 'success')
+    } catch (error) {
+      toast(error.message || 'تعذر تحديث الأمر', 'error')
+    } finally {
+      setCommandBusy('')
+    }
   }
 
   const toggles = [
@@ -198,10 +234,10 @@ function ControlSection({ stats, toast }) {
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>📈 إحصائيات سريعة</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {[
-                { label: 'السيرفرات', val: stats?.botSettings?.discordGuilds || stats?.discordGuilds || 0 },
+                { label: 'السيرفرات', val: stats?.discordGuilds || 0 },
                 { label: 'المستخدمون', val: stats?.discordUsers || 0 },
                 { label: 'Ping', val: `${stats?.ping || 0}ms` },
-                { label: 'Uptime %', val: '99.9%' },
+                { label: 'مدة التشغيل', val: `${Math.floor((stats?.uptime || 0) / 3600)}س ${Math.floor(((stats?.uptime || 0) % 3600) / 60)}د` },
               ].map(({ label, val }) => (
                 <div key={label} style={{ background: 'var(--bg)', borderRadius: 8, padding: '8px 10px', border: '1px solid var(--border2)' }}>
                   <div style={{ fontSize: 10, color: 'var(--muted)' }}>{label}</div>
@@ -211,6 +247,55 @@ function ControlSection({ stats, toast }) {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <div className="card-header">
+          <span className="card-icon">⌨️</span>
+          <div>
+            <div className="card-title">إدارة أوامر البوت</div>
+            <div className="card-subtitle">إيقاف الأمر عن الأعضاء أو إعادته؛ ويظل متاحاً لمالك البوت</div>
+          </div>
+          <span className="badge badge-blue" style={{ marginRight: 'auto' }}>{commands.length} أمر</span>
+        </div>
+        <input
+          className="form-input"
+          placeholder="🔍 ابحث باسم الأمر أو أحد أسمائه البديلة..."
+          value={commandSearch}
+          onChange={event => setCommandSearch(event.target.value)}
+          style={{ marginBottom: 12 }}
+        />
+        <div style={{ display: 'grid', gap: 8, maxHeight: 420, overflowY: 'auto' }}>
+          {filteredCommands.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-state-title">{commands.length ? 'لا توجد أوامر مطابقة' : 'قائمة الأوامر غير متاحة حالياً'}</div>
+            </div>
+          ) : filteredCommands.map(command => {
+            const disabled = disabledCommands.has(command.name.toLowerCase())
+            const busy = commandBusy === command.name
+            return (
+              <div key={command.name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 9, background: 'var(--card2)' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <strong style={{ fontSize: 13 }}>{command.name}</strong>
+                    <span className={`badge ${disabled ? 'badge-red' : 'badge-green'}`}>{disabled ? 'معطل' : 'فعال'}</span>
+                    {command.ownerOnly && <span className="badge badge-yellow">للمالك فقط</span>}
+                  </div>
+                  {command.description && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{command.description}</div>}
+                  {command.aliases?.length > 0 && <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>بدائل: {command.aliases.join('، ')}</div>}
+                </div>
+                <button
+                  className={`btn btn-sm ${disabled ? 'btn-success' : 'btn-ghost'}`}
+                  onClick={() => toggleCommand(command)}
+                  disabled={Boolean(commandBusy)}
+                >
+                  {busy ? '⏳' : disabled ? 'تفعيل' : 'تعطيل'}
+                </button>
+              </div>
+            )
+          })}
+        </div>
+        <div className="form-hint" style={{ marginTop: 10 }}>الأمر المعطل يبقى متاحاً لمالك البوت فقط كإجراء استرداد.</div>
       </div>
     </div>
   )
