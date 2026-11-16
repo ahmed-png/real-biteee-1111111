@@ -19,6 +19,9 @@ const LIMITS = { MAX_WALLET: 5000000, MAX_BANK: 10000000, MAX_INVESTMENT: 100000
  */
 async function loadDatabase() {
     if (mongoose.connection.readyState !== 1) {
+        if (process.env.NODE_ENV === 'production') {
+            throw new Error('MongoDB is not connected; refusing to start with non-persistent production data.');
+        }
         console.warn('[DB] ⚠️ MongoDB غير متصل — استخدام البيانات الافتراضية في الذاكرة المؤقتة (Local In-Memory Mode).');
         return { users: cache.users, guilds: cache.guilds };
     }
@@ -26,24 +29,32 @@ async function loadDatabase() {
     
     try {
         const users = await User.find({}).lean();
-    for (const u of users) {
-        delete u._id; delete u.__v;
-        cache.users.set(u.userId, u);
-    }
-    
-    const guilds = await Guild.find({}).lean();
-    for (const g of guilds) {
-        delete g._id; delete g.__v;
-        cache.guilds.set(g.guildId, g);
-    }
+        const guilds = await Guild.find({}).lean();
+        const sessions = await WebSession.find({}).lean();
 
-    const sessions = await WebSession.find({}).lean();
-    for (const s of sessions) {
-        cache.sessions.set(s.token, s);
-    }
+        cache.users.clear();
+        for (const user of users) {
+            delete user._id;
+            delete user.__v;
+            cache.users.set(user.userId, user);
+        }
 
+        cache.guilds.clear();
+        for (const guild of guilds) {
+            delete guild._id;
+            delete guild.__v;
+            cache.guilds.set(guild.guildId, guild);
+        }
+
+        cache.sessions.clear();
+        for (const session of sessions) {
+            cache.sessions.set(session.token, session);
+        }
         console.log(`[DB] ✅ Loaded ${users.length} Users, ${guilds.length} Guilds into memory.`);
     } catch (err) {
+        if (process.env.NODE_ENV === 'production') {
+            throw new Error(`Failed to load persistent data from MongoDB: ${err.message}`, { cause: err });
+        }
         console.warn('[DB] ⚠️ فشل استرداد البيانات من MongoDB:', err.message);
     }
     return { users: cache.users, guilds: cache.guilds };
@@ -53,7 +64,7 @@ function _defaultUser(userId) {
     return {
         userId, balance: 1000, bank: 0, bankCap: 0, xp: 0, level: 1, dailyStreak: 0, warnings: 0,
         lastDaily: null, lastWeekly: null, lastWork: null, lastRob: null, jailTime: null, muteTime: null,
-        marriedTo: null, marriedSince: null, color: null, birthday: null, reputation: 0, lastRep: null, vault: 0,
+        marriedTo: null, marriedSince: null, friends: [], color: null, birthday: null, reputation: 0, lastRep: null, vault: 0,
         stats: { gamesPlayed: 0, gamesWon: 0, totalWagered: 0, totalWon: 0, biggestWin: 0 },
         inventory: [], achievements: [], transactions: []
     };
