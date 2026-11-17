@@ -74,14 +74,20 @@ test('AutoMod executions include the matched text and the selected log channel',
         ruleId: 'rule-1',
         autoModerationRule: { name: 'Link filter' },
         channel: { name: 'general' },
-        matchedContent: 'suspicious phrase',
+        matchedContent: 'suspicious phrase https://example.com/unsafe',
+        content: 'discord.gg/invitepath',
     });
 
     assert.equal(logged, true);
     assert.equal(sentPayloads.length, sentCount + 1);
     const embed = sentPayloads.at(-1).embeds[0].data;
     assert.equal(embed.title, '🛡️ تنفيذ إجراء AutoMod');
-    assert.match(embed.fields.find(field => field.name === '🧩 النص المطابق').value, /suspicious phrase/);
+    const matchedContent = embed.fields.find(field => field.name === '🧩 النص المطابق').value;
+    const content = embed.fields.find(field => field.name === '📝 محتوى الرسالة').value;
+    assert.match(matchedContent, /suspicious phrase/);
+    assert.match(matchedContent, /رابط \(example\.com\)/);
+    assert.match(content, /رابط \(discord\.gg\)/);
+    assert.doesNotMatch(`${matchedContent} ${content}`, /https?:\/\/|discord\.gg\//);
 });
 
 test('guild update logger captures security and community setting changes', async () => {
@@ -112,4 +118,59 @@ test('guild update logger captures security and community setting changes', asyn
     const changes = embed.fields.find(field => field.name === '📋 التغييرات').value;
     assert.match(changes, /مستوى التحقق/);
     assert.match(changes, /ميزات السيرفر/);
+});
+
+test('deleted-message logs keep links and formatting safe and readable', async () => {
+    const sentCount = sentPayloads.length;
+    await logger.logMessageDelete({
+        id: 'message-123',
+        content: 'افحص https://example.com/path?token=secret ```نص غريب``` @everyone\u202E',
+        author: {
+            id: 'member-1',
+            tag: 'Member',
+            bot: false,
+            displayAvatarURL: () => 'https://cdn.example.com/avatar.png',
+        },
+        channel: '#general',
+        guild,
+        attachments: new Map([['file-1', {
+            name: 'document.pdf',
+            size: 2048,
+            url: 'https://cdn.example.com/document.pdf',
+        }]]),
+    });
+
+    assert.equal(sentPayloads.length, sentCount + 1);
+    const embed = sentPayloads.at(-1).embeds[0].data;
+    const content = embed.fields.find(field => field.name === '📝 محتوى الرسالة').value;
+    const attachments = embed.fields.find(field => field.name.startsWith('📎 المرفقات')).value;
+    assert.equal(embed.title, '🗑️ حذف رسالة');
+    assert.match(content, /رابط \(example\.com\)/);
+    assert.match(content, /ˋˋˋنص غريبˋˋˋ/);
+    assert.doesNotMatch(content, /https?:\/\/|token=secret|@everyone|\u202E/);
+    assert.match(attachments, /document\.pdf/);
+    assert.doesNotMatch(attachments, /https?:\/\//);
+});
+
+test('voice logs make microphone open, muted, and administrator-muted states distinct', async () => {
+    const sentCount = sentPayloads.length;
+    const member = { id: 'member-1', guild };
+    const oldState = { member, channelId: 'voice-1', selfMute: false, serverMute: false };
+    const newState = { member, channelId: 'voice-1', selfMute: true, serverMute: false };
+
+    await logger.logVoiceState(oldState, newState);
+
+    const selfMuteLog = sentPayloads.at(-1).embeds[0].data;
+    assert.equal(selfMuteLog.title, '🎙️ العضو قفل المايك');
+    assert.match(selfMuteLog.fields.find(field => field.name === '🎙️ تفاصيل الحالة').value, /🟢 مفتوح → 🔴 مقفول/);
+
+    await logger.logVoiceState(
+        { ...oldState, selfMute: true },
+        { ...newState, selfMute: true, serverMute: true }
+    );
+
+    assert.equal(sentPayloads.length, sentCount + 2);
+    const serverMuteLog = sentPayloads.at(-1).embeds[0].data;
+    assert.equal(serverMuteLog.title, '🔇 تم كتم المايك من الإدارة');
+    assert.match(serverMuteLog.fields.find(field => field.name === '🎙️ تفاصيل الحالة').value, /🔓 مرفوع → 🔒 مفعّل/);
 });
