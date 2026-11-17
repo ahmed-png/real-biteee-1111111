@@ -191,6 +191,39 @@ function formatLogValue(value) {
     return clipAuditValue(value, 140).replace(/`/g, "'").replace(/\r?\n/g, ' ');
 }
 
+function formatMessageContent(content, maxLength = 900) {
+    if (!content) return 'ماكو محتوى نصي.';
+
+    const formatted = String(content)
+        .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u200B\u200E\u200F\u202A-\u202E\u2060\u2066-\u2069\uFEFF]/g, '')
+        .replace(/\r\n?/g, '\n')
+        .replace(/<@!?(\d+)>/g, '@عضو $1')
+        .replace(/<@&(\d+)>/g, '@رتبة $1')
+        .replace(/<#(\d+)>/g, '#قناة $1')
+        .replace(/@everyone/gi, '@ everyone')
+        .replace(/@here/gi, '@ here')
+        .replace(/(?:https?:\/\/|www\.|discord\.gg\/|discord(?:app)?\.com\/invite\/)[^\s<>"`]+/gi, match => {
+            const url = match.replace(/[),.!?،؛:]+$/g, '');
+            const punctuation = match.slice(url.length);
+            try {
+                const hostname = new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`).hostname;
+                return `رابط (${hostname})${punctuation}`;
+            } catch {
+                return `رابط${punctuation}`;
+            }
+        })
+        .replace(/```/g, 'ˋˋˋ')
+        .replace(/([\\*_~|>])/g, '\\$1')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+
+    if (!formatted) return 'ماكو محتوى نصي.';
+    return formatted.length > maxLength
+        ? `${formatted.slice(0, maxLength - 3)}...`
+        : formatted;
+}
+
 function addLogChange(changes, label, before, after) {
     const beforeText = formatLogValue(before);
     const afterText = formatLogValue(after);
@@ -270,13 +303,13 @@ async function logAutoModerationExecution(execution) {
         .setFooter({ text: `Rule ID: ${execution.ruleId || 'غير متاح'}` });
 
     if (execution.matchedKeyword) {
-        embed.addFields({ name: '🔎 الكلمة المطابقة', value: clipAuditValue(execution.matchedKeyword, 500), inline: true });
+        embed.addFields({ name: '🔎 الكلمة المطابقة', value: formatMessageContent(execution.matchedKeyword, 500), inline: true });
     }
     if (execution.matchedContent) {
-        embed.addFields({ name: '🧩 النص المطابق', value: clipAuditValue(execution.matchedContent, 900), inline: false });
+        embed.addFields({ name: '🧩 النص المطابق', value: formatMessageContent(execution.matchedContent), inline: false });
     }
     if (execution.content) {
-        embed.addFields({ name: '📝 محتوى الرسالة', value: clipAuditValue(execution.content, 900), inline: false });
+        embed.addFields({ name: '📝 محتوى الرسالة', value: formatMessageContent(execution.content), inline: false });
     }
 
     return sendLog(execution.guild, embed);
@@ -294,17 +327,19 @@ async function logVoiceState(oldState, newState) {
     let action = '';
     const stateChanges = [];
 
-    for (const [property, label] of [
-        ['selfMute', 'كتم ذاتي'],
-        ['serverMute', 'كتم من الإدارة'],
-        ['selfDeaf', 'صمم ذاتي'],
-        ['serverDeaf', 'صمم من الإدارة'],
-        ['streaming', 'بث مباشر'],
-        ['selfVideo', 'كاميرا'],
-        ['suppress', 'كتم Stage'],
-    ]) {
+    const voiceProperties = [
+        ['selfMute', '🎙️ المايك (كتم ذاتي)', value => value ? '🔴 مقفول' : '🟢 مفتوح'],
+        ['serverMute', '🔇 كتم المايك من الإدارة', value => value ? '🔒 مفعّل' : '🔓 مرفوع'],
+        ['selfDeaf', '🎧 السماعة (صامت ذاتياً)', value => value ? '🔴 مطفّية' : '🟢 شغّالة'],
+        ['serverDeaf', '🔈 إسكات السماعة من الإدارة', value => value ? '🔒 مفعّل' : '🔓 مرفوع'],
+        ['streaming', '📺 البث المباشر', value => value ? '🟢 شغّال' : '⚫ متوقف'],
+        ['selfVideo', '📷 الكاميرا', value => value ? '🟢 شغّالة' : '⚫ متوقفة'],
+        ['suppress', '🎤 التحدث على Stage', value => value ? '⏸️ موقوف' : '▶️ مسموح'],
+    ];
+
+    for (const [property, label, formatValue] of voiceProperties) {
         if (oldState[property] !== newState[property]) {
-            stateChanges.push(`**${label}:** ${oldState[property] ? 'مفعّل' : 'معطّل'} → ${newState[property] ? 'مفعّل' : 'معطّل'}`);
+            stateChanges.push(`**${label}:** ${formatValue(oldState[property])} → ${formatValue(newState[property])}`);
         }
     }
 
@@ -319,40 +354,45 @@ async function logVoiceState(oldState, newState) {
     // حالة المغادرة (Disconnect)
     else if (oldState.channelId && !newState.channelId) {
         action = 'leave';
-        // محاولة معرفة إذا كان طرداً
         const executor = await getExecutor(guild, AuditLogEvent.MemberDisconnect, member.id);
 
         embed.setColor('#FF0000')
-            .setTitle('طفر من الروم الصوتي')
-            .setDescription(`${member} طلع من الردهة العار`)
+            .setTitle('🚪 مغادرة القناة الصوتية')
+            .setDescription(`غادر العضو ${member} القناة الصوتية.`)
             .addFields(
                 { name: 'القناة', value: `${oldState.channel}`, inline: true },
-                { name: 'بواسطة', value: executor ? `${executor} (طرد)` : 'بنفسه', inline: true }
+                { name: 'التفاصيل', value: executor ? `تم فصله بواسطة ${executor.tag || executor.username}.` : 'غادر بنفسه أو بسبب انقطاع الاتصال.', inline: true }
             );
     }
     // حالة الانتقال (Move)
     else if (oldState.channelId && newState.channelId && oldState.channelId !== newState.channelId) {
         action = 'move';
-        // محاولة معرفة إذا وتم نقله
         const executor = await getExecutor(guild, AuditLogEvent.MemberMove, member.id);
 
         embed.setColor('#FFA500')
-            .setTitle('↔️ انتقال بين قنوات صوتية او جروا من الياخة')
-            .setDescription(`${member} انتقل بين القنوات الصوتية`)
+            .setTitle('↔️ نقل بين القنوات الصوتية')
+            .setDescription(`انتقل العضو ${member} بين القنوات الصوتية.`)
             .addFields(
                 { name: 'من', value: `${oldState.channel}`, inline: true },
                 { name: 'إلى', value: `${newState.channel}`, inline: true },
-                { name: 'بواسطة', value: executor ? `${executor} (سحب)` : 'بنفسه', inline: true }
+                { name: 'التفاصيل', value: executor ? `تم نقله بواسطة ${executor.tag || executor.username}.` : 'انتقل بنفسه أو تعذّر تحديد المنفذ.', inline: true }
             );
     }
     if (stateChanges.length > 0) {
         action ||= 'state-change';
         if (!embed.data.title) {
+            const changedServerMute = oldState.serverMute !== newState.serverMute;
+            const changedSelfMute = oldState.selfMute !== newState.selfMute;
+            const title = changedServerMute
+                ? (newState.serverMute ? '🔇 تم كتم المايك من الإدارة' : '🔊 تم رفع الكتم الإداري عن المايك')
+                : changedSelfMute
+                    ? (newState.selfMute ? '🎙️ العضو قفل المايك' : '🎙️ العضو فتح المايك')
+                    : '🎙️ تغيّرت حالة الصوت';
             embed.setColor('#5865F2')
-                .setTitle('🎙️ تغيير حالة عضو صوتياً')
-                .setDescription(`${member} تغيّرت حالته الصوتية.`);
+                .setTitle(title)
+                .setDescription(`تغيّرت حالة الصوت للعضو ${member}.`);
         }
-        embed.addFields({ name: 'التغييرات', value: stateChanges.join('\n').slice(0, 1000) });
+        embed.addFields({ name: '🎙️ تفاصيل الحالة', value: stateChanges.join('\n').slice(0, 1000) });
     }
 
     if (action) {
@@ -373,29 +413,33 @@ async function logMessageDelete(message) {
 
     if (_isBotAction(executor)) return;
 
-    const safeContent = message.content
-        ? (message.content.length > 1024 ? message.content.substring(0, 1020) + '...' : message.content)
-        : '*بدون محتوى نصي*';
+    const safeContent = formatMessageContent(message.content);
 
-    const executorText = executor ? `${executor} (\`${executor.id}\`)` : `${message.author} (بنفسه/تطبيق طرف ثالث)`;
+    const executorText = executor
+        ? `${executor.tag || executor.username} (${executor.id})`
+        : 'غير معروف (قد يكون صاحب الرسالة أو تطبيقاً خارجياً)';
 
     const embed = new EmbedBuilder()
         .setColor('#ED4245')
-        .setTitle('🗑️ رسالة ممسوحة')
+        .setTitle('🗑️ حذف رسالة')
         .setAuthor({ name: message.author.tag, iconURL: message.author.displayAvatarURL() })
-        .setDescription(`**مسح الرسالة العار** ${message.channel}`)
+        .setDescription(`انحذفت رسالة في ${message.channel}.`)
         .addFields(
-            { name: '📝 شنو مسح', value: `\`\`\`\n${safeContent}\n\`\`\``, inline: false },
-            { name: '👤 الفقير الي نمسحت رسالته او مسحه', value: `${message.author} (\`${message.author.id}\`)`, inline: true },
-            { name: '👮 الي حذفه', value: executorText, inline: true }
+            { name: '📝 محتوى الرسالة', value: safeContent, inline: false },
+            { name: '👤 صاحب الرسالة', value: `${message.author.tag} (${message.author.id})`, inline: true },
+            { name: '👮 حذفها', value: executorText, inline: true }
         )
         .setTimestamp()
-        .setFooter({ text: `Message ID: ${message.id}` });
+        .setFooter({ text: `معرّف الرسالة: ${message.id}` });
 
     if (message.attachments.size > 0) {
         const attachments = [...message.attachments.values()]
             .slice(0, 5)
-            .map(attachment => `${attachment.name || 'ملف'} — ${attachment.url}`)
+            .map(attachment => {
+                const name = formatMessageContent(attachment.name || 'ملف', 120);
+                const size = attachment.size ? ` (${(attachment.size / 1024).toFixed(1)} كيلوبايت)` : '';
+                return `• ${name}${size}`;
+            })
             .join('\n');
         const remaining = message.attachments.size > 5 ? `\nو${message.attachments.size - 5} مرفق إضافي` : '';
         embed.addFields({
@@ -414,26 +458,21 @@ async function logMessageUpdate(oldMessage, newMessage) {
     if (oldMessage.content === newMessage.content) return;
     if (newMessage.author?.bot) return;
 
-    const safeOldContent = oldMessage.content
-        ? (oldMessage.content.length > 1024 ? oldMessage.content.substring(0, 1020) + '...' : oldMessage.content)
-        : '*بدون محتوى*';
-
-    const safeNewContent = newMessage.content
-        ? (newMessage.content.length > 1024 ? newMessage.content.substring(0, 1020) + '...' : newMessage.content)
-        : '*بدون محتوى*';
+    const safeOldContent = formatMessageContent(oldMessage.content);
+    const safeNewContent = formatMessageContent(newMessage.content);
 
     const embed = new EmbedBuilder()
         .setColor('#FEE75C')
-        .setTitle('✏️ رسالة معدلة')
+        .setTitle('✏️ تعديل رسالة')
         .setAuthor({ name: newMessage.author.tag, iconURL: newMessage.author.displayAvatarURL() })
-        .setDescription(`**تم تعديل رسالة في القناة:** ${newMessage.channel}`)
+        .setDescription(`تعدّلت رسالة في ${newMessage.channel}.`)
         .addFields(
-            { name: '🔴 النص السابق', value: `\`\`\`\n${safeOldContent}\n\`\`\``, inline: false },
-            { name: '🟢 النص الجديد', value: `\`\`\`\n${safeNewContent}\n\`\`\``, inline: false },
-            { name: '👤 صاحب الرسالة', value: `${newMessage.author} (\`${newMessage.author.id}\`)`, inline: true }
+            { name: 'قبل التعديل', value: safeOldContent, inline: false },
+            { name: 'بعد التعديل', value: safeNewContent, inline: false },
+            { name: '👤 صاحب الرسالة', value: `${newMessage.author.tag} (${newMessage.author.id})`, inline: true }
         )
         .setTimestamp()
-        .setFooter({ text: `Message ID: ${newMessage.id}` });
+        .setFooter({ text: `معرّف الرسالة: ${newMessage.id}` });
 
     await sendLog(newMessage.guild, embed);
 }
