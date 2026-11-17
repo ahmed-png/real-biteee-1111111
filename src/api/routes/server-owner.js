@@ -16,6 +16,7 @@ const { requireServerOwner } = require('./auth');
 const db = require('../../database/db');
 const botSettings = require('../../database/bot-settings-db');
 const autoRole = require('../../../utils/auto-role');
+const iraqiResponseLibrary = require('../../../utils/iraqi-responses');
 const { AUTO_ROLE_PERMISSION_OPTIONS, AUTO_ROLE_PERMISSION_NAMES } = require('../../../utils/auto-role-permissions');
 const router = express.Router({ mergeParams: true });
 
@@ -342,6 +343,68 @@ router.post('/protection', (req, res) => {
     }
 
     res.json({ success: true, message: 'تم حفظ إعدادات الحماية' });
+});
+
+router.get('/iraqi-responses', (req, res) => {
+    const guildData = db.getGuildData(req.params.guildId);
+    const storedResponses = guildData.iraqiResponses;
+    const responses = Array.isArray(storedResponses) && storedResponses.length > 0
+        ? storedResponses
+        : iraqiResponseLibrary.DEFAULT_IRAQI_RESPONSES;
+
+    res.json({
+        success: true,
+        enabled: guildData.iraqiResponsesEnabled !== false,
+        responses: responses.map(({ id, trigger, response, enabled }) => ({
+            id,
+            trigger,
+            response,
+            enabled: enabled !== false,
+        })),
+    });
+});
+
+router.post('/iraqi-responses', (req, res) => {
+    const { enabled, responses } = req.body || {};
+    if (typeof enabled !== 'boolean') {
+        return res.status(400).json({ success: false, error: 'حدد إذا كانت الردود العراقية مفعّلة أو متوقفة.' });
+    }
+    if (!Array.isArray(responses) || responses.length < 1 || responses.length > 200) {
+        return res.status(400).json({ success: false, error: 'قائمة الردود غير صالحة.' });
+    }
+
+    const ids = new Set();
+    const triggers = new Set();
+    const normalizedResponses = [];
+    for (const item of responses) {
+        if (!item || typeof item !== 'object' ||
+            typeof item.id !== 'string' || !/^[a-zA-Z0-9_-]{1,64}$/.test(item.id) ||
+            typeof item.trigger !== 'string' || typeof item.response !== 'string' ||
+            typeof item.enabled !== 'boolean') {
+            return res.status(400).json({ success: false, error: 'تأكد من اكتمال بيانات كل رد.' });
+        }
+
+        const id = item.id.trim();
+        const trigger = item.trigger.trim();
+        const response = item.response.trim();
+        const normalizedTrigger = iraqiResponseLibrary.normalizeIraqiText(trigger);
+        if (!trigger || trigger.length > 64 || !response || response.length > 400 || !normalizedTrigger) {
+            return res.status(400).json({ success: false, error: 'الكلمة أو الرد فارغ، أو أطول من الحد المسموح.' });
+        }
+        if (ids.has(id) || triggers.has(normalizedTrigger)) {
+            return res.status(400).json({ success: false, error: 'تأكد من عدم تكرار معرّف الرد أو كلمته.' });
+        }
+
+        ids.add(id);
+        triggers.add(normalizedTrigger);
+        normalizedResponses.push({ id, trigger, response, enabled: item.enabled });
+    }
+
+    db.updateGuildData(req.params.guildId, {
+        iraqiResponsesEnabled: enabled,
+        iraqiResponses: normalizedResponses,
+    });
+    res.json({ success: true, enabled, responses: normalizedResponses });
 });
 
 // إعدادات الترحيب — قراءة فقط (الكتابة تتم من Bot Owner Dashboard)

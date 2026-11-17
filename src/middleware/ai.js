@@ -4,6 +4,8 @@ const appLogger = require('../../utils/app-logger');
 const protection = require('../../utils/protection');
 const chatLearner = require('../../utils/chat-learner');
 const dailyChallenges = require('../../utils/daily-challenges');
+const iraqiResponseLibrary = require('../../utils/iraqi-responses');
+const db = require('../database/db');
 const { handleAIReply, recordUserMessage } = require('../services/ai.service');
 
 let globalMessageCounter = 0;
@@ -16,6 +18,25 @@ module.exports = async function aiMiddleware(message) {
     if (!isPublicChannel) return true;
 
     const isRestricted = protection.isPersonalChatRestricted?.(message.channel) || false;
+
+    if (message.guild && !message.author.bot && !isRestricted) {
+        const guildData = db.getGuildData(message.guild.id);
+        const savedResponses = guildData.iraqiResponses;
+        const responses = Array.isArray(savedResponses) && savedResponses.length > 0
+            ? savedResponses
+            : iraqiResponseLibrary.DEFAULT_IRAQI_RESPONSES;
+        const match = guildData.iraqiResponsesEnabled !== false
+            ? iraqiResponseLibrary.findMatchingResponse(message.content, responses)
+            : null;
+
+        if (match) {
+            await message.reply({
+                content: match.response,
+                allowedMentions: { parse: [] },
+            });
+            return false;
+        }
+    }
 
     // سجل المحادثة
     if (message.guild) {

@@ -12,6 +12,8 @@ process.env.OWNER_ID = 'test-owner';
 const express = require('express');
 const auth = require('../src/api/routes/auth');
 const botSettings = require('../utils/bot-settings');
+const appLogger = require('../utils/app-logger');
+const iraqiResponseLibrary = require('../utils/iraqi-responses');
 const db = require('../src/database/db');
 const botOwnerRouter = require('../src/api/routes/bot-owner');
 const serverOwnerRouter = require('../src/api/routes/server-owner');
@@ -123,6 +125,7 @@ test('bot-owner stats exposes canonical commands and their disabled state', asyn
     botSettings.getAll = () => ({ disabledCommands: ['ping'] });
     db.getLeaderboard = () => [];
     client.isReady = () => false;
+    appLogger.info('dashboard-log-visible-test');
 
     try {
         const response = await request('/api/bot-owner/stats');
@@ -136,6 +139,7 @@ test('bot-owner stats exposes canonical commands and their disabled state', asyn
             ownerOnly: false,
             disabled: true,
         });
+        assert.ok(data.stats.logs.some(line => line.includes('dashboard-log-visible-test')));
     } finally {
         botSettings.get = originalGet;
         botSettings.getAll = originalGetAll;
@@ -190,4 +194,58 @@ test('server-owner role control applies a manageable role to a guild member', as
     assert.equal(response.status, 200);
     assert.equal((await response.json()).success, true);
     assert.deepEqual(roleActions, ['add']);
+});
+
+test('server-owner Iraqi response library returns about 150 editable per-guild replies', async () => {
+    const responsesGuildId = '999000000000000001';
+    const originalGetGuildData = db.getGuildData;
+    const originalUpdateGuildData = db.updateGuildData;
+    const guildData = { iraqiResponsesEnabled: true, iraqiResponses: [] };
+    db.getGuildData = () => guildData;
+    db.updateGuildData = (_guildId, updates) => Object.assign(guildData, updates);
+
+    try {
+        const defaultsResponse = await request(`/server/${responsesGuildId}/iraqi-responses`);
+        const defaults = await defaultsResponse.json();
+
+        assert.equal(defaultsResponse.status, 200);
+        assert.equal(defaults.success, true);
+        assert.equal(defaults.enabled, true);
+        assert.ok(defaults.responses.length >= 150 && defaults.responses.length <= 160);
+        assert.equal(defaults.responses.length, iraqiResponseLibrary.DEFAULT_IRAQI_RESPONSES.length);
+
+        const responses = defaults.responses.map(item => ({ ...item }));
+        responses[0] = {
+            ...responses[0],
+            trigger: 'هلا اختبار',
+            response: 'هلا بيك، هذا رد خاص بالسيرفر.',
+            enabled: false,
+        };
+        const savedResponse = await request(`/server/${responsesGuildId}/iraqi-responses`, {
+            method: 'POST',
+            body: JSON.stringify({ enabled: false, responses }),
+        });
+        const saved = await savedResponse.json();
+
+        assert.equal(savedResponse.status, 200);
+        assert.equal(saved.success, true);
+        assert.equal(saved.enabled, false);
+        assert.equal(saved.responses[0].trigger, 'هلا اختبار');
+        assert.equal(saved.responses[0].enabled, false);
+
+        const reloaded = await (await request(`/server/${responsesGuildId}/iraqi-responses`)).json();
+        assert.equal(reloaded.enabled, false);
+        assert.equal(reloaded.responses[0].response, 'هلا بيك، هذا رد خاص بالسيرفر.');
+
+        const duplicated = [...responses];
+        duplicated[1] = { ...duplicated[1], trigger: responses[0].trigger };
+        const rejected = await request(`/server/${responsesGuildId}/iraqi-responses`, {
+            method: 'POST',
+            body: JSON.stringify({ enabled: true, responses: duplicated }),
+        });
+        assert.equal(rejected.status, 400);
+    } finally {
+        db.getGuildData = originalGetGuildData;
+        db.updateGuildData = originalUpdateGuildData;
+    }
 });

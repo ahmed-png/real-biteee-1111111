@@ -110,6 +110,8 @@ const guildSchema = new mongoose.Schema({
     ticketPanelManaged: { type: Boolean, default: false },
     ticketCategoryId: { type: String, default: null },
     ticketOpenTickets: { type: Object, default: () => ({}) },
+    iraqiResponsesEnabled: { type: Boolean, default: true },
+    iraqiResponses: { type: [mongoose.Schema.Types.Mixed], default: [] },
 
     colorChannelId: String,
     colorMessageId: String,

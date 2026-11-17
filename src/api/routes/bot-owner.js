@@ -59,15 +59,8 @@ router.get('/stats', async (req, res) => {
     const mem = process.memoryUsage();
     const upMs = client?.uptime || 0;
 
-    // قراءة Logs
-    const logPath = path.join(__dirname, '../../../../logs/bot.log');
-    let logs = [];
-    try {
-        if (fs.existsSync(logPath)) {
-            const lines = fs.readFileSync(logPath, 'utf8').split('\n').filter(Boolean);
-            logs = lines.slice(-200).reverse();
-        }
-    } catch {}
+    // The application logger writes to stdout/stderr; retain its recent lines for the dashboard.
+    const logs = appLogger.getRecentLogs(200);
 
     // جلب السيرفرات
     let fullGuilds = [];

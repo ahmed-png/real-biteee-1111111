@@ -537,11 +537,9 @@ function AnnounceSection({ toast }) {
 function LogsSection({ stats }) {
   const logs = stats?.logs || []
   const [filter, setFilter] = useState('all')
+  const getLevel = line => line.match(/\[(ERROR|WARN|INFO|DEBUG)\]/)?.[1]?.toLowerCase() || 'other'
 
-  const filtered = filter === 'all' ? logs :
-    filter === 'error' ? logs.filter(l => l.includes('❌') || l.includes('ERROR') || l.includes('error')) :
-    filter === 'success' ? logs.filter(l => l.includes('✅') || l.includes('ready') || l.includes('success')) :
-    logs
+  const filtered = filter === 'all' ? logs : logs.filter(line => getLevel(line) === filter)
 
   return (
     <div className="animate-fade-up">
@@ -550,12 +548,12 @@ function LogsSection({ stats }) {
           <span className="card-icon">📋</span>
           <div>
             <div className="card-title">سجلات البوت الحية</div>
-            <div className="card-subtitle">آخر 200 سطر من الـ console</div>
+            <div className="card-subtitle">أحدث 200 سطر من سجل التطبيق خلال التشغيل الحالي.</div>
           </div>
           <div style={{ display: 'flex', gap: 8, marginRight: 'auto' }}>
-            {['all', 'error', 'success'].map(f => (
+            {['all', 'error', 'warn', 'info'].map(f => (
               <button key={f} className={`btn btn-sm ${filter === f ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setFilter(f)}>
-                {f === 'all' ? 'الكل' : f === 'error' ? '❌ أخطاء' : '✅ نجاح'}
+                {f === 'all' ? 'الكل' : f === 'error' ? '❌ أخطاء' : f === 'warn' ? '⚠️ تحذيرات' : 'ℹ️ معلومات'}
               </button>
             ))}
           </div>
@@ -563,26 +561,21 @@ function LogsSection({ stats }) {
         <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: 16, fontFamily: 'var(--mono)', fontSize: 12, maxHeight: 500, overflowY: 'auto', lineHeight: 1.8, direction: 'ltr', textAlign: 'left' }}>
           {filtered.length === 0
             ? <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 20 }}>ماكو سجلات تطابق الفلتر.</div>
-            : filtered.map((line, i) => (
-              <div key={i} style={{
-                color: (line.includes('❌') || line.includes('ERROR') || line.includes('error'))
-                  ? 'var(--red)'
-                  : (line.includes('✅') || line.includes('ready') || line.includes('success'))
-                  ? 'var(--green)'
-                  : (line.includes('WARN') || line.includes('warn'))
-                  ? 'var(--yellow)'
-                  : 'var(--text2)',
-                padding: '1px 0',
-                borderBottom: '1px solid var(--border2)',
-              }}>
-                {line}
-              </div>
-            ))}
+            : filtered.map((line, i) => {
+              const level = getLevel(line)
+              const color = level === 'error' ? 'var(--red)' : level === 'warn' ? 'var(--yellow)' : level === 'info' ? 'var(--cyan)' : 'var(--text2)'
+              return (
+                <div key={i} style={{ color, padding: '1px 0', borderBottom: '1px solid var(--border2)' }}>
+                  {line}
+                </div>
+              )
+            })}
         </div>
         <div style={{ marginTop: 10, fontSize: 12, color: 'var(--muted)', display: 'flex', gap: 16 }}>
           <span>📊 إجمالي السجلات: {logs.length}</span>
-          <span>❌ أخطاء: {logs.filter(l => l.includes('ERROR')).length}</span>
-          <span>✅ نجاح: {logs.filter(l => l.includes('ready')).length}</span>
+          <span>❌ أخطاء: {logs.filter(line => getLevel(line) === 'error').length}</span>
+          <span>⚠️ تحذيرات: {logs.filter(line => getLevel(line) === 'warn').length}</span>
+          <span>ℹ️ معلومات: {logs.filter(line => getLevel(line) === 'info').length}</span>
         </div>
       </div>
     </div>

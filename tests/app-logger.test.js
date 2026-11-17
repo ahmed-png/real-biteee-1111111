@@ -21,3 +21,17 @@ test('shared application logger formats levels and arguments consistently', () =
     assert.match(result.stderr, /^\d{4}-\d\d-\d\dT[^\n]+ \[WARN\] retry$/m);
     assert.match(result.stderr, /^\d{4}-\d\d-\d\dT[^\n]+ \[ERROR\] Error: failed$/m);
 });
+
+test('application logger exposes recent entries newest first', () => {
+    const loggerPath = path.resolve(__dirname, '../utils/app-logger.js');
+    const result = spawnSync(process.execPath, [
+        '-e',
+        `const logger = require(${JSON.stringify(loggerPath)}); logger.info('first'); logger.warn('second'); logger.error('third'); process.stdout.write(JSON.stringify(logger.getRecentLogs(2)) + '\\n');`,
+    ], { encoding: 'utf8' });
+
+    assert.equal(result.status, 0, result.stderr);
+    const logs = JSON.parse(result.stdout.trim().split('\n').at(-1));
+    assert.equal(logs.length, 2);
+    assert.match(logs[0], /\[ERROR\] third$/);
+    assert.match(logs[1], /\[WARN\] second$/);
+});
