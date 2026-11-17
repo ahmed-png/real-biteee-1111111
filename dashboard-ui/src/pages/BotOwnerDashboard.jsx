@@ -585,12 +585,20 @@ function LogsSection({ stats }) {
 // ─── Responses ────────────────────────────────────────────────────────────────
 function ResponsesSection({ toast }) {
   const [responses, setResponses] = useState([])
+  const [defaultResponses, setDefaultResponses] = useState([])
   const [trigger, setTrigger] = useState('')
   const [response, setResponse] = useState('')
   const [exact, setExact] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [defaultSearch, setDefaultSearch] = useState('')
 
-  const reload = () => apiFetch('/bot-owner/responses').then(d => { if (d?.success) setResponses(d.responses); setLoading(false) })
+  const reload = () => apiFetch('/bot-owner/responses').then(d => {
+    if (d?.success) {
+      setResponses(d.responses)
+      setDefaultResponses(d.defaultResponses || [])
+    }
+    setLoading(false)
+  })
 
   useEffect(() => { reload() }, [])
 
@@ -641,16 +649,46 @@ function ResponsesSection({ toast }) {
 
         <div className="card">
           <div className="card-header">
+            <span className="card-icon">💬</span>
+            <div>
+              <div className="card-title">الردود العراقية الجاهزة ({defaultResponses.length})</div>
+              <div className="card-subtitle">هذي الردود موجودة للسيرفرات، وتگدر تعدّلها من لوحة مالك كل سيرفر.</div>
+            </div>
+          </div>
+          <input
+            className="form-input"
+            value={defaultSearch}
+            onChange={event => setDefaultSearch(event.target.value)}
+            placeholder="🔍 دوّر على كلمة أو رد..."
+            aria-label="البحث في الردود العراقية الجاهزة"
+            style={{ marginBottom: 12 }}
+          />
+          <div style={{ display: 'grid', gap: 8, maxHeight: 420, overflowY: 'auto' }}>
+            {defaultResponses
+              .filter(item => !defaultSearch.trim() ||
+                item.trigger.includes(defaultSearch.trim()) ||
+                item.response.includes(defaultSearch.trim()))
+              .map(item => (
+                <div key={item.id} style={{ padding: 10, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--card2)' }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 3 }}>{item.trigger}</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)' }}>{item.response}</div>
+                </div>
+              ))}
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-header">
             <span className="card-icon">📋</span>
-            <div className="card-title">الردود الحالية ({responses.length})</div>
+            <div className="card-title">الردود العامة المضافة ({responses.length})</div>
           </div>
           {loading ? (
             <div style={{ textAlign: 'center', padding: 20 }}><div className="spinner" style={{ margin: '0 auto' }} /></div>
           ) : responses.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon">🤖</div>
-              <div className="empty-state-title">ماكو ردود تلقائية بعد.</div>
-              <div className="empty-state-desc">ضيف رد من النموذج اللي يمك.</div>
+              <div className="empty-state-title">ماكو ردود عامة مضافة من لوحة مالك البوت.</div>
+              <div className="empty-state-desc">الردود العراقية الجاهزة موجودة بالقائمة الثانية، والردود الخاصة بكل سيرفر من لوحة مالكه.</div>
             </div>
           ) : responses.map(r => (
             <div key={r.id} style={{ padding: '12px 0', borderBottom: '1px solid var(--border2)', display: 'flex', gap: 10, alignItems: 'flex-start' }}>

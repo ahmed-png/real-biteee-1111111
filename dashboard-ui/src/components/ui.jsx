@@ -87,6 +87,7 @@ export function Sidebar({ activeSection, onSection, role, user, onLogout, select
     { id: 'welcome', icon: '👋', label: 'إعدادات الترحيب' },
     { id: 'protection', icon: '🛡️', label: 'الحماية' },
     { id: 'iraqi-responses', icon: '💬', label: 'الردود العراقية' },
+    { id: 'automatic-responses', icon: '🤖', label: 'الردود التلقائية' },
     { id: 'auto-role', icon: '🎟️', label: 'الرتبة التلقائية' },
     { id: 'roles', icon: '🏷️', label: 'الأدوار' },
     { id: 'leaderboard', icon: '🏆', label: 'المتصدرون' },

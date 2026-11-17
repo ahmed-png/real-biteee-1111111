@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth, apiFetch } from '../auth'
 import { Sidebar, StatCard, ToggleRow, ToastContainer, useToast, ChannelSelect, RefreshButton } from '../components/ui'
 import IraqiResponsesSection from './IraqiResponsesSection'
+import AutomaticResponsesSection from './AutomaticResponsesSection'
 
 // ─── Overview ─────────────────────────────────────────────────────────────────
 function Overview({ info }) {
@@ -1070,6 +1071,7 @@ export default function ServerOwnerDashboard() {
     welcome:    '👋 إعدادات الترحيب',
     protection: '🛡️ الحماية',
     'iraqi-responses': '💬 الردود العراقية',
+    'automatic-responses': '🤖 الردود التلقائية',
     'auto-role': '🎟️ الرتبة التلقائية',
     roles:      '🏷️ الأدوار',
     leaderboard:'🏆 المتصدرون',
@@ -1082,6 +1084,7 @@ export default function ServerOwnerDashboard() {
     welcome:     <WelcomeSection guildId={guildId} channels={channels} toast={toast} />,
     protection:  <ProtectionSection guildId={guildId} toast={toast} />,
     'iraqi-responses': <IraqiResponsesSection guildId={guildId} toast={toast} />,
+    'automatic-responses': <AutomaticResponsesSection guildId={guildId} toast={toast} />,
     'auto-role': <AutoRoleSection guildId={guildId} toast={toast} />,
     roles:       <RolesSection guildId={guildId} toast={toast} />,
     leaderboard: <LeaderboardSection guildId={guildId} />,

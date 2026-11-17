@@ -63,3 +63,41 @@ test('AI middleware uses the server-specific Iraqi reply before other chat respo
         protection.isPersonalChatRestricted = originalRestrictionCheck;
     }
 });
+
+test('AI middleware prioritizes enabled custom replies for their guild only', async () => {
+    const originalGetGuildData = db.getGuildData;
+    const originalRestrictionCheck = protection.isPersonalChatRestricted;
+    const replies = [];
+    db.getGuildData = guildId => ({
+        serverAutoResponsesEnabled: guildId === 'custom-response-guild',
+        serverAutoResponses: [{
+            id: 'custom',
+            trigger: 'قوانين السيرفر',
+            response: 'هاي قوانيننا.',
+            exactMatch: true,
+            enabled: true,
+        }],
+        iraqiResponsesEnabled: false,
+        iraqiResponses: [],
+    });
+    protection.isPersonalChatRestricted = () => false;
+
+    try {
+        const message = {
+            content: 'قوانين السيرفر؟',
+            guild: { id: 'custom-response-guild', roles: { everyone: {} } },
+            channel: { permissionsFor: () => ({ has: () => true }) },
+            author: { id: 'custom-member', username: 'member', bot: false },
+            reply: async payload => replies.push(payload),
+        };
+
+        const proceed = await aiMiddleware(message);
+        assert.equal(proceed, false);
+        assert.equal(replies.length, 1);
+        assert.equal(replies[0].content, 'هاي قوانيننا.');
+        assert.deepEqual(replies[0].allowedMentions, { parse: [] });
+    } finally {
+        db.getGuildData = originalGetGuildData;
+        protection.isPersonalChatRestricted = originalRestrictionCheck;
+    }
+});

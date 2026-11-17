@@ -148,6 +148,15 @@ test('bot-owner stats exposes canonical commands and their disabled state', asyn
     }
 });
 
+test('bot-owner automatic replies dashboard includes the ready Iraqi response catalog', async () => {
+    const response = await request('/api/bot-owner/responses');
+    const result = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(result.success, true);
+    assert.ok(result.defaultResponses.length >= 150 && result.defaultResponses.length <= 160);
+});
+
 test('server-owner role control blocks roles at or above the bot hierarchy', async () => {
     role.comparePositionTo = () => 0;
     const response = await request(`/server/${guild.id}/roles/manage`, {
@@ -225,6 +234,7 @@ test('server-owner Iraqi response library returns about 150 editable per-guild r
             method: 'POST',
             body: JSON.stringify({ enabled: false, responses }),
         });
+
         const saved = await savedResponse.json();
 
         assert.equal(savedResponse.status, 200);
@@ -244,6 +254,64 @@ test('server-owner Iraqi response library returns about 150 editable per-guild r
             body: JSON.stringify({ enabled: true, responses: duplicated }),
         });
         assert.equal(rejected.status, 400);
+    } finally {
+        db.getGuildData = originalGetGuildData;
+        db.updateGuildData = originalUpdateGuildData;
+    }
+});
+
+test('server-owner automatic replies are stored only under the requested guild', async () => {
+    const originalGetGuildData = db.getGuildData;
+    const originalUpdateGuildData = db.updateGuildData;
+    const guilds = new Map();
+    const updates = [];
+    db.getGuildData = guildId => {
+        if (!guilds.has(guildId)) guilds.set(guildId, { serverAutoResponsesEnabled: true, serverAutoResponses: [] });
+        return guilds.get(guildId);
+    };
+    db.updateGuildData = (guildId, changes) => {
+        updates.push({ guildId, changes });
+        Object.assign(db.getGuildData(guildId), changes);
+    };
+
+    try {
+        const guildId = '999000000000000002';
+        const response = await request(`/server/${guildId}/automatic-responses`, {
+            method: 'POST',
+            body: JSON.stringify({
+                enabled: true,
+                responses: [{
+                    id: 'welcome-rule',
+                    trigger: 'قوانين السيرفر',
+                    response: 'تفضل، هاي قوانين السيرفر.',
+                    exactMatch: true,
+                    enabled: true,
+                }],
+            }),
+        });
+        const saved = await response.json();
+
+        assert.equal(response.status, 200);
+        assert.equal(saved.success, true);
+        assert.equal(updates[0].guildId, guildId);
+        assert.equal(guilds.get(guildId).serverAutoResponses[0].trigger, 'قوانين السيرفر');
+
+        const reloaded = await (await request(`/server/${guildId}/automatic-responses`)).json();
+        assert.equal(reloaded.responses[0].response, 'تفضل، هاي قوانين السيرفر.');
+        const otherGuild = await (await request('/server/999000000000000003/automatic-responses')).json();
+        assert.equal(otherGuild.responses.length, 0);
+
+        const invalid = await request(`/server/${guildId}/automatic-responses`, {
+            method: 'POST',
+            body: JSON.stringify({ enabled: true, responses: [{
+                id: 'bad-rule',
+                trigger: 'هلا',
+                response: 'رد',
+                exactMatch: 'yes',
+                enabled: true,
+            }] }),
+        });
+        assert.equal(invalid.status, 400);
     } finally {
         db.getGuildData = originalGetGuildData;
         db.updateGuildData = originalUpdateGuildData;

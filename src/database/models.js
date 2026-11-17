@@ -112,6 +112,8 @@ const guildSchema = new mongoose.Schema({
     ticketOpenTickets: { type: Object, default: () => ({}) },
     iraqiResponsesEnabled: { type: Boolean, default: true },
     iraqiResponses: { type: [mongoose.Schema.Types.Mixed], default: [] },
+    serverAutoResponsesEnabled: { type: Boolean, default: true },
+    serverAutoResponses: { type: [mongoose.Schema.Types.Mixed], default: [] },
 
     colorChannelId: String,
     colorMessageId: String,

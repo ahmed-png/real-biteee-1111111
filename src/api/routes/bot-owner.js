@@ -14,6 +14,7 @@ const express = require('express');
 const { requireBotOwner } = require('./auth');
 const dConf = require('../../../utils/dashboard-config');
 const botSettings = require('../../../utils/bot-settings');
+const iraqiResponseLibrary = require('../../../utils/iraqi-responses');
 const db = require('../../database/db');
 const fs = require('fs');
 const path = require('path');
@@ -286,7 +287,11 @@ router.post('/response', (req, res) => {
 });
 
 router.get('/responses', (req, res) => {
-    res.json({ success: true, responses: dConf.getAutoResponses() });
+    res.json({
+        success: true,
+        responses: dConf.getAutoResponses(),
+        defaultResponses: iraqiResponseLibrary.DEFAULT_IRAQI_RESPONSES,
+    });
 });
 
 router.delete('/response/:id', (req, res) => {

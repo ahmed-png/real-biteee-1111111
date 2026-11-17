@@ -407,6 +407,58 @@ router.post('/iraqi-responses', (req, res) => {
     res.json({ success: true, enabled, responses: normalizedResponses });
 });
 
+router.get('/automatic-responses', (req, res) => {
+    const guildData = db.getGuildData(req.params.guildId);
+    res.json({
+        success: true,
+        enabled: guildData.serverAutoResponsesEnabled !== false,
+        responses: Array.isArray(guildData.serverAutoResponses) ? guildData.serverAutoResponses : [],
+    });
+});
+
+router.post('/automatic-responses', (req, res) => {
+    const { enabled, responses } = req.body || {};
+    if (typeof enabled !== 'boolean') {
+        return res.status(400).json({ success: false, error: 'حدد إذا كانت الردود التلقائية مفعّلة أو متوقفة.' });
+    }
+    if (!Array.isArray(responses) || responses.length > 100) {
+        return res.status(400).json({ success: false, error: 'قائمة الردود غير صالحة.' });
+    }
+
+    const ids = new Set();
+    const triggers = new Set();
+    const normalizedResponses = [];
+    for (const item of responses) {
+        if (!item || typeof item !== 'object' ||
+            typeof item.id !== 'string' || !/^[a-zA-Z0-9_-]{1,64}$/.test(item.id) ||
+            typeof item.trigger !== 'string' || typeof item.response !== 'string' ||
+            typeof item.exactMatch !== 'boolean' || typeof item.enabled !== 'boolean') {
+            return res.status(400).json({ success: false, error: 'تأكد من اكتمال بيانات كل رد.' });
+        }
+
+        const id = item.id.trim();
+        const trigger = item.trigger.trim();
+        const response = item.response.trim();
+        const normalizedTrigger = iraqiResponseLibrary.normalizeIraqiText(trigger);
+        if (!trigger || trigger.length > 64 || !response || response.length > 2000 || !normalizedTrigger) {
+            return res.status(400).json({ success: false, error: 'الكلمة أو الرد فارغ، أو أطول من الحد المسموح.' });
+        }
+        if (ids.has(id) || triggers.has(normalizedTrigger)) {
+            return res.status(400).json({ success: false, error: 'تأكد من عدم تكرار معرّف الرد أو كلمته.' });
+        }
+
+        ids.add(id);
+        triggers.add(normalizedTrigger);
+        normalizedResponses.push({ id, trigger, response, exactMatch: item.exactMatch, enabled: item.enabled });
+    }
+
+    db.updateGuildData(req.params.guildId, {
+        serverAutoResponsesEnabled: enabled,
+        serverAutoResponses: normalizedResponses,
+    });
+    res.json({ success: true, enabled, responses: normalizedResponses });
+});
+
 // إعدادات الترحيب — قراءة فقط (الكتابة تتم من Bot Owner Dashboard)
 
 /**

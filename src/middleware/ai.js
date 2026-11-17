@@ -21,6 +21,27 @@ module.exports = async function aiMiddleware(message) {
 
     if (message.guild && !message.author.bot && !isRestricted) {
         const guildData = db.getGuildData(message.guild.id);
+        const normalizedMessage = iraqiResponseLibrary.normalizeIraqiText(message.content);
+        const serverAutoResponse = guildData.serverAutoResponsesEnabled !== false &&
+            Array.isArray(guildData.serverAutoResponses)
+            ? guildData.serverAutoResponses.find(item => {
+                if (!item || item.enabled === false || typeof item.trigger !== 'string' || typeof item.response !== 'string') return false;
+                const trigger = iraqiResponseLibrary.normalizeIraqiText(item.trigger);
+                if (!trigger) return false;
+                return item.exactMatch
+                    ? normalizedMessage === trigger
+                    : normalizedMessage.includes(trigger);
+            })
+            : null;
+
+        if (serverAutoResponse) {
+            await message.reply({
+                content: serverAutoResponse.response,
+                allowedMentions: { parse: [] },
+            });
+            return false;
+        }
+
         const savedResponses = guildData.iraqiResponses;
         const responses = Array.isArray(savedResponses) && savedResponses.length > 0
             ? savedResponses

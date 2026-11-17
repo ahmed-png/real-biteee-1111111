@@ -234,6 +234,8 @@ function _defaultGuild(guildId) {
         ticketOpenTickets: {},
         iraqiResponsesEnabled: true,
         iraqiResponses: [],
+        serverAutoResponsesEnabled: true,
+        serverAutoResponses: [],
         // إعدادات أخرى
         bankChannel: null, jailRole: null, muteRole: null, logChannel: null, punishmentsChannel: null,
         gamesChannel: null, colorChannelId: null, colorMessageId: null, logChannelId: null,
