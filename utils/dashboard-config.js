@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('./app-logger');
 
 const fs = require('fs');
 const path = require('path');
@@ -27,7 +28,7 @@ function loadConfig() {
             return { ...defaultData, ...data };
         }
     } catch (err) {
-        console.error('[DashboardConfig] Error loading config:', err.message);
+        appLogger.error('[DashboardConfig] Error loading config:', err.message);
     }
     return { ...defaultData };
 }
@@ -38,12 +39,12 @@ function saveConfig(data) {
         fs.writeFileSync(configPath, JSON.stringify(data, null, 2), 'utf8');
         return true;
     } catch (err) {
-        console.error('[DashboardConfig] Error saving config:', err.message);
+        appLogger.error('[DashboardConfig] Error saving config:', err.message);
         return false;
     }
 }
 
-// ─── دوال الردود التلقائية ──────────────────────────────────────────────
+// دوال الردود التلقائية
 function getAutoResponses() {
     return loadConfig().autoResponses;
 }
@@ -67,7 +68,7 @@ function deleteAutoResponse(id) {
     return false;
 }
 
-// ─── دوال الأوامر المخصصة ───────────────────────────────────────────────
+// دوال الأوامر المخصصة
 function getCustomCommands() {
     return loadConfig().customCommands;
 }

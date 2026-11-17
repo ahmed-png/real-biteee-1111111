@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../../utils/app-logger');
 
 /**
  * API Server — Express App
@@ -43,17 +44,17 @@ app.use(express.json({ limit: '10mb' }));
 const uploadsPath = path.join(__dirname, '../../data/uploads');
 app.use('/uploads', express.static(uploadsPath));
 
-// 📁 Load Routers 📁──────────────────────────────────────────────────────────────
+// Load Routers ──────────────────────────────────────────────────────────────
 const authRouter       = require('./routes/auth');
 const botOwnerRouter   = require('./routes/bot-owner');
 const serverOwnerRouter = require('./routes/server-owner');
 const publicRouter     = require('./routes/public');
 
-// ─── Legacy routers (backward compat — still Bot Owner protected) ──────────────
+// Legacy routers (backward compat — still Bot Owner protected)
 const legacyStatsRouter   = require('./routes/stats');
 const legacyControlRouter = require('./routes/control');
 
-// ─── Mount Routes ──────────────────────────────────────────────────────────────
+// Mount Routes
 app.use('/api/auth', authRouter);
 
 // Discord OAuth redirects (not under /api so browser can follow redirect)
@@ -71,18 +72,18 @@ app.use('/api/public', publicRouter);
 app.use('/api/stats', legacyStatsRouter);
 app.use('/api/control', legacyControlRouter);
 
-// ─── Health Check ──────────────────────────────────────────────────────────────
+// Health Check
 app.get('/health', (req, res) => {
     const client = app.get('client');
     if (!client || !client.isReady()) return res.status(503).send('Bot Not Ready');
     res.status(200).send('OK');
 });
 
-// ─── Serve 2D Web Games Directly ──────────────────────────────────────────────
+// Serve 2D Web Games Directly
 const gamesPath = path.join(__dirname, '../../dashboard-ui/public/games');
 app.use('/games', express.static(gamesPath));
 
-// ─── Serve Vite Frontend ───────────────────────────────────────────────────────
+// Serve Vite Frontend
 const distPath = path.join(__dirname, '../../dashboard-ui/dist');
 const dashboardEntryPath = path.join(distPath, 'index.html');
 app.use(express.static(distPath));
@@ -94,7 +95,7 @@ app.use((req, res) => {
         return res.status(404).json({ success: false, error: 'Not found' });
     }
     if (!fs.existsSync(dashboardEntryPath)) {
-        console.error(`[Dashboard] Frontend build is missing: ${dashboardEntryPath}. Run "npm run build:dashboard".`);
+        appLogger.error(`[Dashboard] Frontend build is missing: ${dashboardEntryPath}. Run "npm run build:dashboard".`);
         return res.status(503).type('text/plain').send('Dashboard frontend is not built. Rebuild the service to restore it.');
     }
     return res.sendFile(dashboardEntryPath);

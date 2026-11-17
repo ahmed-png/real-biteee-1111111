@@ -10,7 +10,7 @@ function Overview({ stats }) {
   if (!stats) return (
     <div className="loading-screen">
       <div className="spinner" />
-      <div className="loading-text">جاري تحميل البيانات...</div>
+      <div className="loading-text">دا أحمّل البيانات...</div>
     </div>
   )
 
@@ -24,9 +24,9 @@ function Overview({ stats }) {
       <div className="cards-grid" style={{ marginBottom: 24 }}>
         <StatCard icon="🌐" value={stats.discordGuilds} label="السيرفرات" color="green" />
         <StatCard icon="👥" value={(stats.discordUsers || 0).toLocaleString()} label="المستخدمون" color="purple" />
-        <StatCard icon="⚡" value={`${stats.ping || 0}ms`} label="Ping" color="cyan" />
-        <StatCard icon="⏱️" value={`${upH}س ${upM}د`} label="Uptime" color="gold" />
-        <StatCard icon="💾" value={`${stats.heapMB || 0} MB`} label="RAM" />
+        <StatCard icon="⚡" value={`${stats.ping || 0}ms`} label="سرعة الاستجابة" color="cyan" />
+        <StatCard icon="⏱️" value={`${upH}س ${upM}د`} label="مدة التشغيل" color="gold" />
+        <StatCard icon="💾" value={`${stats.heapMB || 0} MB`} label="الذاكرة" />
         <StatCard icon="⚙️" value={stats.totalCmds || 0} label="الأوامر" />
       </div>
 
@@ -37,7 +37,7 @@ function Overview({ stats }) {
             <span className="card-icon">🤖</span>
             <div>
               <div className="card-title">معلومات البوت</div>
-              <div className="card-subtitle">الحالة والبيانات التقنية</div>
+              <div className="card-subtitle">حالة البوت ومعلوماته التقنية.</div>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginBottom: 20 }}>
@@ -58,9 +58,9 @@ function Overview({ stats }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {[
               { icon: '🖥️', label: 'Node.js', value: stats.nodeVersion },
-              { icon: '💽', label: 'Platform', value: stats.platform },
-              { icon: '📦', label: 'Heap', value: `${stats.heapMB} MB` },
-              { icon: '🔧', label: 'RSS', value: `${stats.rssMB} MB` },
+              { icon: '💽', label: 'نظام التشغيل', value: stats.platform },
+              { icon: '📦', label: 'الذاكرة المستخدمة', value: `${stats.heapMB} MB` },
+              { icon: '🔧', label: 'إجمالي الذاكرة', value: `${stats.rssMB} MB` },
             ].map(({ icon, label, value }) => (
               <div key={label} style={{ background: 'var(--card2)', borderRadius: 8, padding: '10px 12px', border: '1px solid var(--border2)' }}>
                 <div style={{ fontSize: 10, color: 'var(--muted)', marginBottom: 3 }}>{icon} {label}</div>
@@ -100,14 +100,14 @@ function Overview({ stats }) {
         <div className="card-header">
           <span className="card-icon">📊</span>
           <div>
-            <div className="card-title">نشاط البوت الحي</div>
-            <div className="card-subtitle">مؤشرات الأداء في الوقت الحقيقي</div>
+            <div className="card-title">نشاط البوت هسه</div>
+            <div className="card-subtitle">مؤشرات الأداء المباشرة.</div>
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
           {[
             { label: 'استخدام الذاكرة', value: Math.min(100, ((stats.heapMB || 0) / 512) * 100), color: '#6366f1', text: `${stats.heapMB} MB / 512 MB` },
-            { label: 'جودة الاتصال', value: Math.max(0, 100 - ((stats.ping || 0) / 5)), color: '#22c55e', text: `${stats.ping || 0}ms Ping` },
+            { label: 'سرعة الاستجابة', value: Math.max(0, 100 - ((stats.ping || 0) / 5)), color: '#22c55e', text: `${stats.ping || 0}ms` },
             { label: 'الأوامر المُسجَّلة', value: Math.min(100, ((stats.totalCmds || 0) / 100) * 100), color: '#a855f7', text: `${stats.totalCmds || 0} أمر` },
           ].map(m => (
             <div key={m.label}>
@@ -158,8 +158,8 @@ function ControlSection({ stats, toast }) {
     setSaving(true)
     const res = await apiFetch('/bot-owner/settings', { method: 'POST', body: JSON.stringify(s) })
     setSaving(false)
-    if (res?.success) toast('تم حفظ الإعدادات ✅', 'success')
-    else toast('خطأ في الحفظ', 'error')
+    if (res?.success) toast('انحفظت الإعدادات ✅', 'success')
+    else toast('ما گدرت أحفظ الإعدادات.', 'error')
   }
 
   const toggleCommand = async command => {
@@ -171,7 +171,7 @@ function ControlSection({ stats, toast }) {
         body: JSON.stringify({ command: command.name, action: currentlyDisabled ? 'enable' : 'disable' }),
       })
       if (!res?.success) {
-        toast(res?.error || 'تعذر تحديث الأمر', 'error')
+        toast(res?.error || 'ما گدرت أغيّر الأمر.', 'error')
         return
       }
       setS(prev => ({
@@ -180,21 +180,21 @@ function ControlSection({ stats, toast }) {
           ? (Array.isArray(prev.disabledCommands) ? prev.disabledCommands : []).filter(name => String(name).toLowerCase() !== command.name.toLowerCase())
           : [...(Array.isArray(prev.disabledCommands) ? prev.disabledCommands : []), command.name],
       }))
-      toast(currentlyDisabled ? 'تم تفعيل الأمر ✅' : 'تم تعطيل الأمر', 'success')
+      toast(currentlyDisabled ? 'اشتغل الأمر ✅' : 'انطفي الأمر.', 'success')
     } catch (error) {
-      toast(error.message || 'تعذر تحديث الأمر', 'error')
+      toast(error.message || 'ما گدرت أغيّر الأمر.', 'error')
     } finally {
       setCommandBusy('')
     }
   }
 
   const toggles = [
-    { key: 'autoMessagesEnabled', label: 'الرسائل التلقائية', desc: 'رسائل المزاج، التحديات، الأحداث العشوائية', icon: '🤖' },
-    { key: 'aiRandomReplyEnabled', label: 'ردود الذكاء الاصطناعي', desc: 'رد AI تلقائي عشوائي في المحادثات', icon: '🧠' },
-    { key: 'dailyReminderEnabled', label: 'التذكير الصباحي', desc: 'رسالة صباحية يومية الساعة 9', icon: '🌅' },
-    { key: 'dailySummaryEnabled', label: 'الملخص اليومي', desc: 'ملخص نشاط السيرفر في المساء', icon: '📊' },
-    { key: 'ghostPingEnabled', label: 'Ghost Ping', desc: 'منشن وهمي (معطّل افتراضياً)', icon: '👻' },
-    { key: 'antiRaidAccountAgeEnabled', label: 'حماية الحسابات الجديدة', desc: 'رفض حسابات عمرها أقل من 7 أيام', icon: '🛡️' },
+    { key: 'autoMessagesEnabled', label: 'الرسائل التلقائية', desc: 'رسائل خفيفة، تحديات وأحداث عشوائية.', icon: '🤖' },
+    { key: 'aiRandomReplyEnabled', label: 'ردود الذكاء الاصطناعي', desc: 'ردود تلقائية بالمحادثات.', icon: '🧠' },
+    { key: 'dailyReminderEnabled', label: 'تذكير الصبح', desc: 'رسالة صباحية كل يوم الساعة 9.', icon: '🌅' },
+    { key: 'dailySummaryEnabled', label: 'ملخص اليوم', desc: 'ملخص نشاط السيرفر بالمساء.', icon: '📊' },
+    { key: 'ghostPingEnabled', label: 'المنشن الوهمي', desc: 'منشن ينحذف بسرعة (مطفي تلقائياً).', icon: '👻' },
+    { key: 'antiRaidAccountAgeEnabled', label: 'حماية الحسابات الجديدة', desc: 'يمنع الحسابات اللي عمرها أقل من 7 أيام.', icon: '🛡️' },
   ]
 
   return (
@@ -214,21 +214,21 @@ function ControlSection({ stats, toast }) {
             />
           ))}
           <button className="btn btn-primary" onClick={save} disabled={saving} style={{ marginTop: 8, width: '100%' }}>
-            {saving ? '⏳ جاري الحفظ...' : '💾 حفظ الإعدادات'}
+            {saving ? '⏳ دا أحفظ...' : '💾 حفظ الإعدادات'}
           </button>
         </div>
 
         <div className="card">
           <div className="card-header">
             <span className="card-icon">ℹ️</span>
-            <div className="card-title">دليل الإعدادات</div>
+            <div className="card-title">ملاحظات الإعدادات</div>
           </div>
           <div className="info-box" style={{ marginBottom: 12 }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>💡 نصائح مهمة:</div>
-            <div>• تأثير الإعدادات فوري بعد الحفظ</div>
-            <div>• إيقاف AI لا يؤثر على الأوامر المباشرة</div>
-            <div>• حماية الحسابات الجديدة تُوقِف الراید</div>
-            <div>• Ghost Ping للمزح فقط — استخدم بمسؤولية</div>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>💡 انتبه لهالنقاط:</div>
+            <div>• الإعدادات تشتغل من تحفظها</div>
+            <div>• إيقاف AI ما يوقف الأوامر العادية</div>
+            <div>• حماية الحسابات الجديدة تمنع الحسابات الحديثة</div>
+            <div>• المنشن الوهمي للمزح؛ لا تستخدمه للإزعاج</div>
           </div>
 
           <div style={{ padding: '14px', background: 'var(--card2)', borderRadius: 10, border: '1px solid var(--border)' }}>
@@ -237,7 +237,7 @@ function ControlSection({ stats, toast }) {
               {[
                 { label: 'السيرفرات', val: stats?.discordGuilds || 0 },
                 { label: 'المستخدمون', val: stats?.discordUsers || 0 },
-                { label: 'Ping', val: `${stats?.ping || 0}ms` },
+                { label: 'سرعة الاستجابة', val: `${stats?.ping || 0}ms` },
                 { label: 'مدة التشغيل', val: `${Math.floor((stats?.uptime || 0) / 3600)}س ${Math.floor(((stats?.uptime || 0) % 3600) / 60)}د` },
               ].map(({ label, val }) => (
                 <div key={label} style={{ background: 'var(--bg)', borderRadius: 8, padding: '8px 10px', border: '1px solid var(--border2)' }}>
@@ -255,13 +255,13 @@ function ControlSection({ stats, toast }) {
           <span className="card-icon">⌨️</span>
           <div>
             <div className="card-title">إدارة أوامر البوت</div>
-            <div className="card-subtitle">إيقاف الأمر عن الأعضاء أو إعادته؛ ويظل متاحاً لمالك البوت</div>
+            <div className="card-subtitle">تگدر تطفي الأمر أو ترجّعه؛ ومالك البوت يظل يگدر يستخدمه.</div>
           </div>
           <span className="badge badge-blue" style={{ marginRight: 'auto' }}>{commands.length} أمر</span>
         </div>
         <input
           className="form-input"
-          placeholder="🔍 ابحث باسم الأمر أو أحد أسمائه البديلة..."
+          placeholder="🔍 دوّر باسم الأمر أو أحد بدائله..."
           value={commandSearch}
           onChange={event => setCommandSearch(event.target.value)}
           style={{ marginBottom: 12 }}
@@ -269,7 +269,7 @@ function ControlSection({ stats, toast }) {
         <div style={{ display: 'grid', gap: 8, maxHeight: 420, overflowY: 'auto' }}>
           {filteredCommands.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-state-title">{commands.length ? 'لا توجد أوامر مطابقة' : 'قائمة الأوامر غير متاحة حالياً'}</div>
+              <div className="empty-state-title">{commands.length ? 'ماكو أوامر تطابق بحثك.' : 'قائمة الأوامر مو متاحة هسه.'}</div>
             </div>
           ) : filteredCommands.map(command => {
             const disabled = disabledCommands.has(command.name.toLowerCase())
@@ -279,24 +279,24 @@ function ControlSection({ stats, toast }) {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <strong style={{ fontSize: 13 }}>{command.name}</strong>
-                    <span className={`badge ${disabled ? 'badge-red' : 'badge-green'}`}>{disabled ? 'معطل' : 'فعال'}</span>
-                    {command.ownerOnly && <span className="badge badge-yellow">للمالك فقط</span>}
+                    <span className={`badge ${disabled ? 'badge-red' : 'badge-green'}`}>{disabled ? 'مطفي' : 'شغّال'}</span>
+                    {command.ownerOnly && <span className="badge badge-yellow">للمالك بس</span>}
                   </div>
                   {command.description && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{command.description}</div>}
-                  {command.aliases?.length > 0 && <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>بدائل: {command.aliases.join('، ')}</div>}
+                  {command.aliases?.length > 0 && <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>أسماء ثانية: {command.aliases.join('، ')}</div>}
                 </div>
                 <button
                   className={`btn btn-sm ${disabled ? 'btn-success' : 'btn-ghost'}`}
                   onClick={() => toggleCommand(command)}
                   disabled={Boolean(commandBusy)}
                 >
-                  {busy ? '⏳' : disabled ? 'تفعيل' : 'تعطيل'}
+                  {busy ? '⏳' : disabled ? 'تشغيل' : 'إطفاء'}
                 </button>
               </div>
             )
           })}
         </div>
-        <div className="form-hint" style={{ marginTop: 10 }}>الأمر المعطل يبقى متاحاً لمالك البوت فقط كإجراء استرداد.</div>
+        <div className="form-hint" style={{ marginTop: 10 }}>حتى لو طفيت الأمر، يبقى متاح لمالك البوت حتى يگدر يرجّعه.</div>
       </div>
     </div>
   )
@@ -371,22 +371,22 @@ function EconomySection({ toast }) {
 
   const handle = async (e) => {
     e.preventDefault()
-    if (!userId || !amount) return toast('يرجى ملء جميع الحقول', 'error')
+    if (!userId || !amount) return toast('كمّل كل الحقول أولاً.', 'error')
     setLoading(true)
     const res = await apiFetch('/bot-owner/economy', { method: 'POST', body: JSON.stringify({ userId, amount: Number(amount), action }) })
     setLoading(false)
     if (res?.success) {
-      toast(`✅ تمت العملية على ${userId}`, 'success')
+      toast(`✅ تمت العملية على ${userId}.`, 'success')
       setUserId(''); setAmount('')
     } else {
-      toast(res?.error || 'خطأ', 'error')
+      toast(res?.error || 'صار خلل.', 'error')
     }
   }
 
   const actions = [
-    { value: 'add', label: '➕ إضافة رصيد', color: 'var(--green)', desc: 'إضافة مبلغ لرصيد المستخدم' },
-    { value: 'remove', label: '➖ خصم رصيد', color: 'var(--red)', desc: 'خصم مبلغ من رصيد المستخدم' },
-    { value: 'set', label: '🎯 تحديد رصيد', color: 'var(--cyan)', desc: 'تعيين رصيد محدد للمستخدم' },
+    { value: 'add', label: '➕ زيد رصيد', color: 'var(--green)', desc: 'ضيف مبلغ لرصيد العضو.' },
+    { value: 'remove', label: '➖ اخصم رصيد', color: 'var(--red)', desc: 'اطرح مبلغ من رصيد العضو.' },
+    { value: 'set', label: '🎯 غيّر الرصيد', color: 'var(--cyan)', desc: 'خلّي رصيد العضو على مبلغ محدد.' },
   ]
 
   return (
@@ -396,13 +396,13 @@ function EconomySection({ toast }) {
           <div className="card-header">
             <span className="card-icon">💰</span>
             <div>
-              <div className="card-title">إدارة رصيد المستخدمين</div>
-              <div className="card-subtitle">إضافة / خصم / تحديد</div>
+              <div className="card-title">إدارة أرصدة الأعضاء</div>
+              <div className="card-subtitle">زيادة، خصم أو تحديد رصيد.</div>
             </div>
           </div>
           <form onSubmit={handle}>
             <div className="form-group">
-              <label className="form-label">🆔 Discord User ID</label>
+              <label className="form-label">🆔 معرّف عضو Discord</label>
               <input className="form-input" placeholder="123456789012345678" value={userId} onChange={e => setUserId(e.target.value)} required />
             </div>
             <div className="form-group">
@@ -425,7 +425,7 @@ function EconomySection({ toast }) {
               </div>
             </div>
             <button className="btn btn-primary" type="submit" disabled={loading} style={{ width: '100%', marginTop: 4 }}>
-              {loading ? '⏳ جاري التنفيذ...' : '✅ تنفيذ العملية'}
+              {loading ? '⏳ دا أنفّذ...' : '✅ نفّذ العملية'}
             </button>
           </form>
         </div>
@@ -433,16 +433,16 @@ function EconomySection({ toast }) {
         <div className="card">
           <div className="card-header">
             <span className="card-icon">📋</span>
-            <div className="card-title">إرشادات الاستخدام</div>
+            <div className="card-title">قبل لا تنفّذ</div>
           </div>
           <div className="info-box" style={{ marginBottom: 12 }}>
-            <strong>⚠️ تنبيه:</strong> هذه العمليات فورية ولا يمكن التراجع عنها.
+            <strong>⚠️ انتبه:</strong> هالعمليات فورية وما تگدر ترجعها.
           </div>
           <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 2 }}>
-            <div>📌 اعثر على User ID: انقر بزر الفأرة الأيمن على المستخدم في ديسكورد → Copy ID</div>
-            <div>📌 تأكد من تفعيل Developer Mode في الإعدادات</div>
-            <div>📌 إضافة رصيد سلبي غير مسموح — استخدم "خصم"</div>
-            <div>📌 عملية "تحديد" تُغير الرصيد بالكامل بغض النظر عن الرصيد الحالي</div>
+            <div>📌 حتى تجيب معرّف العضو: اضغط عليه بالزر اليمين بـ Discord واختار «نسخ المعرّف» (Copy ID).</div>
+            <div>📌 فعّل وضع المطوّر (Developer Mode) من الإعدادات.</div>
+            <div>📌 ما يصير تضيف رصيد سالب؛ استخدم "خصم"</div>
+            <div>📌 خيار "غيّر الرصيد" يستبدل الرصيد كله، مو بس يضيف عليه</div>
           </div>
         </div>
       </div>
@@ -463,11 +463,11 @@ function AnnounceSection({ toast }) {
     const res = await apiFetch('/bot-owner/announce', { method: 'POST', body: JSON.stringify({ channelId, message }) })
     setLoading(false)
     if (res?.success) {
-      toast('تم الإرسال ✅', 'success')
+      toast('انرسلت الرسالة ✅', 'success')
       setMessage('')
       setCharCount(0)
     } else {
-      toast(res?.error || 'خطأ', 'error')
+      toast(res?.error || 'صار خلل.', 'error')
     }
   }
 
@@ -478,13 +478,13 @@ function AnnounceSection({ toast }) {
           <div className="card-header">
             <span className="card-icon">📢</span>
             <div>
-              <div className="card-title">إرسال إعلان</div>
-              <div className="card-subtitle">إرسال رسالة لأي قناة في أي سيرفر</div>
+              <div className="card-title">دز إعلان</div>
+              <div className="card-subtitle">دز رسالة لأي قناة بأي سيرفر.</div>
             </div>
           </div>
           <form onSubmit={handle}>
             <div className="form-group">
-              <label className="form-label">📍 Channel ID</label>
+              <label className="form-label">📍 معرّف القناة</label>
               <input className="form-input" placeholder="123456789012345678" value={channelId} onChange={e => setChannelId(e.target.value)} required />
             </div>
             <div className="form-group">
@@ -495,7 +495,7 @@ function AnnounceSection({ toast }) {
               <textarea
                 className="form-textarea"
                 rows={6}
-                placeholder="اكتب رسالتك هنا... يمكنك استخدام emoji 🎉"
+                placeholder="اكتب رسالتك هنا... وتگدر تضيف إيموجي 🎉"
                 value={message}
                 onChange={e => { setMessage(e.target.value); setCharCount(e.target.value.length) }}
                 maxLength={2000}
@@ -504,7 +504,7 @@ function AnnounceSection({ toast }) {
               <div className="form-hint">يدعم Markdown: **عريض** *مائل* `كود` __خط تحتي__</div>
             </div>
             <button className="btn btn-primary" type="submit" disabled={loading} style={{ width: '100%' }}>
-              {loading ? '⏳ جاري الإرسال...' : '📤 إرسال الإعلان'}
+              {loading ? '⏳ دا أرسل...' : '📤 دز الإعلان'}
             </button>
           </form>
         </div>
@@ -512,19 +512,19 @@ function AnnounceSection({ toast }) {
         <div className="card">
           <div className="card-header">
             <span className="card-icon">💡</span>
-            <div className="card-title">نصائح الإعلانات</div>
+            <div className="card-title">ملاحظات الإعلان</div>
           </div>
           <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 2.2 }}>
-            <div>📌 استخدم Channel ID وليس اسم القناة</div>
-            <div>📌 البوت يجب أن يكون عنده صلاحية Send Messages</div>
-            <div>📌 الرسائل الطويلة فوق 2000 حرف ستُرفض من Discord</div>
-            <div>📌 يمكنك mention أي دور أو مستخدم بكتابة ‎@everyone أو {'<@ID>'}</div>
+            <div>📌 استخدم معرّف القناة (Channel ID)، مو اسمها.</div>
+            <div>📌 البوت يحتاج صلاحية Send Messages</div>
+            <div>📌 Discord يرفض الرسائل الأطول من 2000 حرف</div>
+            <div>📌 تگدر تمنشن دور أو عضو بكتابة ‎@everyone أو {'<@ID>'}</div>
           </div>
 
           <div style={{ marginTop: 20, padding: 14, background: 'var(--card2)', borderRadius: 10, border: '1px solid var(--border)' }}>
-            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8 }}>🎨 مثال على الرسالة:</div>
+            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8 }}>🎨 مثال:</div>
             <code style={{ display: 'block', whiteSpace: 'pre-wrap', fontSize: 12, lineHeight: 1.8 }}>
-              {`🎉 **إعلان مهم!**\n\nأهلاً @everyone،\nنحن نُعلن عن حدث جديد اليوم!\n\nالوقت: **8 مساءً**\nالمكان: #الأحداث`}
+              {`🎉 **عدنا خبر!**\n\nهلا @everyone،\nاليوم عدنا فعالية جديدة.\n\nالوقت: **8 بالليل**\nالمكان: #الأحداث`}
             </code>
           </div>
         </div>
@@ -562,7 +562,7 @@ function LogsSection({ stats }) {
         </div>
         <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: 16, fontFamily: 'var(--mono)', fontSize: 12, maxHeight: 500, overflowY: 'auto', lineHeight: 1.8, direction: 'ltr', textAlign: 'left' }}>
           {filtered.length === 0
-            ? <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 20 }}>لا توجد سجلات مطابقة للفلتر</div>
+            ? <div style={{ color: 'var(--muted)', textAlign: 'center', padding: 20 }}>ماكو سجلات تطابق الفلتر.</div>
             : filtered.map((line, i) => (
               <div key={i} style={{
                 color: (line.includes('❌') || line.includes('ERROR') || line.includes('error'))
@@ -605,7 +605,7 @@ function ResponsesSection({ toast }) {
     e.preventDefault()
     const res = await apiFetch('/bot-owner/response', { method: 'POST', body: JSON.stringify({ trigger, response, exactMatch: exact }) })
     if (res?.success) {
-      toast('تمت الإضافة ✅', 'success')
+      toast('انضاف الرد ✅', 'success')
       setTrigger(''); setResponse(''); reload()
     } else {
       toast(res?.error || 'خطأ', 'error')
@@ -624,25 +624,25 @@ function ResponsesSection({ toast }) {
         <div className="card">
           <div className="card-header">
             <span className="card-icon">➕</span>
-            <div className="card-title">إضافة رد تلقائي جديد</div>
+            <div className="card-title">ضيف رد تلقائي جديد</div>
           </div>
           <form onSubmit={add}>
             <div className="form-group">
-              <label className="form-label">🎯 الـ Trigger (الكلمة / العبارة)</label>
-              <input className="form-input" placeholder="مثال: مرحبا" value={trigger} onChange={e => setTrigger(e.target.value)} required />
+              <label className="form-label">🎯 كلمة أو عبارة التفعيل</label>
+              <input className="form-input" placeholder="مثال: هلا" value={trigger} onChange={e => setTrigger(e.target.value)} required />
             </div>
             <div className="form-group">
               <label className="form-label">💬 الرد التلقائي</label>
-              <textarea className="form-textarea" placeholder="مثال: أهلاً وسهلاً! 👋 كيف يمكنني مساعدتك؟" value={response} onChange={e => setResponse(e.target.value)} required />
+              <textarea className="form-textarea" placeholder="مثال: هلا بيك! شلون أساعدك؟" value={response} onChange={e => setResponse(e.target.value)} required />
             </div>
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, cursor: 'pointer', fontSize: 13, padding: '10px 14px', background: exact ? 'var(--accent3)' : 'var(--card2)', borderRadius: 8, border: '1px solid var(--border)', transition: 'all 0.2s' }}>
               <input type="checkbox" checked={exact} onChange={e => setExact(e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--accent)' }} />
               <div>
-                <div style={{ fontWeight: 600 }}>تطابق تام فقط</div>
-                <div style={{ fontSize: 11, color: 'var(--muted)' }}>الرد فقط عند تطابق الرسالة بالكامل</div>
+                <div style={{ fontWeight: 600 }}>لازم تطابقها حرفياً</div>
+                <div style={{ fontSize: 11, color: 'var(--muted)' }}>ما يرد إلا إذا الرسالة كلها تطابق الكلمة أو العبارة.</div>
               </div>
             </label>
-            <button className="btn btn-primary" type="submit" style={{ width: '100%' }}>➕ إضافة الرد</button>
+            <button className="btn btn-primary" type="submit" style={{ width: '100%' }}>➕ ضيف الرد</button>
           </form>
         </div>
 
@@ -656,8 +656,8 @@ function ResponsesSection({ toast }) {
           ) : responses.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon">🤖</div>
-              <div className="empty-state-title">لا توجد ردود تلقائية</div>
-              <div className="empty-state-desc">أضف ردوداً من النموذج المجاور</div>
+              <div className="empty-state-title">ماكو ردود تلقائية بعد.</div>
+              <div className="empty-state-desc">ضيف رد من النموذج اللي يمك.</div>
             </div>
           ) : responses.map(r => (
             <div key={r.id} style={{ padding: '12px 0', borderBottom: '1px solid var(--border2)', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
@@ -704,18 +704,18 @@ function WelcomeSection({ stats, toast }) {
 
   const save = async () => {
     if (!s.welcomeGuildId || !s.welcomeChannelId) {
-      return toast('⚠️ اختر السيرفر وقناة الترحيب أولاً', 'error')
+      return toast('⚠️ اختار السيرفر وقناة الترحيب أولاً.', 'error')
     }
     setSaving(true)
     const res = await apiFetch('/bot-owner/settings', { method: 'POST', body: JSON.stringify(s) })
     setSaving(false)
-    if (res?.success) toast('تم حفظ إعدادات الترحيب ✅', 'success')
-    else toast('خطأ في الحفظ: ' + (res?.error || ''), 'error')
+    if (res?.success) toast('انحفظت إعدادات الترحيب ✅', 'success')
+    else toast('ما گدرت أحفظ الإعدادات: ' + (res?.error || ''), 'error')
   }
 
   const testWelcome = async () => {
     if (!s.welcomeGuildId || !s.welcomeChannelId) {
-      return toast('⚠️ يرجى اختيار السيرفر والقناة ثم الضغط على "حفظ وتطبيق" أولاً', 'error')
+      return toast('⚠️ اختار السيرفر والقناة واحفظ الإعدادات قبل التجربة.', 'error')
     }
     setTesting(true)
     // حفظ أولاً لضمان وصول الإعدادات للـ backend
@@ -729,13 +729,13 @@ function WelcomeSection({ stats, toast }) {
       })
     })
     setTesting(false)
-    if (res?.success) toast(res.message || '✅ تم إرسال رسالة ترحيب تجريبية!', 'success')
-    else toast(res?.error || 'حدث خطأ', 'error')
+    if (res?.success) toast(res.message || '✅ وصلت رسالة الترحيب التجريبية!', 'success')
+    else toast(res?.error || 'صار خلل.', 'error')
   }
 
   const saveDesign = async () => {
-    if (!designName) return toast('يرجى كتابة اسم للتصميم', 'error')
-    if (!s.welcomeImage) return toast('لا توجد صورة لحفظها', 'error')
+    if (!designName) return toast('اكتب اسم للتصميم.', 'error')
+    if (!s.welcomeImage) return toast('ماكو صورة حتى نحفظها.', 'error')
     const newDesign = {
       id: Date.now().toString(),
       name: designName,
@@ -748,12 +748,12 @@ function WelcomeSection({ stats, toast }) {
     setS({ ...s, savedWelcomeDesigns: newDesigns })
     setDesignName('')
     await apiFetch('/bot-owner/settings', { method: 'POST', body: JSON.stringify({ savedWelcomeDesigns: newDesigns }) })
-    toast('تم حفظ التصميم في المعرض ✅', 'success')
+    toast('انحفظ التصميم بالمعرض ✅', 'success')
   }
 
   const applyDesign = (d) => {
     setS({ ...s, welcomeImage: d.image, welcomeAvatarX: d.x, welcomeAvatarY: d.y, welcomeAvatarWidth: d.w, welcomeAvatarHeight: d.h, welcomeAvatarRadius: d.r })
-    toast('تم تحميل التصميم! لا تنس الحفظ.', 'info')
+    toast('تطبّق التصميم؛ لا تنسى تحفظه.', 'info')
   }
 
   const deleteDesign = async (id) => {
@@ -772,10 +772,10 @@ function WelcomeSection({ stats, toast }) {
         <div style={{ color: 'var(--muted)', fontSize: 13 }}>تخصيص صورة ورسالة الترحيب لكل السيرفرات</div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn btn-ghost btn-sm" onClick={testWelcome} disabled={testing || saving}>
-            {testing ? '⏳ جاري التجربة...' : '🧪 تجربة الترحيب'}
+            {testing ? '⏳ دا أجرّب...' : '🧪 جرّب الترحيب'}
           </button>
           <button className="btn btn-success" onClick={save} disabled={saving}>
-            {saving ? '⏳ حفظ...' : '💾 حفظ وتطبيق'}
+            {saving ? '⏳ دا أحفظ...' : '💾 حفظ وتطبيق'}
           </button>
         </div>
       </div>
@@ -790,7 +790,7 @@ function WelcomeSection({ stats, toast }) {
           <div className="form-group">
             <label className="form-label">🌐 السيرفر المخصص للترحيب</label>
             <select className="form-select" value={s.welcomeGuildId || ''} onChange={e => setS({ ...s, welcomeGuildId: e.target.value, welcomeChannelId: '' })}>
-              <option value="">— اختر سيرفر —</option>
+              <option value="">— اختار سيرفر —</option>
               {guildChannels.map(g => (
                 <option key={g.guildId} value={g.guildId}>{g.guildName}</option>
               ))}
@@ -800,7 +800,7 @@ function WelcomeSection({ stats, toast }) {
           <div className="form-group">
             <label className="form-label">💬 قناة الترحيب</label>
             <select className="form-select" value={s.welcomeChannelId || ''} onChange={e => setS({ ...s, welcomeChannelId: e.target.value })}>
-              <option value="">— اختر قناة —</option>
+              <option value="">— اختار قناة —</option>
               {availableChannels.map(ch => (
                 <option key={ch.id} value={ch.id}>#{ch.name}{!ch.canSend ? ' ⚠️' : ''}</option>
               ))}
@@ -814,17 +814,17 @@ function WelcomeSection({ stats, toast }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <label className="form-label" style={{ margin: 0 }}>🖼️ صورة الترحيب</label>
               {s.welcomeImage && (
-                  <button className="btn btn-sm btn-danger" onClick={() => setS({ ...s, welcomeImage: '', welcomeImageBase64: '', deleteWelcomeImage: true })}>🗑️ حذف الصورة نهائياً</button>
+                  <button className="btn btn-sm btn-danger" onClick={() => setS({ ...s, welcomeImage: '', welcomeImageBase64: '', deleteWelcomeImage: true })}>🗑️ احذف الصورة نهائياً</button>
               )}
             </div>
             
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
               <label className="btn btn-primary" style={{ flex: 1, cursor: 'pointer', textAlign: 'center' }}>
-                ☁️ اختر صورة من جهازك
+                ☁️ اختار صورة من جهازك
                 <input type="file" accept="image/png, image/jpeg, image/webp" style={{ display: 'none' }} onChange={e => {
                   const file = e.target.files[0];
                   if (!file) return;
-                  if (file.size > 5 * 1024 * 1024) return toast('حجم الصورة كبير جداً! (الحد الأقصى 5 ميجابايت)', 'error');
+                  if (file.size > 5 * 1024 * 1024) return toast('الصورة أكبر من الحد المسموح (5 ميجابايت).', 'error');
                   
                   const reader = new FileReader();
                   reader.onload = (ev) => {
@@ -834,7 +834,7 @@ function WelcomeSection({ stats, toast }) {
                 }} />
               </label>
             </div>
-            <div className="form-hint" style={{ color: 'var(--muted)', marginTop: 8 }}>أو يمكنك وضع رابط مباشر للصورة هنا:</div>
+            <div className="form-hint" style={{ color: 'var(--muted)', marginTop: 8 }}>أو حط رابط الصورة المباشر هنا:</div>
             <input type="text" className="form-input" style={{ marginTop: 5 }} placeholder="https://..." value={!s.welcomeImage?.startsWith('data:') && !s.welcomeImage?.startsWith('/uploads/') ? (s.welcomeImage || '') : ''} onChange={e => setS({ ...s, welcomeImage: e.target.value, welcomeImageBase64: '', deleteWelcomeImage: false })} />
           </div>
 
@@ -940,7 +940,7 @@ function ModerationSection({ toast }) {
 
   const handle = async (e) => {
     e.preventDefault()
-    if (!userId || !guildId) return toast('يرجى ملء جميع الحقول', 'error')
+    if (!userId || !guildId) return toast('كمّل كل الحقول أولاً.', 'error')
     setLoading(true)
     const res = await apiFetch('/bot-owner/moderate', {
       method: 'POST',
@@ -948,10 +948,10 @@ function ModerationSection({ toast }) {
     })
     setLoading(false)
     if (res?.success) {
-      toast(`✅ تم تنفيذ الإجراء على ${userId}`, 'success')
+      toast(`✅ تنفّذ الإجراء على ${userId}.`, 'success')
       setUserId(''); setReason('')
     } else {
-      toast(res?.error || 'خطأ في التنفيذ', 'error')
+      toast(res?.error || 'ما گدرت أنفّذ الإجراء.', 'error')
     }
   }
 
@@ -963,16 +963,16 @@ function ModerationSection({ toast }) {
             <span className="card-icon">🔨</span>
             <div>
               <div className="card-title">إجراءات الإشراف</div>
-              <div className="card-subtitle">تنفيذ إجراءات على الأعضاء</div>
+              <div className="card-subtitle">نفّذ إجراء على عضو.</div>
             </div>
           </div>
           <form onSubmit={handle}>
             <div className="form-group">
-              <label className="form-label">🆔 User ID</label>
+              <label className="form-label">🆔 معرّف العضو</label>
               <input className="form-input" placeholder="123456789..." value={userId} onChange={e => setUserId(e.target.value)} required />
             </div>
             <div className="form-group">
-              <label className="form-label">🌐 Guild ID</label>
+              <label className="form-label">🌐 معرّف السيرفر</label>
               <input className="form-input" placeholder="123456789..." value={guildId} onChange={e => setGuildId(e.target.value)} required />
             </div>
             <div className="form-group">
@@ -981,7 +981,7 @@ function ModerationSection({ toast }) {
                 <option value="warn">⚠️ تحذير</option>
                 <option value="kick">🦵 طرد (Kick)</option>
                 <option value="ban">🔨 حظر (Ban)</option>
-                <option value="timeout">⏰ توقف مؤقت</option>
+                <option value="timeout">⏰ كتم مؤقت</option>
               </select>
             </div>
             <div className="form-group">
@@ -989,7 +989,7 @@ function ModerationSection({ toast }) {
               <input className="form-input" placeholder="سبب الإجراء..." value={reason} onChange={e => setReason(e.target.value)} />
             </div>
             <button className="btn btn-danger" type="submit" disabled={loading} style={{ width: '100%' }}>
-              {loading ? '⏳...' : '⚡ تنفيذ الإجراء'}
+              {loading ? '⏳...' : '⚡ نفّذ الإجراء'}
             </button>
           </form>
         </div>
@@ -997,16 +997,16 @@ function ModerationSection({ toast }) {
         <div className="card">
           <div className="card-header">
             <span className="card-icon">ℹ️</span>
-            <div className="card-title">معلومات الإشراف</div>
+            <div className="card-title">عن إجراءات الإشراف</div>
           </div>
           <div className="info-box warning" style={{ marginBottom: 12 }}>
-            ⚠️ هذه الإجراءات فورية وتؤثر على المستخدم مباشرة في ديسكورد.
+            ⚠️ هالإجراءات فورية وتطبّق مباشرة على العضو بـ Discord.
           </div>
           <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 2.2 }}>
-            <div>• <strong>تحذير:</strong> يُرسل رسالة تحذير للمستخدم</div>
-            <div>• <strong>طرد:</strong> يُخرج المستخدم من السيرفر (يمكنه العودة)</div>
-            <div>• <strong>حظر:</strong> يمنع المستخدم من دخول السيرفر نهائياً</div>
-            <div>• <strong>توقف مؤقت:</strong> يمنع الكتابة لفترة مؤقتة (10 دقائق)</div>
+            <div>• <strong>تحذير:</strong> توصله رسالة تنبيه.</div>
+            <div>• <strong>طرد:</strong> يطلعه من السيرفر، ويگدر يرجع.</div>
+            <div>• <strong>حظر:</strong> يمنعه من دخول السيرفر.</div>
+            <div>• <strong>كتم مؤقت:</strong> ما يگدر يكتب لمدة 10 دقايق.</div>
           </div>
         </div>
       </div>
@@ -1034,10 +1034,10 @@ export default function BotOwnerDashboard() {
         setLastUpdated(new Date())
         setLoadError('')
       } else if (data) {
-        setLoadError(data.error || 'تعذر تحميل بيانات البوت.')
+        setLoadError(data.error || 'ما گدرت أحمّل بيانات البوت.')
       }
     } catch {
-      setLoadError('تعذر تحميل بيانات البوت. تحقق من الاتصال وحاول مجدداً.')
+      setLoadError('ما گدرت أحمّل بيانات البوت. تأكد من الاتصال وجرّب مرة ثانية.')
     } finally {
       if (!silent) setRefreshing(false)
     }
@@ -1082,7 +1082,7 @@ export default function BotOwnerDashboard() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <RefreshButton busy={refreshing} lastUpdated={lastUpdated} onClick={() => loadStats()} />
             <button className="btn btn-outline btn-sm" onClick={() => navigate('/guilds')} type="button">
-              🏠 إدارة سيرفري
+              🏠 إدارة السيرفرات
             </button>
             {stats && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--green)' }}>
@@ -1090,13 +1090,13 @@ export default function BotOwnerDashboard() {
                 <span>متصل • {stats.ping || 0}ms</span>
               </div>
             )}
-            <span className="page-badge gold">👑 Bot Owner</span>
+            <span className="page-badge gold">👑 مالك البوت</span>
           </div>
         </div>
         {loadError && (
           <div className="dashboard-load-error" role="alert">
             <span>⚠️ {loadError}</span>
-            <button className="btn btn-outline btn-sm" onClick={() => loadStats()} type="button">إعادة المحاولة</button>
+            <button className="btn btn-outline btn-sm" onClick={() => loadStats()} type="button">جرّب مرة ثانية</button>
           </div>
         )}
         {sections[section] || null}

@@ -41,7 +41,7 @@ setInterval(_flush, 60_000).unref?.();
 process.on('SIGINT', _flush);
 process.on('SIGTERM', _flush);
 
-// ─── بنك التحديات ──────────────────────────────────────────────────────────
+// بنك التحديات
 const CHALLENGE_BANK = [
     { id: 'send_10', name: 'المتحدث النشيط', desc: 'أرسل 10 رسائل في السيرفر', target: 10, type: 'messages', xp: 50, coins: 200, emoji: '💬' },
     { id: 'send_25', name: 'الكاتب الماهر', desc: 'أرسل 25 رسالة في السيرفر', target: 25, type: 'messages', xp: 100, coins: 400, emoji: '✍️' },
@@ -60,7 +60,7 @@ const CHALLENGE_BANK = [
     { id: 'chat_bot', name: 'محاور الذكاء', desc: 'تحدث مع البوت الذكي 5 مرات', target: 5, type: 'ai_chat', xp: 65, coins: 260, emoji: '🤖' },
 ];
 
-// ─── اختيار 3 تحديات يومية عشوائية ─────────────────────────────────────────
+// اختيار 3 تحديات يومية عشوائية
 function getDailyChallenges(date = null) {
     const today = date || new Date().toDateString();
     const data = _load();
@@ -80,7 +80,7 @@ function getDailyChallenges(date = null) {
     return data.dailyChallenges.challenges || [];
 }
 
-// ─── الحصول على تقدم مستخدم ──────────────────────────────────────────────
+// الحصول على تقدم مستخدم
 function getUserProgress(userId) {
     const data = _load();
     const today = new Date().toDateString();
@@ -101,7 +101,7 @@ function getUserProgress(userId) {
     return data.userProgress[userId];
 }
 
-// ─── تحديث التقدم ────────────────────────────────────────────────────────
+// تحديث التقدم
 async function updateProgress(userId, type, amount = 1, message = null) {
     const today = new Date().toDateString();
     const challenges = getDailyChallenges(today);
@@ -152,7 +152,7 @@ async function updateProgress(userId, type, amount = 1, message = null) {
     return earnedRewards;
 }
 
-// ─── عرض التحديات ────────────────────────────────────────────────────────
+// عرض التحديات
 function buildChallengesEmbed(userId) {
     const { EmbedBuilder } = require('discord.js');
     const challenges = getDailyChallenges();
@@ -201,7 +201,7 @@ function buildChallengesEmbed(userId) {
     return embed;
 }
 
-// ─── وقت الإعادة الجديدة ────────────────────────────────────────────────
+// وقت الإعادة الجديدة
 function getNextResetTime() {
     const now = new Date();
     const tomorrow = new Date(now);
@@ -210,7 +210,7 @@ function getNextResetTime() {
     return tomorrow.getTime();
 }
 
-// ─── إحصائيات ─────────────────────────────────────────────────────────────
+// إحصائيات
 function getStats(userId) {
     const data = _load();
     const progress = getUserProgress(userId);

@@ -4,8 +4,8 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags
 const db = require('../../utils/database');
 const { hasPermOrOwner, getAuthor } = require('../../utils/permissions');
 
-// ─── طلبات التأكيد المعلقة ─────────────────────────────────────────────────
-// المفتاح: msgId → ActionData
+// طلبات التأكيد المعلقة
+// المفتاح: msgId  ActionData
 const pendingActions = new Map();
 
 // تنظيف تلقائي كل 10 دقائق
@@ -17,7 +17,7 @@ const _cleanup = setInterval(() => {
 }, 10 * 60 * 1000);
 _cleanup.unref?.();
 
-// ─── بناء embed التأكيد ──────────────────────────────────────────────────────
+// بناء embed التأكيد
 async function requestConfirmation(message, action) {
     const { type, target, reason, author } = action;
 
@@ -36,14 +36,14 @@ async function requestConfirmation(message, action) {
         .setDescription(
             [
                 `> **العضو:** ${target}`,
-                `> **السبب:** ${reason || 'بدون سبب محدد'}`,
+                `> **السبب:** ${reason || 'ما محدد سبب'}`,
                 `> **المسؤول:** ${author}`,
                 '',
-                `> ⚠️ هل تريد تنفيذ هذا الإجراء؟`,
+                `> ⚠️ تريد تنفّذ هالإجراء؟`,
             ].join('\n')
         )
         .setThumbnail(target.displayAvatarURL?.() || null)
-        .setFooter({ text: '⏰ ينتهي التأكيد بعد 30 ثانية' });
+        .setFooter({ text: '⏰ التأكيد ينتهي بعد 30 ثانية' });
 
     const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
@@ -63,12 +63,12 @@ async function requestConfirmation(message, action) {
     setTimeout(() => {
         if (!pendingActions.has(msg.id)) return;
         pendingActions.delete(msg.id);
-        embed.setColor('#95A5A6').setDescription('> ⏰ **انتهى وقت التأكيد — تم إلغاء الإجراء.**');
+        embed.setColor('#95A5A6').setDescription('> ⏰ **خلص وقت التأكيد، فانلغى الإجراء.**');
         msg.edit({ embeds: [embed], components: [] }).catch(() => {});
     }, 30_000);
 }
 
-// ─── بناء embed النتيجة ──────────────────────────────────────────────────────
+// بناء embed النتيجة
 function buildResultEmbed(type, target, reason, author, extra = '') {
     const META = {
         ban:    { icon: '🔨', color: '#ED4245', label: 'حظر نهائي'   },
@@ -83,35 +83,33 @@ function buildResultEmbed(type, target, reason, author, extra = '') {
 
     return new EmbedBuilder()
         .setColor(m.color)
-        .setTitle(`${m.icon} تم تنفيذ ${m.label}`)
+        .setTitle(`${m.icon} اتنفّذ ${m.label}`)
         .addFields(
             { name: '👤 العضو',    value: `${target}`,             inline: true },
-            { name: '📝 السبب',    value: reason || 'بدون سبب',   inline: true },
+            { name: '📝 السبب',    value: reason || 'ماكو سبب',   inline: true },
             { name: '👮 المسؤول',  value: `${author}`,             inline: true }
         )
-        .setFooter({ text: extra || 'تم التنفيذ بنجاح' })
+        .setFooter({ text: extra || 'اتنفّذ الإجراء.' })
         .setTimestamp();
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-//  🔨 BAN
-// ════════════════════════════════════════════════════════════════════════════
+// BAN
 module.exports.ban = {
     name: 'ban',
     aliases: ['باند', 'حظر', 'طرد_نهائي'],
-    description: 'حظر عضو من السيرفر (مع تأكيد)',
+    description: 'يحظر عضو من السيرفر بعد التأكيد',
     usage: 'ban @user [السبب]',
 
     async execute(message, args) {
         if (!hasPermOrOwner(message.member, PermissionFlagsBits.BanMembers)) {
-            return message.reply({ content: '❌ ليس لديك صلاحية الحظر!', flags: MessageFlags.Ephemeral });
+            return message.reply({ content: '❌ ما عندك صلاحية تحظر أعضاء.', flags: MessageFlags.Ephemeral });
         }
         const target = message.mentions.members.first();
-        if (!target) return message.reply('❌ منشن العضو المراد حظره!\nمثال: `ban @شخص السبب`');
-        if (!target.bannable) return message.reply('❌ لا يمكنني حظر هذا العضو — قد يكون رتبته أعلى مني!');
-        if (target.id === message.author.id) return message.reply('❌ لا يمكنك حظر نفسك!');
+        if (!target) return message.reply('❌ منشن العضو اللي تريد تحظره.\nمثال: `ban @شخص السبب`');
+        if (!target.bannable) return message.reply('❌ ما أگدر أحظر هالعضو؛ يمكن رتبته أعلى من رتبتي.');
+        if (target.id === message.author.id) return message.reply('❌ ما تگدر تحظر نفسك.');
 
-        const reason = args.slice(1).join(' ') || 'لا يوجد سبب';
+        const reason = args.slice(1).join(' ') || 'ماكو سبب';
         await requestConfirmation(message, {
             type: 'ban', target: target.user, member: target,
             reason, author: message.author, guild: message.guild,
@@ -121,25 +119,23 @@ module.exports.ban = {
     async handleModInteraction(interaction) { await handleModButton(interaction); },
 };
 
-// ════════════════════════════════════════════════════════════════════════════
-//  👢 KICK
-// ════════════════════════════════════════════════════════════════════════════
+// KICK
 module.exports.kick = {
     name: 'kick',
     aliases: ['طرد', 'كيك'],
-    description: 'طرد عضو من السيرفر (مع تأكيد)',
+    description: 'يطرد عضو من السيرفر بعد التأكيد',
     usage: 'kick @user [السبب]',
 
     async execute(message, args) {
         if (!hasPermOrOwner(message.member, PermissionFlagsBits.KickMembers)) {
-            return message.reply('❌ ليس لديك صلاحية الطرد!');
+            return message.reply('❌ ما عندك صلاحية تطرد أعضاء.');
         }
         const target = message.mentions.members.first();
-        if (!target) return message.reply('❌ منشن العضو المراد طرده!');
-        if (!target.kickable) return message.reply('❌ لا يمكنني طرد هذا العضو!');
-        if (target.id === message.author.id) return message.reply('❌ لا يمكنك طرد نفسك!');
+        if (!target) return message.reply('❌ منشن العضو اللي تريد تطرده.');
+        if (!target.kickable) return message.reply('❌ ما أگدر أطرد هالعضو.');
+        if (target.id === message.author.id) return message.reply('❌ ما تگدر تطرد نفسك.');
 
-        const reason = args.slice(1).join(' ') || 'لا يوجد سبب';
+        const reason = args.slice(1).join(' ') || 'ماكو سبب';
         await requestConfirmation(message, {
             type: 'kick', target: target.user, member: target,
             reason, author: message.author, guild: message.guild,
@@ -149,24 +145,22 @@ module.exports.kick = {
     async handleModInteraction(interaction) { await handleModButton(interaction); },
 };
 
-// ════════════════════════════════════════════════════════════════════════════
-//  ⚠️ WARN
-// ════════════════════════════════════════════════════════════════════════════
+// WARN
 module.exports.warn = {
     name: 'warn',
     aliases: ['تحذير', 'انذار'],
-    description: 'تحذير عضو (مع تأكيد)',
+    description: 'ينبّه عضو بعد التأكيد',
     usage: 'warn @user [السبب]',
 
     async execute(message, args) {
         if (!hasPermOrOwner(message.member, PermissionFlagsBits.ModerateMembers)) {
-            return message.reply('❌ ليس لديك صلاحية التحذير!');
+            return message.reply('❌ ما عندك صلاحية توجّه تحذير.');
         }
         const target = message.mentions.members.first();
-        if (!target) return message.reply('❌ منشن العضو المراد تحذيره!');
-        if (target.id === message.author.id) return message.reply('❌ لا يمكنك تحذير نفسك!');
+        if (!target) return message.reply('❌ منشن العضو اللي تريد تحذّره.');
+        if (target.id === message.author.id) return message.reply('❌ ما تگدر تحذّر نفسك.');
 
-        const reason = args.slice(1).join(' ') || 'لا يوجد سبب';
+        const reason = args.slice(1).join(' ') || 'ماكو سبب';
         await requestConfirmation(message, {
             type: 'warn', target: target.user, member: target,
             reason, author: message.author, guild: message.guild,
@@ -176,25 +170,23 @@ module.exports.warn = {
     async handleModInteraction(interaction) { await handleModButton(interaction); },
 };
 
-// ════════════════════════════════════════════════════════════════════════════
-//  🔇 MUTE
-// ════════════════════════════════════════════════════════════════════════════
+// MUTE
 module.exports.mute = {
     name: 'mute',
     aliases: ['كتم', 'صمت'],
-    description: 'كتم عضو مؤقتاً (مع تأكيد)',
+    description: 'يكتم عضو مؤقتاً بعد التأكيد',
     usage: 'mute @user [السبب]',
 
     async execute(message, args) {
         if (!hasPermOrOwner(message.member, PermissionFlagsBits.ModerateMembers)) {
-            return message.reply('❌ ليس لديك صلاحية الكتم!');
+            return message.reply('❌ ما عندك صلاحية تكتم أعضاء.');
         }
         const target = message.mentions.members.first();
-        if (!target) return message.reply('❌ منشن العضو المراد كتمه!');
-        if (!target.moderatable) return message.reply('❌ لا يمكنني كتم هذا العضو!');
-        if (target.id === message.author.id) return message.reply('❌ لا يمكنك كتم نفسك!');
+        if (!target) return message.reply('❌ منشن العضو اللي تريد تكتمه.');
+        if (!target.moderatable) return message.reply('❌ ما أگدر أكتم هالعضو.');
+        if (target.id === message.author.id) return message.reply('❌ ما تگدر تكتم نفسك.');
 
-        const reason = args.slice(1).join(' ') || 'لا يوجد سبب';
+        const reason = args.slice(1).join(' ') || 'ماكو سبب';
         await requestConfirmation(message, {
             type: 'mute', target: target.user, member: target,
             reason, author: message.author, guild: message.guild,
@@ -205,25 +197,25 @@ module.exports.mute = {
     async handleModInteraction(interaction) { await handleModButton(interaction); },
 };
 
-// ─── معالج الأزرار الموحّد ─────────────────────────────────────────────────
+// معالج الأزرار الموحّد
 async function handleModButton(interaction) {
     const id = interaction.customId;
 
     if (id.startsWith('clear_warns_')) {
         const [, , targetId, authorId] = id.split('_');
         if (interaction.user.id !== authorId) {
-            return interaction.reply({ content: '❌ فقط من طلب الأمر يمكنه التنظيف.', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: '❌ بس اللي طلب الأمر يگدر يمسح التحذيرات.', flags: MessageFlags.Ephemeral });
         }
         if (!hasPermOrOwner(interaction.member, PermissionFlagsBits.ModerateMembers)) {
-            return interaction.reply({ content: '❌ ليس لديك صلاحية!', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: '❌ ما عندك صلاحية.', flags: MessageFlags.Ephemeral });
         }
         db.updateFields(targetId, { warnings: 0, warnLogs: [] });
         return interaction.update({
             embeds: [
                 new EmbedBuilder()
                     .setColor('#57F287')
-                    .setTitle('🗑️ تم تنظيف السجل')
-                    .setDescription(`> تم إزالة جميع التحذيرات بنجاح.`)
+                    .setTitle('🗑️ انمسح السجل')
+                    .setDescription('> انشالت كل التحذيرات.')
                     .setTimestamp()
             ],
             components: []
@@ -240,14 +232,14 @@ async function handleModButton(interaction) {
     // تحقق: فقط صاحب الأمر الأصلي يستطيع تأكيده
     if (authorId && interaction.user.id !== authorId) {
         return interaction.reply({
-            content: '❌ فقط من أصدر هذا الأمر يمكنه تأكيده أو إلغاؤه.',
+            content: '❌ بس الشخص اللي طلب هالأمر يگدر يأكده أو يلغيه.',
             flags: MessageFlags.Ephemeral,
         });
     }
 
     // فحص صلاحيات عامة
     if (!hasPermOrOwner(interaction.member, PermissionFlagsBits.ModerateMembers)) {
-        return interaction.reply({ content: '❌ ليس لديك صلاحية!', flags: MessageFlags.Ephemeral });
+        return interaction.reply({ content: '❌ ما عندك صلاحية.', flags: MessageFlags.Ephemeral });
     }
 
     const msgId = interaction.message.id;
@@ -258,28 +250,28 @@ async function handleModButton(interaction) {
             embeds: [
                 new EmbedBuilder()
                     .setColor('#95A5A6')
-                    .setDescription('> ⏰ انتهى وقت هذا الإجراء — يمكنك إعادة الأمر.'),
+                    .setDescription('> ⏰ خلص وقت هالإجراء. تگدر تطلبه من جديد.'),
             ],
             components: [],
         });
     }
 
-    // ── إلغاء ──────────────────────────────────────────────────────────────
+    // إلغاء
     if (id.startsWith('mod_cancel_')) {
         pendingActions.delete(msgId);
         return interaction.update({
             embeds: [
                 new EmbedBuilder()
                     .setColor('#95A5A6')
-                    .setTitle('❌ تم إلغاء الإجراء')
-                    .setDescription(`> تم الإلغاء من قِبل ${interaction.user}`)
+                    .setTitle('❌ انلغى الإجراء')
+                    .setDescription(`> ألغاه ${interaction.user}`)
                     .setTimestamp(),
             ],
             components: [],
         });
     }
 
-    // ── تنفيذ ──────────────────────────────────────────────────────────────
+    // تنفيذ
     pendingActions.delete(msgId);
     const { type, member, target, reason, author, guild, duration } = actionData;
 
@@ -288,11 +280,11 @@ async function handleModButton(interaction) {
 
         if (type === 'ban') {
             await member.ban({ reason: `بواسطة ${author.username}: ${reason}` });
-            resultExtra = '🔨 تم الحظر النهائي بنجاح';
+            resultExtra = '🔨 انحظر العضو.';
 
         } else if (type === 'kick') {
             await member.kick(`بواسطة ${author.username}: ${reason}`);
-            resultExtra = '👢 تم الطرد بنجاح';
+            resultExtra = '👢 انطرد العضو.';
 
         } else if (type === 'warn') {
             const userData = db.getUserData(target.id);
@@ -306,33 +298,33 @@ async function handleModButton(interaction) {
             });
             
             db.updateFields(target.id, { warnings, warnLogs });
-            resultExtra = `⚠️ هذا التحذير رقم ${warnings} للعضو`;
+            resultExtra = `⚠️ هالتحذير رقم ${warnings} للعضو.`;
             
             let escalationMsg = '';
             if (warnings === 2) {
                 await member.timeout(60 * 60 * 1000, `تلقائي: التحذير الثاني - ${reason}`).catch(()=>{});
-                escalationMsg = `\n🔇 **عقوبة:** كتم لمدة ساعة (تحذير 2)`;
+                escalationMsg = `\n🔇 **الإجراء:** كتم لمدة ساعة (التحذير الثاني)`;
                 resultExtra += escalationMsg;
             } else if (warnings === 3) {
                 await member.timeout(24 * 60 * 60 * 1000, `تلقائي: التحذير الثالث - ${reason}`).catch(()=>{});
-                escalationMsg = `\n🔇 **عقوبة:** كتم لمدة 24 ساعة (تحذير 3)`;
+                escalationMsg = `\n🔇 **الإجراء:** كتم لمدة 24 ساعة (التحذير الثالث)`;
                 resultExtra += escalationMsg;
             } else if (warnings >= 4) {
                 await member.kick(`تلقائي: التحذير ${warnings} - ${reason}`).catch(()=>{});
-                escalationMsg = `\n👢 **عقوبة:** طرد من السيرفر (تحذير 4+)`;
+                escalationMsg = `\n👢 **الإجراء:** طرد من السيرفر (التحذير الرابع أو أكثر)`;
                 resultExtra += escalationMsg;
             }
 
             // إرسال DM
             target.send?.(
-                `⚠️ **تحذير** في السيرفر\nالسبب: ${reason}\nإجمالي تحذيراتك: **${warnings}**${escalationMsg}`
+                `⚠️ **إشعار تحذير** بالسيرفر\nالسبب: ${reason}\nمجموع تحذيراتك: **${warnings}**${escalationMsg}`
             ).catch(() => {});
 
         } else if (type === 'mute') {
             const muteDuration = duration || 10 * 60 * 1000;
             await member.timeout(muteDuration, `بواسطة ${author.username}: ${reason}`);
             const mins = Math.round(muteDuration / 60_000);
-            resultExtra = `🔇 تم الكتم لمدة ${mins} دقيقة`;
+            resultExtra = `🔇 انكتم لمدة ${mins} دقيقة.`;
         }
 
         const resultEmbed = buildResultEmbed(type, target, reason, author, resultExtra);
@@ -357,7 +349,7 @@ async function handleModButton(interaction) {
             embeds: [
                 new EmbedBuilder()
                     .setColor('#ED4245')
-                    .setTitle('❌ فشل التنفيذ')
+                    .setTitle('❌ ما كدرنا ننفّذ الإجراء')
                     .setDescription(`> ${err.message}`)
                     .setTimestamp(),
             ],

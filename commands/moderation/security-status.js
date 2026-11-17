@@ -7,39 +7,39 @@ const securityMonitor = require('../../utils/security-monitor');
 module.exports = {
     name: 'security-status',
     aliases: ['أمان', 'حماية-حالة', 'security', 'security-log'],
-    description: 'عرض حالة أنظمة الحماية وآخر الحوادث الأمنية',
+    description: 'يعرض وضع أنظمة الحماية وآخر الحوادث الأمنية',
     permissions: PermissionFlagsBits.ManageGuild,
 
     async execute(message, args) {
         if (!message.guild) return;
 
-        // ── التحكم: تفعيل/تعطيل نظام معين
+        // التحكم: تفعيل/تعطيل نظام معين
         if (args[0] === 'toggle' && args[1]) {
             if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
-                return message.reply('❌ هذا الأمر يحتاج صلاحية Administrator!');
+                return message.reply('❌ هالأمر يحتاج صلاحية Administrator.');
             }
             const systemName = args[1].toLowerCase();
             const setTo = args[2] !== 'off';
             const done = securityMonitor.toggleSystem(systemName, setTo);
             if (done) {
-                return message.reply(`✅ نظام \`${systemName}\` تم ${setTo ? 'تفعيله ✅' : 'تعطيله ❌'}`);
+                return message.reply(`✅ نظام \`${systemName}\` ${setTo ? 'اشتغل ✅' : 'انطفى ❌'}`);
             }
-            return message.reply(`❌ النظام \`${systemName}\` غير موجود. الأنظمة المتاحة: antiNuke, antiPhishing, antiTokenSniff, antiAdminAbuse, antiMassDM, antiBotAbuse`);
+            return message.reply(`❌ ماكو نظام باسم \`${systemName}\`. الأنظمة المتوفرة: antiNuke, antiPhishing, antiTokenSniff, antiAdminAbuse, antiMassDM, antiBotAbuse`);
         }
 
-        // ── عرض الحالة العامة
+        // عرض الحالة العامة
         const status = securityMonitor.getSystemStatus();
         const incidents = securityMonitor.getIncidentLog(message.guild.id, 5);
 
         const systemsField = [
-            `${PremiumEmbedBuilder.statusEmoji(status.antiNuke)} — **Anti-Nuke** (تدمير السيرفر)`,
-            `${PremiumEmbedBuilder.statusEmoji(status.antiPhishing)} — **Anti-Phishing** (روابط احتيال)`,
-            `${PremiumEmbedBuilder.statusEmoji(status.antiTokenSniff)} — **Token Guard** (توكنات)`,
-            `${PremiumEmbedBuilder.statusEmoji(status.antiAdminAbuse)} — **Admin Guard** (إساءة صلاحيات)`,
-            `${PremiumEmbedBuilder.statusEmoji(status.antiMassDM)} — **Mass DM** (سبام خاص)`,
-            `${PremiumEmbedBuilder.statusEmoji(status.antiBotAbuse)} — **Bot Verifier** (بوتات مشبوهة)`,
-            `🛡️ — **Channel Privacy** (خصوصية الشركات والسجلات: **نشط 🔒**)`,
-            `${status.lockdownMode ? '🔒 **LOCKDOWN مفعّل!**' : '🟢 **لا يوجد إغلاق**'}`,
+            `${PremiumEmbedBuilder.statusEmoji(status.antiNuke)} — **Anti-Nuke** (منع تخريب السيرفر)`,
+            `${PremiumEmbedBuilder.statusEmoji(status.antiPhishing)} — **Anti-Phishing** (منع روابط الاحتيال)`,
+            `${PremiumEmbedBuilder.statusEmoji(status.antiTokenSniff)} — **Token Guard** (حماية الرموز)`,
+            `${PremiumEmbedBuilder.statusEmoji(status.antiAdminAbuse)} — **Admin Guard** (منع إساءة الصلاحيات)`,
+            `${PremiumEmbedBuilder.statusEmoji(status.antiMassDM)} — **Mass DM** (منع الرسائل الخاصة المزعجة)`,
+            `${PremiumEmbedBuilder.statusEmoji(status.antiBotAbuse)} — **Bot Verifier** (فحص البوتات المشبوهة)`,
+            `🛡️ — **خصوصية القنوات** (خصوصية القنوات والسجلات: **شغّالة 🔒**)`,
+            `${status.lockdownMode ? '🔒 **الإغلاق شغّال!**' : '🟢 **ماكو إغلاق**'}`,
         ].join('\n');
 
         const incidentsField = incidents.length > 0
@@ -47,7 +47,7 @@ module.exports = {
                 const timeAgo = Math.floor((Date.now() - i.time) / 60000);
                 return `\`${i.type}\` — <@${i.userId}> — منذ ${timeAgo} دقيقة`;
             }).join('\n')
-            : '✅ لا توجد حوادث أخيرة';
+            : '✅ ماكو حوادث جديدة';
 
         const totalNuke = incidents.filter(i => i.type === 'Anti-Nuke').length;
         const totalPhish = incidents.filter(i => i.type === 'Phishing').length;
@@ -55,21 +55,21 @@ module.exports = {
 
         const embed = new EmbedBuilder()
             .setColor(status.lockdownMode ? '#FF0000' : '#00FF7F')
-            .setTitle('🛡️ نظام المراقبة الأمنية — Security Monitor v2.0')
-            .setDescription('مراقبة مستمرة 24/7 — كشف التهديدات وإيقافها فوراً بدون تردد')
+            .setTitle('🛡️ مراقبة أمان السيرفر — Security Monitor v2.0')
+            .setDescription('مراقبة مستمرة 24/7 — نكشف التهديدات ونتعامل وياها فوراً.')
             .addFields(
                 {
-                    name: '⚙️ حالة الأنظمة',
+                    name: '⚙️ وضع الأنظمة',
                     value: systemsField,
                     inline: false
                 },
                 {
-                    name: '📊 إحصائيات (آخر 50 حادثة)',
+                    name: '📊 الأرقام (آخر 50 حادثة)',
                     value: [
                         `🚨 Anti-Nuke: **${totalNuke}** حادثة`,
                         `🎣 Phishing: **${totalPhish}** حادثة`,
                         `🔑 Token Sniff: **${totalToken}** حادثة`,
-                        `📌 إجمالي: **${incidents.length}** حادثة مسجّلة`,
+                        `📌 المجموع: **${incidents.length}** حادثة مسجّلة`,
                     ].join('\n'),
                     inline: true
                 },
@@ -82,14 +82,14 @@ module.exports = {
             .addFields({
                 name: '🔧 التحكم',
                 value: [
-                    '`!أمان toggle <system> off/on` — تفعيل/تعطيل نظام',
-                    '`!أمان toggle antiNuke off` — مثال لتعطيل Anti-Nuke',
-                    '`!فك-الإغلاق` — رفع وضع Lockdown الفوري',
+                    '`!أمان toggle <system> off/on` — تشغيل/إطفاء نظام',
+                    '`!أمان toggle antiNuke off` — مثال لإطفاء Anti-Nuke',
+                    '`!فك-الإغلاق` — رفع الإغلاق فوراً',
                 ].join('\n'),
                 inline: false
             })
             .setTimestamp()
-            .setFooter({ text: `🛡️ Security Monitor | حالة الأمان في ${message.guild.name}` });
+            .setFooter({ text: `🛡️ Security Monitor | أمان ${message.guild.name}` });
 
         await message.reply({ embeds: [embed] });
     }

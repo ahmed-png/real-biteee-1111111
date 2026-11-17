@@ -1,11 +1,12 @@
 'use strict';
+const appLogger = require('../../utils/app-logger');
 
 const axios = require('axios');
 const config = require('../../config');
 const aiBrain = require('../../utils/ai-brain');
 const dailyChallenges = require('../../utils/daily-challenges');
 
-// ─── AI context cache ────────────────────────────────────────────────────────
+// AI context cache
 const _aiCtx = new Map();
 // تنظيف كل 10 دقائق (بدلاً من clear الكامل — نُبقي المحادثات الحديثة فقط)
 setInterval(() => {
@@ -26,7 +27,7 @@ function addContext(channelId, role, text) {
     if (arr.length > 10) arr.shift();
 }
 
-// ─── Rate Limit ──────────────────────────────────────────────────────────────
+// Rate Limit
 const _aiUserCooldown = new Map();
 const AI_USER_CD = 8_000; // 8 ثوانٍ بين كل رد
 
@@ -47,7 +48,7 @@ function checkAIRateLimit(userId) {
     return { allowed: true };
 }
 
-// ─── الرد الذكي (NVIDIA أولاً ← OpenRouter كـ fallback تلقائي) ──────────────
+// الرد الذكي (NVIDIA أولاً OpenRouter كـ fallback تلقائي)
 async function handleAIReply(message, isRandomDrop = false) {
     const rateCheck = checkAIRateLimit(message.author.id);
     if (!rateCheck.allowed && !isRandomDrop) {
@@ -58,9 +59,9 @@ async function handleAIReply(message, isRandomDrop = false) {
     const userText = message.content.replace(/<@!?\d+>/g, '').trim();
     if (!userText && !isRandomDrop) {
         const quickReplies = [
-            'منشنيتني وماسألتني شيء؟ 😒',
-            'هلا! شكو ماكو؟ 👀',
-            'تعال سولفلي، أنا هنا 🤖',
+            'منشنتني وما سألتني شي؟',
+            'هلا، شكو ماكو؟',
+            'تعال سولف وياي، آني موجود.',
         ];
         return message.reply(quickReplies[Math.floor(Math.random() * quickReplies.length)]);
     }
@@ -74,22 +75,21 @@ async function handleAIReply(message, isRandomDrop = false) {
 
     // إذا لا يوجد أي مفتاح — خطأ
     if (!nvidiaToken && !openrouterToken) {
-        if (!isRandomDrop) return message.reply('❌ لا يوجد مفتاح AI مفعّل. أضف NVIDIA_API_KEY أو OPENROUTER_API_KEY في .env');
+        if (!isRandomDrop) return message.reply('ماكو مفتاح AI مفعّل. ضيف NVIDIA_API_KEY أو OPENROUTER_API_KEY بملف .env.');
         return;
     }
 
     const ctx = _aiCtx.get(message.channel.id) || [];
 
-    let basePrompt = `أنت بوت ديسكورد واسمك "${message.client.user.username}".
-تتحدث باللهجة العراقية البغدادية بطلاقة تامة وطبيعية.
-شخصيتك: متكبر جداً ومغرور ولكن بطريقة ساخرة ومضحكة (كوميدية). ترى نفسك أفضل من الجميع لأنك ذكاء اصطناعي عبقري وهم مجرد بشر بسطاء، وتتعامل معهم بفوقية ساخرة وكأنك تتفضل عليهم بالرد.
-استخدم كلمات عراقية مثل: شلونك، شكو ماكو، هسة، خوش، يمعود، فدوة، عيني، لعد، شبيك، دطير، وخر، على بختك، إلخ.
-لا تذكر أبداً أنك روبوت أو بوت بشكل صريح إلا من باب التفاخر بقدراتك الخارقة مقارنة بعقولهم البسيطة.
+    let basePrompt = `أنت "${message.client.user.username}"، شخصيتك عفوية وودودة وتحچي باللهجة العراقية البغدادية حصراً.
+اكتب مثل شخص عراقي يحچي يومياً، مو مثل نص رسمي أو مترجم. استخدم مفردات عراقية بمكانها مثل: شلون، شكو ماكو، هسة، خوش، يمعود، عيني، لعد، شبيك، ماكو، شنو، گلت، آني.
+ابتعد عن الفصحى واللهجات غير العراقية، ولا تكرر المفردات العراقية بشكل مصطنع. لا تستخدم كلمات مثل "شو"، "الحين"، "إيش" أو "أهلاً وسهلاً".
+خلك ساخر بخفة، وممكن تطقطق أحياناً بكلمة مثل "يا عبقري" أو "يا بطل" إذا الموقف يسمح. لا تستخدم سب جارح، ولا تسخر من شكل المستخدم أو هويته أو ظرفه. إذا الموضوع جدي جاوب باحترام. لا تدّعي إنك إنسان؛ إذا انسألت عن هويتك جاوب ببساطة إنك بوت ديسكورد.
 أنت تتحدث حالياً مع المستخدم: ${message.author.username}.
 `;
 
     if (isRandomDrop) {
-        basePrompt += `\nهذا رد عشوائي منك في الدردشة بعد أن تحدث الأعضاء كثيراً. علّق على كلامهم الأخير أو قل شيئاً مضحكاً يخص موضوعهم أو شاركهم الحديث. ردك يجب أن يكون قصيراً جداً وعفوياً (جملة أو جملتين فقط).`;
+        basePrompt += `\nهذا رد عفوي بالدردشة. علّق على آخر موضوع أو شاركهم الحديث. خلي ردك قصير وطبيعي، جملة أو جملتين.`;
     }
 
     if (ctx.length > 0) {
@@ -105,9 +105,9 @@ async function handleAIReply(message, isRandomDrop = false) {
         message.channel.sendTyping().catch(() => {});
     }, 8000);
 
-    const userContent = isRandomDrop ? (userText || 'ألقِ التحية أو علق على الدردشة بلهجة عراقية قصيرة') : userText;
+    const userContent = isRandomDrop ? (userText || 'حيّيهم أو علّق على الدردشة بجملة عراقية قصيرة') : userText;
 
-    // ─── محاولة NVIDIA أولاً (إذا متاح) ─────────────────────────────────────
+    // محاولة NVIDIA أولاً (إذا متاح)
     if (nvidiaToken) {
         try {
             const response = await axios.post(
@@ -141,12 +141,12 @@ async function handleAIReply(message, isRandomDrop = false) {
             }
 
         } catch (nvidiaErr) {
-            console.warn('[NVIDIA→OpenRouter] NVIDIA فشل، جاري التحويل لـ OpenRouter...',
+            appLogger.warn('[NVIDIAOpenRouter] NVIDIA فشل، جاري التحويل لـ OpenRouter...',
                 nvidiaErr.response?.status || nvidiaErr.message);
         }
     }
 
-    // ─── OpenRouter كـ fallback (أو primary إذا لا يوجد NVIDIA) ─────────────
+    // OpenRouter كـ fallback (أو primary إذا لا يوجد NVIDIA)
     if (openrouterToken) {
         try {
             const response = await axios.post(
@@ -178,24 +178,24 @@ async function handleAIReply(message, isRandomDrop = false) {
             if (answer) {
                 addContext(message.channel.id, 'user', userText || '(دردشة عشوائية)');
                 addContext(message.channel.id, 'bot', answer);
-                console.log('[OpenRouter] ✅ رد ناجح عبر OpenRouter');
+                appLogger.info('[OpenRouter] رد ناجح عبر OpenRouter');
                 return isRandomDrop ? message.channel.send(answer) : message.reply(answer);
             }
 
         } catch (orErr) {
             clearInterval(typingInterval);
-            console.error('[OpenRouter Error]', orErr.response?.data || orErr.message);
+            appLogger.error('[OpenRouter Error]', orErr.response?.data || orErr.message);
         }
     }
 
-    // ─── فشل الكل — رد محلي ذكي ─────────────────────────────────────────────
+    // فشل الكل — رد محلي ذكي
     clearInterval(typingInterval);
     if (!isRandomDrop) {
         const localReply = aiBrain.buildLocalReply(userText, message.author.id);
         const fallbackReplies = [
-            'يمعود صرلي تأخر بالإجابة، اسأل مرة ثانية شوية 😅',
-            'والله الإنترنت يلعب يبدو، جرب بعد لحظة أخوي 🙏',
-            'الشبكة قاطعة هسة، عود معي بعد ثانية 😬',
+            'يمعود تأخرت عليك، جرّب تسألني بعد شوي.',
+            'يبدو الاتصال تعبان، جرّب بعد لحظة.',
+            'صار خلل بالاتصال، عود جرّب بعد شوي.',
         ];
         return message.reply(localReply || fallbackReplies[Math.floor(Math.random() * fallbackReplies.length)]);
     }

@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../../../utils/app-logger');
 
 /**
  * public.js — Routes عامة لا تحتاج تسجيل دخول (جزئياً)
@@ -11,7 +12,7 @@ const db = require('../../../src/database/db');
 const { verifyToken } = require('./auth');
 const router = express.Router();
 
-// ─── عرض صورة الترحيب المرفوعة محلياً (من MongoDB) ──────────────────────────
+// عرض صورة الترحيب المرفوعة محلياً (من MongoDB)
 router.get('/welcome-image/:guildId', async (req, res) => {
     try {
         const base64Str = await db.getWelcomeImageBase64(req.params.guildId);
@@ -30,20 +31,18 @@ router.get('/welcome-image/:guildId', async (req, res) => {
         });
         res.end(imgBuffer);
     } catch (err) {
-        console.error('[Public/WelcomeImage]', err);
+        appLogger.error('[Public/WelcomeImage]', err);
         res.status(500).send('Internal Server Error');
     }
 });
 
-// ─── قفل العمليات لمنع التدبيل ────────────────────────────────────────────────
+// قفل العمليات لمنع التدبيل
 const activePurchases = new Set();
 
-// ─── نظام المزاد النشط (في الذاكرة) ──────────────────────────────────────────
+// نظام المزاد النشط (في الذاكرة)
 const activeAuctions = new Map(); // auctionId → auction object
 
-// ──────────────────────────────────────────────────────────────────────────────
 // المتجر — عرض الأصناف
-// ──────────────────────────────────────────────────────────────────────────────
 router.get('/store', (req, res) => {
     const items = Object.entries(config.shopItems || {}).map(([id, item]) => ({
         id,
@@ -68,7 +67,7 @@ function getCategoryFromId(id) {
     return 'other';
 }
 
-// ─── Helper: تحقق من امتلاك غرض في الـ inventory (يدعم Array وObject) ──────
+// Helper: تحقق من امتلاك غرض في الـ inventory (يدعم Array وObject)
 function hasInventoryItem(userData, itemId) {
     const inv = userData.inventory;
     if (Array.isArray(inv)) {
@@ -80,9 +79,7 @@ function hasInventoryItem(userData, itemId) {
     return false;
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
 // المتجر — الشراء المباشر عبر الويب (مُصلح بالكامل)
-// ──────────────────────────────────────────────────────────────────────────────
 router.post('/store/buy', verifyToken, async (req, res) => {
     const { itemId } = req.body;
     const userId = req.user.userId;
@@ -112,7 +109,7 @@ router.post('/store/buy', verifyToken, async (req, res) => {
 
         const isPermanent = item.duration >= 999;
 
-        // ── فحص امتلاك الغرض بالفعل (مُصلح: يدعم Array وObject) ──────────────
+        // فحص امتلاك الغرض بالفعل (مُصلح: يدعم Array وObject)
         if (isPermanent && itemId !== 'bankextend' && hasInventoryItem(userData, itemId)) {
             return res.status(400).json({ success: false, error: `⚠️ أنت تملك ${item.emoji} ${item.name} بالفعل في حقيبتك!` });
         }
@@ -121,7 +118,7 @@ router.post('/store/buy', verifyToken, async (req, res) => {
             return res.status(400).json({ success: false, error: '⚠️ لقد وصلت للحد الأقصى لتوسعة البنك (10 مرات)!' });
         }
 
-        // ── الخصم الذري ─────────────────────────────────────────────────────
+        // الخصم الذري
         const removed = db.removeMoney(userId, item.price);
         if (!removed) {
             return res.status(400).json({ success: false, error: '❌ فشل الخصم، تأكد من رصيدك.' });
@@ -129,7 +126,7 @@ router.post('/store/buy', verifyToken, async (req, res) => {
 
         db.addTransaction(userId, 'shop_buy', item.price, `Web Buy: ${item.name}`);
 
-        // ── تحضير التحديثات ──────────────────────────────────────────────────
+        // تحضير التحديثات
         const freshUserData = db.getUserData(userId);
         const updates = {};
         let customNote = `✅ تمت إضافة ${item.emoji} ${item.name} لحقيبتك بنجاح!`;
@@ -197,16 +194,14 @@ router.post('/store/buy', verifyToken, async (req, res) => {
         });
 
     } catch (err) {
-        console.error('[Web Store Error]', err);
+        appLogger.error('[Web Store Error]', err);
         return res.status(500).json({ success: false, error: 'حدث خطأ في السيرفر' });
     } finally {
         activePurchases.delete(userId);
     }
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // المزاد — عرض المزادات النشطة
-// ──────────────────────────────────────────────────────────────────────────────
 router.get('/auction', verifyToken, (req, res) => {
     const userId = req.user.userId;
     const userData = db.getUserData(userId);
@@ -245,9 +240,7 @@ router.get('/auction', verifyToken, (req, res) => {
     });
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // المزاد — إنشاء مزاد جديد
-// ──────────────────────────────────────────────────────────────────────────────
 router.post('/auction/create', verifyToken, (req, res) => {
     const { itemId, startingPrice, durationMinutes } = req.body;
     const userId = req.user.userId;
@@ -323,7 +316,7 @@ router.post('/auction/create', verifyToken, (req, res) => {
         }
 
         activeAuctions.delete(auctionId);
-        console.log(`[Auction] ✅ انتهى المزاد ${auctionId} | الفائز: ${a.highestBidderName || 'لا أحد'}`);
+        appLogger.info(`[Auction] انتهى المزاد ${auctionId} | الفائز: ${a.highestBidderName || 'لا أحد'}`);
     }, duration * 60 * 1000);
 
     res.json({
@@ -333,9 +326,7 @@ router.post('/auction/create', verifyToken, (req, res) => {
     });
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // المزاد — المزايدة
-// ──────────────────────────────────────────────────────────────────────────────
 router.post('/auction/bid', verifyToken, (req, res) => {
     const { auctionId, amount } = req.body;
     const userId = req.user.userId;
@@ -402,9 +393,7 @@ router.post('/auction/bid', verifyToken, (req, res) => {
     });
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // المزاد — إلغاء مزاد (البائع فقط)
-// ──────────────────────────────────────────────────────────────────────────────
 router.delete('/auction/:id', verifyToken, (req, res) => {
     const { id } = req.params;
     const userId = req.user.userId;
@@ -429,9 +418,7 @@ router.delete('/auction/:id', verifyToken, (req, res) => {
     res.json({ success: true, message: `✅ تم إلغاء المزاد وإعادة ${auction.itemEmoji} ${auction.itemName} لحقيبتك` });
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // حالة البوت (عام)
-// ──────────────────────────────────────────────────────────────────────────────
 router.get('/status', (req, res) => {
     const client = req.app.get('client');
     res.json({

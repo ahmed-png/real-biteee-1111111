@@ -45,15 +45,15 @@ function buildResultEmbed(p1, p2, c1, c2, result, prize = 0) {
     if (result === 'draw') {
         color = '#FEE75C';
         title = '🤝 تعادل!';
-        desc = `كلاكما اختار **${icons[c1]}**`;
+        desc = `كلكم اخترتوا **${icons[c1]}**`;
     } else if (result === 'player1') {
         color = '#57F287';
         title = `🏆 ${p1.username} فاز!`;
-        desc = `**${icons[c1]} ${CHOICES[c1].label}** يتغلب على **${icons[c2]} ${CHOICES[c2].label}**`;
+        desc = `**${icons[c1]} ${CHOICES[c1].label}** غلب **${icons[c2]} ${CHOICES[c2].label}**`;
     } else {
         color = '#ED4245';
         title = `🏆 ${p2.username || 'البوت'} فاز!`;
-        desc = `**${icons[c2]} ${CHOICES[c2].label}** يتغلب على **${icons[c1]} ${CHOICES[c1].label}**`;
+        desc = `**${icons[c2]} ${CHOICES[c2].label}** غلب **${icons[c1]} ${CHOICES[c1].label}**`;
     }
 
     const embed = new EmbedBuilder()
@@ -62,7 +62,7 @@ function buildResultEmbed(p1, p2, c1, c2, result, prize = 0) {
         .setDescription(desc)
         .addFields(
             { name: `${p1.username}`, value: `${icons[c1]} ${CHOICES[c1].label}`, inline: true },
-            { name: 'vs', value: '⚔️', inline: true },
+            { name: 'ضد', value: '⚔️', inline: true },
             { name: `${p2?.username || '🤖 البوت'}`, value: `${icons[c2]} ${CHOICES[c2].label}`, inline: true },
         );
 
@@ -75,7 +75,7 @@ function buildResultEmbed(p1, p2, c1, c2, result, prize = 0) {
 
 module.exports = {
     name: 'rps', aliases: ['حجر_ورقة_مقص', 'ركس', 'حجر'],
-    description: 'لعبة حجر ورقة مقص بالأزرار',
+    description: 'العب حجر ورقة مقص بالأزرار',
     usage: 'rps [@مستخدم | بوت]',
 
     async execute(message, args) {
@@ -87,15 +87,15 @@ module.exports = {
             const embed = new EmbedBuilder()
                 .setColor('#5865F2')
                 .setTitle('🪨📄✂️ حجر ورقة مقص')
-                .setDescription(`> ${message.author} — اختر حركتك ضد **🤖 البوت**!\n\n> ⏰ لديك 30 ثانية للاختيار`)
-                .setFooter({ text: 'اضغط على أحد الخيارات أدناه' });
+                .setDescription(`> ${message.author} — اختار حركتك ضد **🤖 البوت**!\n\n> ⏰ عندك 30 ثانية تختار`)
+                .setFooter({ text: 'اختار واحد من الأزرار جوّه' });
 
             const gameId = `vs_${message.author.id}_${Date.now()}`;
             const row = buildChoiceRow(gameId);
             await message.reply({ embeds: [embed], components: [row] });
         } else {
             // ── ضد لاعب آخر ────────────────────────────────────────
-            if (target.id === message.author.id) return message.reply('❌ لا يمكنك تحدي نفسك!');
+            if (target.id === message.author.id) return message.reply('❌ ما تگدر تتحدى نفسك، العب ضد البوت 😄');
 
             const gameId = `pvp_${message.author.id}_${target.id}_${Date.now()}`;
             rpsGames.set(gameId, {
@@ -111,12 +111,12 @@ module.exports = {
                 .setTitle('🪨📄✂️ تحدي حجر ورقة مقص!')
                 .setDescription([
                     `> 🎮 ${message.author} يتحدى ${target}!`,
-                    `> كلاكما سيختار سراً — والنتيجة تُكشف بعد الاختيارَين!`,
+                    `> كل واحد يختار بسرّه — ونكشف النتيجة من تختارون اثنينكم!`,
                     '',
-                    `> ⏳ **انتظار اختيار ${message.author.username}...**`,
-                    `> ⏳ **انتظار اختيار ${target.username}...**`,
+                    `> ⏳ **ننتظر ${message.author.username} يختار...**`,
+                    `> ⏳ **ننتظر ${target.username} يختار...**`,
                 ].join('\n'))
-                .setFooter({ text: '⏰ 60 ثانية للاختيار' });
+                .setFooter({ text: '⏰ عندكم 60 ثانية تختارون' });
 
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId(`rps_choice_${gameId}_rock`).setLabel('🪨 حجر').setStyle(ButtonStyle.Primary),
@@ -131,7 +131,7 @@ module.exports = {
             setTimeout(() => {
                 if (rpsGames.has(gameId)) {
                     rpsGames.delete(gameId);
-                    msg.edit({ content: '❌ انتهت اللعبة بسبب عدم الاختيار.', embeds: [], components: [] }).catch(() => {});
+                    msg.edit({ content: '❌ خلص وقت اللعبة لأن ما صار اختيار.', embeds: [], components: [] }).catch(() => {});
                 }
             }, 60000);
         }
@@ -153,7 +153,7 @@ module.exports = {
         if (gameId.startsWith('vs_')) {
             const ownerId = gameId.split('_')[1];
             if (interaction.user.id !== ownerId) {
-                return interaction.reply({ content: '❌ هذه اللعبة ليست لك!', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: '❌ هاللعبة مو إلك!', flags: MessageFlags.Ephemeral });
             }
 
             const botChoice = CHOICE_KEYS[Math.floor(Math.random() * CHOICE_KEYS.length)];
@@ -173,22 +173,22 @@ module.exports = {
         // ── وضع PvP ──────────────────────────────────────────────────────────
         const game = rpsGames.get(gameId);
         if (!game) {
-            return interaction.reply({ content: '❌ اللعبة انتهت أو غير موجودة.', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: '❌ اللعبة خلصت أو مو موجودة.', flags: MessageFlags.Ephemeral });
         }
 
         const isP1 = interaction.user.id === game.player1.id;
         const isP2 = interaction.user.id === game.player2.id;
 
         if (!isP1 && !isP2) {
-            return interaction.reply({ content: '❌ أنت لست جزءاً من هذه اللعبة!', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: '❌ إنت مو لاعب بهاللعبة!', flags: MessageFlags.Ephemeral });
         }
 
         // فحص إذا اختار بالفعل
         if (isP1 && game.choice1) {
-            return interaction.reply({ content: '✅ لقد اخترت بالفعل! انتظر اختيار الطرف الآخر.', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: '✅ إنت مختار من قبل! انتظر الثاني يختار.', flags: MessageFlags.Ephemeral });
         }
         if (isP2 && game.choice2) {
-            return interaction.reply({ content: '✅ لقد اخترت بالفعل! انتظر اختيار الطرف الآخر.', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: '✅ إنت مختار من قبل! انتظر الثاني يختار.', flags: MessageFlags.Ephemeral });
         }
 
         // تسجيل الاختيار
@@ -197,7 +197,7 @@ module.exports = {
 
         // إشعار سري بالاختيار
         await interaction.reply({
-            content: `✅ اخترت **${CHOICES[choice].label}**! انتظر الطرف الآخر...`,
+            content: `✅ اخترت **${CHOICES[choice].label}**! هسه ننتظر الثاني...`,
             flags: MessageFlags.Ephemeral
         });
 

@@ -14,10 +14,10 @@ const {
 const db = require('../../utils/database');
 const dailyChallenges = require('../../utils/daily-challenges');
 
-// ─── الاستطلاعات النشطة ────────────────────────────────────────────────────
+// الاستطلاعات النشطة
 const activePolls = new Map(); // messageId → pollData
 
-// ─── إنشاء استطلاع ──────────────────────────────────────────────────────
+// إنشاء استطلاع
 async function createPoll(message, args) {
     const content = args.join(' ');
 
@@ -27,31 +27,31 @@ async function createPoll(message, args) {
     if (parts.length < 3) {
         const helpEmbed = new EmbedBuilder()
             .setColor('#3498DB')
-            .setTitle('🗳️ كيف تنشئ استطلاعاً؟')
+            .setTitle('🗳️ شلون تسوي استطلاع؟')
             .setDescription([
                 '```',
                 'بول [السؤال] | [خيار1] | [خيار2] | [خيار3]',
                 '```',
                 '**مثال:**',
                 '```',
-                'بول ما هي لعبتك المفضلة؟ | PUBG | COD | Fortnite | Valorant',
+                'بول شنو لعبتك المفضلة؟ | PUBG | COD | Fortnite | Valorant',
                 '```',
-                '> 📌 يمكنك إضافة حتى **5 خيارات**',
-                '> ⏰ الاستطلاع ينتهي بعد **10 دقائق** تلقائياً',
+                '> 📌 تگدر تضيف لحد **5 خيارات**',
+                '> ⏰ الاستطلاع ينتهي وحده بعد **10 دقايق**',
             ].join('\n'))
             .setTimestamp();
         return message.reply({ embeds: [helpEmbed] });
     }
 
     if (!parts[0] || parts.slice(1).some(option => !option)) {
-        return message.reply('❌ أدخل السؤال وخيارين على الأقل، ولا تترك أي خيار فارغاً.');
+        return message.reply('❌ اكتب السؤال وخيارين عالأقل، ولا تخلي خيار فارغ.');
     }
 
     const question = parts[0];
     const options = parts.slice(1, 6); // أقصى 5 خيارات
 
     if (options.length < 2) {
-        return message.reply('❌ يجب إضافة **خيارين على الأقل**! استخدم `|` للفصل بين الخيارات.');
+        return message.reply('❌ لازم تضيف **خيارين عالأقل**! استخدم `|` حتى تفصل بينهم.');
     }
 
     const emojis = ['🔵', '🔴', '🟢', '🟡', '🟣'];
@@ -89,11 +89,11 @@ async function createPoll(message, args) {
     rows.push(new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId('poll_end')
-            .setLabel('⏹️ إنهاء الاستطلاع')
+            .setLabel('⏹️ خلّص الاستطلاع')
             .setStyle(ButtonStyle.Danger),
         new ButtonBuilder()
             .setCustomId('poll_results')
-            .setLabel('📊 النتائج')
+            .setLabel('📊 شوف النتائج')
             .setStyle(ButtonStyle.Secondary),
     ));
 
@@ -117,12 +117,12 @@ async function createPoll(message, args) {
     await dailyChallenges.updateProgress(message.author.id, 'poll', 1, message);
 }
 
-// ─── بناء Embed الاستطلاع ────────────────────────────────────────────────
+// بناء Embed الاستطلاع
 function buildPollEmbed(pollData, author, emojis, ended) {
     const totalVotes = Object.keys(pollData.votes).length;
     const embed = new EmbedBuilder()
         .setColor(ended ? '#2ECC71' : '#3498DB')
-        .setTitle(`${ended ? '📊 نتائج الاستطلاع' : '🗳️ استطلاع نشط'} — ${pollData.question}`)
+        .setTitle(`${ended ? '📊 نتائج الاستطلاع' : '🗳️ استطلاع شغّال'} — ${pollData.question}`)
         .setTimestamp();
 
     if (author) {
@@ -145,9 +145,9 @@ function buildPollEmbed(pollData, author, emojis, ended) {
     embed.addFields({
         name: '📊 الإحصائيات',
         value: [
-            `👥 **إجمالي الأصوات:** ${totalVotes}`,
+            `👥 **مجموع الأصوات:** ${totalVotes}`,
             ended
-                ? '🔴 **الاستطلاع منتهٍ**'
+                ? '🔴 **الاستطلاع خلص**'
                 : `⏰ **ينتهي:** <t:${Math.floor(pollData.endsAt / 1000)}:R>`,
         ].join('\n'),
         inline: false,
@@ -157,7 +157,7 @@ function buildPollEmbed(pollData, author, emojis, ended) {
         const maxCount = Math.max(...pollData.optionCounts);
         const winnerIndex = pollData.optionCounts.indexOf(maxCount);
         embed.addFields({
-            name: '🏆 الفائز',
+            name: '🏆 الخيار الفايز',
             value: `${emojis[winnerIndex]} **${pollData.options[winnerIndex]}** بـ ${maxCount} صوت`,
         });
     }
@@ -165,21 +165,21 @@ function buildPollEmbed(pollData, author, emojis, ended) {
     return embed;
 }
 
-// ─── معالج التصويت ───────────────────────────────────────────────────────
+// معالج التصويت
 async function handlePollInteraction(interaction) {
     const id = interaction.customId;
     const msgId = interaction.message.id;
     const poll = activePolls.get(msgId);
 
     if (!poll) {
-        return interaction.reply({ content: '❌ هذا الاستطلاع غير نشط أو انتهى!', flags: MessageFlags.Ephemeral });
+        return interaction.reply({ content: '❌ هالاستطلاع مو شغّال أو خلص!', flags: MessageFlags.Ephemeral });
     }
 
     const emojis = ['🔵', '🔴', '🟢', '🟡', '🟣'];
 
     if (id.startsWith('poll_vote_')) {
         if (poll.ended) {
-            return interaction.reply({ content: '❌ الاستطلاع منتهٍ!', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: '❌ الاستطلاع خلص!', flags: MessageFlags.Ephemeral });
         }
 
         const optionIndex = parseInt(id.replace('poll_vote_', ''));
@@ -205,7 +205,7 @@ async function handlePollInteraction(interaction) {
 
         await interaction.followUp({
             content: prevVote === optionIndex
-                ? '✅ تم إلغاء تصويتك!'
+                ? '✅ لغينا تصويتك!'
                 : `✅ صوّتت لـ **${poll.options[optionIndex]}**!`,
             flags: MessageFlags.Ephemeral,
         });
@@ -213,7 +213,7 @@ async function handlePollInteraction(interaction) {
     else if (id === 'poll_end') {
         if (poll.creatorId !== interaction.user.id &&
             !interaction.member?.permissions.has('ManageMessages')) {
-            return interaction.reply({ content: '❌ فقط منشئ الاستطلاع يمكنه إنهاؤه!', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: '❌ بس اللي سوّى الاستطلاع يگدر ينهيه!', flags: MessageFlags.Ephemeral });
         }
 
         poll.ended = true;
@@ -230,22 +230,22 @@ async function handlePollInteraction(interaction) {
 module.exports = {
     name: 'poll',
     aliases: ['بول', 'استطلاع', 'تصويت'],
-    description: 'إنشاء استطلاع رأي تفاعلي',
+    description: 'سوّي استطلاع رأي تفاعلي',
     category: 'اجتماعي',
 
     async execute(message, args) {
         if (!args.length) {
             const embed = new EmbedBuilder()
                 .setColor('#3498DB')
-                .setTitle('🗳️ نظام الاستطلاع')
+                .setTitle('🗳️ نظام الاستطلاعات')
                 .setDescription([
-                    '**الاستخدام:**',
+                    '**طريقة الاستخدام:**',
                     '```',
                     'بول [السؤال] | [خيار1] | [خيار2]',
                     '```',
                     '**مثال:**',
                     '```',
-                    'بول ما لعبتك المفضلة؟ | PUBG | COD | Fortnite',
+                    'بول شنو لعبتك المفضلة؟ | PUBG | COD | Fortnite',
                     '```',
                 ].join('\n'))
                 .setTimestamp();

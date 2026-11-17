@@ -14,7 +14,7 @@ class TournamentSystem {
     async createTournament(guild, options = {}) {
         const entryFee = options.entryFee === undefined ? 1000 : options.entryFee;
         if (!Number.isSafeInteger(entryFee) || entryFee < 0) {
-            throw new RangeError('رسوم الاشتراك يجب ألا تكون سالبة وأن تكون عدداً صحيحاً.');
+            throw new RangeError('رسوم الاشتراك ما يصير تكون سالبة ولازم تكون عدد صحيح.');
         }
 
         const tournamentId = `tournament_${Date.now()}`;
@@ -40,31 +40,31 @@ class TournamentSystem {
     // التسجيل في بطولة
     async registerPlayer(tournamentId, userId, username) {
         const tournament = this.activeTournaments.get(tournamentId);
-        if (!tournament) return { success: false, error: 'البطولة غير موجودة!' };
+        if (!tournament) return { success: false, error: 'البطولة مو موجودة!' };
 
         if (tournament.status !== 'registration') {
-            return { success: false, error: 'انتهى وقت التسجيل!' };
+            return { success: false, error: 'خلص وقت التسجيل!' };
         }
 
         if (tournament.participants.some(p => p.userId === userId)) {
-            return { success: false, error: 'أنت مسجّل بالفعل!' };
+            return { success: false, error: 'إنت مسجّل من قبل!' };
         }
 
         if (tournament.participants.length >= tournament.maxPlayers) {
-            return { success: false, error: 'البطولة ممتلئة!' };
+            return { success: false, error: 'البطولة مليانة!' };
         }
 
         const userData = db.getUserData(userId);
         if (!Number.isSafeInteger(tournament.entryFee) || tournament.entryFee < 0) {
-            return { success: false, error: 'رسوم الاشتراك في هذه البطولة غير صالحة.' };
+            return { success: false, error: 'رسوم الاشتراك بهالبطولة مو صالحة.' };
         }
         if (userData.balance < tournament.entryFee) {
-            return { success: false, error: 'ليس لديك رصيد كافٍ!' };
+            return { success: false, error: 'رصيدك ما يكفي!' };
         }
 
         // خصم رسوم الدخول
         if (tournament.entryFee > 0 && !db.removeMoney(userId, tournament.entryFee)) {
-            return { success: false, error: 'تعذر خصم رسوم الاشتراك. حاول مرة أخرى.' };
+            return { success: false, error: 'ما گدرنا نخصم رسوم الاشتراك. جرّب مرة ثانية.' };
         }
         tournament.prizePool += tournament.entryFee;
 
@@ -140,7 +140,7 @@ class TournamentSystem {
         const embed = PremiumEmbedBuilder.custom({
             color: tournament.status === 'finished' ? '#FFD700' : '#3498DB',
             title: `${statusEmoji[tournament.status]} بطولة ${getGameName(tournament.game)}`,
-            description: `معرف: \`${tournament.id}\``,
+            description: `المعرّف: \`${tournament.id}\``,
         });
 
         // معلومات البطولة
@@ -151,12 +151,12 @@ class TournamentSystem {
                 inline: true
             },
             {
-                name: '👥 المشاركون',
+                name: '👥 المشاركين',
                 value: `${tournament.participants.length}/${tournament.maxPlayers}`,
                 inline: true
             },
             {
-                name: '💵 رسوم الدخول',
+                name: '💵 رسوم الاشتراك',
                 value: `${tournament.entryFee.toLocaleString()} ${config.currency}`,
                 inline: true
             }
@@ -168,7 +168,7 @@ class TournamentSystem {
             const minutes = Math.floor(timeLeft / 60000);
             embed.addFields({
                 name: '⏰ وقت البداية',
-                value: `بعد **${minutes}** دقيقة\nسجّل الآن: \`!tournament join ${tournament.id}\``,
+                value: `بعد **${minutes}** دقيقة\nسجّل هسه: \`!tournament join ${tournament.id}\``,
                 inline: false
             });
         }
@@ -181,7 +181,7 @@ class TournamentSystem {
                 .join('\n');
 
             embed.addFields({
-                name: '📋 قائمة المشاركين',
+                name: '📋 المشاركين',
                 value: participantsList + (tournament.participants.length > 10 ? `\n...و ${tournament.participants.length - 10} آخرين` : ''),
                 inline: false
             });
@@ -190,7 +190,7 @@ class TournamentSystem {
         // الفائز
         if (tournament.status === 'finished' && tournament.winner) {
             embed.addFields({
-                name: '👑 الفائز',
+                name: '👑 الفايز',
                 value: `**${tournament.winner.username}**\nالجائزة: **${tournament.finalPrize.toLocaleString()}** ${config.currency}`,
                 inline: false
             });
@@ -205,10 +205,10 @@ function getGameName(gameType) {
     const names = {
         'slots': 'سلوتس',
         'blackjack': 'بلاك جاك',
-        'trivia': 'معلومات عامة',
-        'mixed': 'مختلطة'
+        'trivia': 'أسئلة عامة',
+        'mixed': 'منوّعة'
     };
-    return names[gameType] || 'عامة';
+    return names[gameType] || 'عامّة';
 }
 
 // Singleton instance
@@ -225,7 +225,7 @@ async function tournamentCommand(message, args) {
     if (subcommand === 'create') {
         // للإدمن فقط
         if (!message.member.permissions.has('Administrator')) {
-            return message.reply('❌ هذا الأمر للإداريين فقط!');
+            return message.reply('❌ هالأمر للإداريين بس!');
         }
         return await createTournamentCommand(message, args.slice(1));
     }
@@ -238,30 +238,30 @@ async function tournamentCommand(message, args) {
         return await tournamentInfo(message, args[1]);
     }
 
-    return message.reply('استخدام خاطئ! استخدم: `!tournament list/create/join/info`');
+    return message.reply('الاستخدام مو صحيح! جرّب: `!tournament list/create/join/info`');
 }
 
 async function listTournaments(message) {
     const tournaments = tournamentSystem.getActiveTournaments(message.guild.id);
 
     if (tournaments.length === 0) {
-        return message.reply('📭 لا توجد بطولات نشطة حالياً!');
+        return message.reply('📭 ماكو بطولات شغّالة هسه!');
     }
 
     const embed = PremiumEmbedBuilder.custom({
         color: '#3498DB',
-        title: '🏆 البطولات النشطة',
+        title: '🏆 البطولات الشغّالة',
         description: `عدد البطولات: **${tournaments.length}**`
     });
 
     tournaments.forEach((t, i) => {
         embed.addFields({
-            name: `${i + 1}. ${getGameName(t.game)} - ${t.status === 'registration' ? '📝 تسجيل' : '🏆 نشطة'}`,
+            name: `${i + 1}. ${getGameName(t.game)} - ${t.status === 'registration' ? '📝 تسجيل' : '🏆 شغّالة'}`,
             value:
-                `معرف: \`${t.id}\`\n` +
+                `المعرّف: \`${t.id}\`\n` +
                 `الجائزة: **${t.prizePool.toLocaleString()}** ${config.currency}\n` +
-                `المشاركون: ${t.participants.length}/${t.maxPlayers}\n` +
-                `رسوم الدخول: ${t.entryFee.toLocaleString()} ${config.currency}`,
+                `المشاركين: ${t.participants.length}/${t.maxPlayers}\n` +
+                `رسوم الاشتراك: ${t.entryFee.toLocaleString()} ${config.currency}`,
             inline: true
         });
     });
@@ -273,7 +273,7 @@ async function createTournamentCommand(message, args) {
     const game = args[0] || 'mixed';
     const parsedEntryFee = args[1] === undefined ? 1000 : Number(args[1]);
     if (!Number.isSafeInteger(parsedEntryFee) || parsedEntryFee < 0) {
-        return message.reply('❌ رسوم الاشتراك يجب ألا تكون سالبة وأن تكون عدداً صحيحاً.');
+        return message.reply('❌ رسوم الاشتراك ما يصير تكون سالبة ولازم تكون عدد صحيح.');
     }
     const entryFee = parsedEntryFee;
     const maxPlayers = parseInt(args[2]) || 16;
@@ -295,7 +295,7 @@ async function createTournamentCommand(message, args) {
             await tournamentSystem.startTournament(tournament.id);
             const channel = message.guild.channels.cache.get(message.channel.id);
             if (channel) {
-                channel.send(`🏆 **بطولة ${getGameName(tournament.game)} بدأت!**\nالجائزة: **${tournament.prizePool.toLocaleString()}** ${config.currency}`);
+                channel.send(`🏆 **بدت بطولة ${getGameName(tournament.game)}!**\nالجائزة: **${tournament.prizePool.toLocaleString()}** ${config.currency}`);
             }
         } else {
             // إلغاء - عدد مشاركين قليل
@@ -319,13 +319,13 @@ async function joinTournament(message, tournamentId) {
     }
 
     const embed = tournamentSystem.getTournamentEmbed(result.tournament);
-    await message.reply({ content: '✅ تم تسجيلك في البطولة بنجاح!', embeds: [embed] });
+    await message.reply({ content: '✅ تسجّلت بالبطولة بنجاح!', embeds: [embed] });
 }
 
 async function tournamentInfo(message, tournamentId) {
     const tournament = tournamentSystem.activeTournaments.get(tournamentId);
     if (!tournament) {
-        return message.reply('❌ البطولة غير موجودة!');
+        return message.reply('❌ البطولة مو موجودة!');
     }
 
     const embed = tournamentSystem.getTournamentEmbed(tournament);
@@ -336,7 +336,7 @@ module.exports = {
     // ─── واجهة الأمر المطلوبة من commandHandler ──────────────────
     name: 'tournament',
     aliases: ['بطولة', 'tournaments'],
-    description: 'نظام البطولات — إنشاء، تسجيل، ومعلومات',
+    description: 'دير البطولات، سجّل واعرف التفاصيل',
     usage: 'tournament [list/create/join/info]',
 
     async execute(message, args) {

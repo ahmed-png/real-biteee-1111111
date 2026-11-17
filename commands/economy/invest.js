@@ -8,7 +8,7 @@ const levels = require('../../utils/levels');
 module.exports = {
     name: 'invest',
     aliases: ['استثمار', 'inv'],
-    description: 'استثمار المال للحصول على ربح يومي 2%',
+    description: 'استثمر فلوسك وخذ ربح يومي 2%',
     usage: '!استثمار <المبلغ/كامل/نصف/ربع>',
 
     async execute(message, args) {
@@ -20,11 +20,11 @@ module.exports = {
 
             return message.reply(
                 `📈 **نظام الاستثمار**\n\n` +
-                `• نسبة الربح: **${((config.investmentRate || 0.02) * 100).toFixed(0)}%** يومياً\n` +
+                `• نسبة الربح: **${((config.investmentRate || 0.02) * 100).toFixed(0)}%** باليوم\n` +
                 `• استثمارك الحالي: **${current.toLocaleString()}** ${config.currency}\n` +
                 `• ربحك اليومي: **${dailyProfit.toLocaleString()}** ${config.currency}\n` +
-                `• الحد الأقصى: **${maxInv.toLocaleString()}** ${config.currency}\n\n` +
-                `الاستخدام: \`!استثمار <مبلغ>\`\nأمثلة: \`!استثمار 5000\` | \`!استثمار كامل\` | \`!استثمار نصف\``
+                `• الحد الأعلى: **${maxInv.toLocaleString()}** ${config.currency}\n\n` +
+                `طريقة الاستخدام: \`!استثمار <مبلغ>\`\nأمثلة: \`!استثمار 5000\` | \`!استثمار كامل\` | \`!استثمار نصف\``
             );
         }
 
@@ -44,11 +44,11 @@ module.exports = {
         }
 
         if (!amount || isNaN(amount) || amount <= 0) {
-            return message.reply('❌ يجب تحديد مبلغ صحيح للاستثمار!');
+            return message.reply('❌ لازم تحدد مبلغ صحيح للاستثمار.');
         }
 
         if (amount < (config.investmentMinAmount || 1000)) {
-            return message.reply(`❌ الحد الأدنى للاستثمار هو **${(config.investmentMinAmount || 1000).toLocaleString()}** ${config.currency}!`);
+            return message.reply(`❌ أقل مبلغ للاستثمار هو **${(config.investmentMinAmount || 1000).toLocaleString()}** ${config.currency}.`);
         }
 
         // فحص الحد الأقصى للاستثمار الكلي
@@ -56,13 +56,13 @@ module.exports = {
         if (currentInvestment + amount > maxInv) {
             const canAdd = maxInv - currentInvestment;
             if (canAdd <= 0) {
-                return message.reply(`❌ وصلت للحد الأقصى للاستثمار (**${maxInv.toLocaleString()}** ${config.currency})!\nاسحب بعض الاستثمار أولاً.`);
+                return message.reply(`❌ وصلت للحد الأعلى للاستثمار (**${maxInv.toLocaleString()}** ${config.currency})!\nاسحب جزء من استثمارك أولاً.`);
             }
-            return message.reply(`❌ يمكنك إضافة **${canAdd.toLocaleString()}** فقط (الحد الأقصى: ${maxInv.toLocaleString()})!`);
+            return message.reply(`❌ تگدر تضيف **${canAdd.toLocaleString()}** بس (الحد الأعلى: ${maxInv.toLocaleString()}).`);
         }
 
         if ((userData.balance || 0) < amount) {
-            return message.reply(`❌ ليس لديك رصيد كافٍ! محفظتك: **${(userData.balance || 0).toLocaleString()}** ${config.currency}`);
+            return message.reply(`❌ رصيدك ما يكفي! بمحفظتك: **${(userData.balance || 0).toLocaleString()}** ${config.currency}`);
         }
 
         const newInvestment = currentInvestment + amount;
@@ -74,18 +74,18 @@ module.exports = {
             lastInvestment: Date.now(),
             lastCollect: Date.now() // FIX: دائماً نعيّن lastCollect الآن لمنع الجمع الفوري
         });
-        db.addTransaction(message.author.id, 'invest', -amount, `Investment: +${amount}`);
+        db.addTransaction(message.author.id, 'invest', -amount, `استثمار: +${amount}`);
 
         const embed = new EmbedBuilder()
             .setColor('#FFD700')
             .setTitle('📈 استثمار ناجح!')
-            .setDescription(`تم استثمار **${amount.toLocaleString()} ${config.currency}** بنجاح!`)
+            .setDescription(`استثمرت **${amount.toLocaleString()} ${config.currency}** بنجاح!`)
             .addFields(
                 { name: '💼 إجمالي استثمارك', value: `${newInvestment.toLocaleString()} ${config.currency}`, inline: true },
-                { name: '💰 الربح اليومي المتوقع', value: `${dailyProfit.toLocaleString()} ${config.currency} (${((config.investmentRate || 0.02) * 100).toFixed(0)}%)`, inline: true },
-                { name: '📊 الحد الأقصى', value: `${maxInv.toLocaleString()} ${config.currency}`, inline: true }
+                { name: '💰 ربحك اليومي المتوقع', value: `${dailyProfit.toLocaleString()} ${config.currency} (${((config.investmentRate || 0.02) * 100).toFixed(0)}%)`, inline: true },
+                { name: '📊 الحد الأعلى', value: `${maxInv.toLocaleString()} ${config.currency}`, inline: true }
             )
-            .setFooter({ text: 'اكتب "جمع" يومياً لاستلام الأرباح! (أقصى 30 يوم دفعة واحدة)' })
+            .setFooter({ text: 'اكتب "جمع" كل يوم حتى تستلم أرباحك! (لحد 30 يوم دفعة وحدة)' })
             .setTimestamp();
 
         message.reply({ embeds: [embed] });

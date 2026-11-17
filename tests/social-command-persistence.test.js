@@ -43,7 +43,7 @@ test('friendships are stored for both users and remain listable from persisted u
     assert.deepEqual(userAFriends.map(entry => entry.userId), ['user-b']);
     assert.deepEqual(userBFriends.map(entry => entry.userId), ['user-a']);
     assert.equal(userAFriends[0].since, userBFriends[0].since);
-    assert.match(replies[0], /تم إضافة/);
+    assert.match(replies[0], /ضفنا/);
 
     const { message: listMessage, replies: listReplies } = createMessage('user-b', null);
     await friendsCommand.execute(listMessage, ['list']);
@@ -64,7 +64,7 @@ test('adding the same friend twice does not duplicate the persisted friendship',
     await friendsCommand.execute(secondMessage, ['add']);
 
     assert.equal(users.get('user-a').friends.length, 1);
-    assert.match(replies[0], /أصدقاء بالفعل/);
+    assert.match(replies[0], /أصلاً أصحاب/);
 });
 
 test('poll creation rejects empty options before creating Discord components', async () => {
@@ -79,6 +79,6 @@ test('poll creation rejects empty options before creating Discord components', a
             }
         }, args);
 
-        assert.match(replies[0], /خيارين على الأقل/);
+        assert.match(replies[0], /خيارين عالأقل/);
     }
 });

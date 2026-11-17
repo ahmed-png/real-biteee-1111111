@@ -70,8 +70,8 @@ async function showColorSelection(interaction) {
 
     const embed = new EmbedBuilder()
         .setColor('#9B59B6')
-        .setTitle('🎨 اختر لون البروفايل')
-        .setDescription(`**السعر**: ${item.price.toLocaleString()} ${config.currency}\n\nاختر اللون المفضل لك:`)
+        .setTitle('🎨 اختار لون البروفايل')
+        .setDescription(`**السعر:** ${item.price.toLocaleString()} ${config.currency}\n\nاختار اللون اللي يعجبك:`)
         .setFooter({ text: `رصيدك: ${userData.balance.toLocaleString()} ${config.currency}` });
 
     // إضافة الألوان كـ Fields

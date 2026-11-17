@@ -4,7 +4,7 @@ const db = require('../../utils/database');
 module.exports = {
     name: 'friends',
     aliases: ['اصدقاء', 'صديق', 'ضيف_صديق'],
-    description: 'نظام الأصدقاء الأساسي',
+    description: 'إدارة قائمة أصحابك',
     usage: 'friends [add @user | list]',
 
     async execute(message, args) {
@@ -19,14 +19,14 @@ module.exports = {
 
 async function addFriend(message) {
     const friend = message.mentions.users.first();
-    if (!friend) return message.reply('❌ منشن الشخص!');
-    if (friend.id === message.author.id) return message.reply('❌ لا يمكنك إضافة نفسك!');
+    if (!friend) return message.reply('❌ سوّي منشن للشخص!');
+    if (friend.id === message.author.id) return message.reply('❌ ما تگدر تضيف نفسك، صير صاحب نفسك 😄');
 
     const userId = message.author.id;
     const userData = db.getUserData(userId);
     const userFriends = Array.isArray(userData.friends) ? userData.friends : [];
     if (userFriends.some(entry => entry.userId === friend.id)) {
-        return message.reply('✅ أنتما أصدقاء بالفعل!');
+        return message.reply('✅ إنتو أصلاً أصحاب!');
     }
 
     const since = Date.now();
@@ -41,7 +41,7 @@ async function addFriend(message) {
             friends: [...friendFriends, { userId, since }]
         });
     }
-    return message.reply(`✅ تم إضافة ${friend} إلى قائمة أصدقائك!`);
+    return message.reply(`✅ ضفنا ${friend} لقائمة أصحابك!`);
 }
 
 async function listFriends(message) {
@@ -50,7 +50,7 @@ async function listFriends(message) {
         .map(entry => entry.userId)
         .filter(Boolean)
         .map(userId => `<@${userId}>`);
-    if (userFriends.length === 0) return message.reply('❌ ليس لديك أصدقاء بعد!');
-    const embed = PremiumEmbedBuilder.info('👥 قائمة أصدقائك', userFriends.join('\n'));
+    if (userFriends.length === 0) return message.reply('❌ لحد هسه ما عندك أصحاب بالقائمة!');
+    const embed = PremiumEmbedBuilder.info('👥 قائمة أصحابك', userFriends.join('\n'));
     return message.reply({ embeds: [embed] });
 }

@@ -16,7 +16,7 @@ const _xpCleanup = setInterval(() => {
 _xpCleanup.unref?.();
 
 async function handleMessageXP(message) {
-    // ── نظام الـ XP
+    // نظام الـ XP
     // التأكد من أن القناة عامة ومسموح التحدث فيها
     const isPublicChannel = message.guild
         ? (message.channel.permissionsFor(message.guild.roles.everyone)?.has('SendMessages') ?? true)

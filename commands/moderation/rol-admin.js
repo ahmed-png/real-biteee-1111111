@@ -1,33 +1,34 @@
+const appLogger = require('../../utils/app-logger');
 const { EmbedBuilder } = require('discord.js');
 const config = require('../../config');
 
 const adminMessages = [
-    'أهلاً بك في فريق الإدارة! 🎉 جهز نفسك للصداع ومشاكل الأعضاء التي لا تنتهي.',
-    'مبروك رتبة الأدمن! الآن يمكنك الاستمتاع بقراءة شات العقوبات طوال اليوم. 😅',
-    'تم ترقيتك لأدمن. تذكر: القوة العظيمة تأتي مع... رغبة كبيرة في حظر الجميع. 😏',
-    'أصبحت أدمن؟ رائع. الآن اذهب ونظف الشات، إنه فوضوي. 🧹',
-    'مبروك! لقد فزت بلقب "جليس الأطفال" الرسمي للسيرفر. 👶',
+    'هلا بيك بفريق الإدارة! 🎉 جهّز نفسك للصداع ومشاكل الأعضاء اللي ما تخلص.',
+    'مبروك رتبة الأدمن! هسه تگدر تقرا سجل العقوبات طول اليوم 😅',
+    'صرت أدمن. تذكّر: الصلاحيات تجيب وياها رغبة تحظر الكل... قاومها 😏',
+    'صرت أدمن؟ عاشت إيدك. روح رتّب الشات، شكله محتاج شوية اهتمام 🧹',
+    'مبروك! فزت بلقب "مراقب الأطفال" الرسمي للسيرفر 👶',
 ];
 
 module.exports = {
     name: 'رول ادمن',
     aliases: ['rol-admin', 'admin-role', 'اعطي ادمن', 'اعطِ ادمن', 'add-admin'],
-    description: 'إعطاء رتبة الادمن لعضو (لمالك البوت فقط)',
+    description: 'يعطي رتبة الأدمن لعضو (مالك البوت بس)',
     usage: 'رول ادمن @user',
 
     async execute(message, args) {
         // فقط مالك البوت
         if (message.author.id !== config.ownerId) {
-            return message.reply('❌ من تظن نفسك؟ هذا الأمر لمالك البوت فقط.');
+            return message.reply('❌ هالأمر لمالك البوت بس.');
         }
 
         const target = message.mentions.members.first();
         if (!target) {
-            return message.reply('❌ منشن الشخص الذي تريد منحه رتبة **👮 Admin**!\n`رول ادمن @user`');
+            return message.reply('❌ منشن العضو اللي تريد تعيّنه **👮 Admin**.\n`رول ادمن @user`');
         }
 
         if (target.id === message.author.id) {
-            return message.reply('أنت المالك يا صاحبي، ما تحتاج ادمن 😄');
+            return message.reply('إنت المالك يا صاحبي، ما تحتاج أدمن 😄');
         }
 
         // البحث عن رتبة الأدمن (تقبل أي صيغة فيها كلمة admin أو ادمن أو أدمن)
@@ -38,7 +39,7 @@ module.exports = {
         );
 
         if (!adminRole) {
-            return message.reply('❌ لم أجد رتبة **Admin** في السيرفر!\nتأكد من وجود رتبة تحتوي على كلمة `admin` أو `ادمن` في اسمها.');
+            return message.reply('❌ ما لگيت رتبة **Admin** بالسيرفر.\nتأكد أكو رتبة باسم بيها `admin` أو `ادمن`.');
         }
 
         try {
@@ -47,11 +48,11 @@ module.exports = {
             const embed = new EmbedBuilder()
                 .setColor('#E74C3C')
                 .setTitle('👮 تعيين أدمن جديد')
-                .setDescription(`تم تعيين ${target} كـ **${adminRole.name}**!`)
+                .setDescription(`تعيّن ${target} برتبة **${adminRole.name}**.`)
                 .addFields(
                     { name: 'العضو', value: `${target} (${target.user.username})`, inline: true },
                     { name: 'الرتبة', value: `${adminRole}`, inline: true },
-                    { name: 'بواسطة', value: `${message.author}`, inline: true }
+                    { name: 'عيّنه', value: `${message.author}`, inline: true }
                 )
                 .setThumbnail(target.user.displayAvatarURL())
                 .setTimestamp();
@@ -63,16 +64,16 @@ module.exports = {
                 .setColor('#E74C3C')
                 .setTitle('👮 ترقية إدارية — مبروك!')
                 .setDescription(adminMessages[Math.floor(Math.random() * adminMessages.length)])
-                .addFields({ name: 'الصلاحيات', value: 'طرد، حظر، إدارة الرومات، والمزيد...' })
-                .setFooter({ text: 'حظاً موفقاً، ستحتاجه.' });
+                .addFields({ name: 'الصلاحيات', value: 'طرد، حظر، وإدارة القنوات... والباقي بعدين 😏' })
+                .setFooter({ text: 'بالتوفيق، راح تحتاجه 😅' });
 
             await target.send({ embeds: [dm] }).catch(() => {
-                message.channel.send(`⚠️ لم أستطع إرسال رسالة خاصة لـ ${target} (الخاص مغلق)، لكنه أصبح أدمن.`);
+                message.channel.send(`⚠️ ما كدرت أرسل رسالة خاصة لـ ${target} (الخاص مغلق)، بس صار أدمن.`);
             });
 
         } catch (error) {
-            console.error('[rol-admin error]:', error);
-            return message.reply(`❌ فشل إعطاء الرتبة!\n> تأكد أن رتبة البوت **أعلى** من رتبة **${adminRole.name}** في قائمة الرول.`);
+            appLogger.error('[rol-admin error]:', error);
+            return message.reply(`❌ ما كدرت أعطيه الرتبة.\n> تأكد إن رتبة البوت **أعلى** من **${adminRole.name}** بقائمة الرتب.`);
         }
     }
 };

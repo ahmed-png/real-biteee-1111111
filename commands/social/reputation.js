@@ -13,15 +13,15 @@ const dailyChallenges = require('../../utils/daily-challenges');
 
 const REP_COOLDOWN = 24 * 60 * 60 * 1000; // 24 ساعة
 
-// ─── شارات السمعة ──────────────────────────────────────────────────────────
+// شارات السمعة
 const REP_BADGES = [
     { min: 0,   badge: '🆕', title: 'وجه جديد' },
-    { min: 5,   badge: '⭐', title: 'موثوق' },
+    { min: 5,   badge: '⭐', title: 'محل ثقة' },
     { min: 15,  badge: '🌟', title: 'محترم' },
     { min: 30,  badge: '💫', title: 'مميز' },
     { min: 50,  badge: '✨', title: 'نجم السيرفر' },
     { min: 100, badge: '👑', title: 'أسطورة السيرفر' },
-    { min: 200, badge: '🏆', title: 'بطل لا يُنسى' },
+    { min: 200, badge: '🏆', title: 'بطل ما ينوصف' },
 ];
 
 function getRepBadge(rep) {
@@ -29,14 +29,14 @@ function getRepBadge(rep) {
     return sorted.find(b => rep >= b.min) || REP_BADGES[0];
 }
 
-// ─── منح سمعة ────────────────────────────────────────────────────────────
+// منح سمعة
 async function giveRep(message, targetUser) {
     if (!targetUser || targetUser.bot) {
-        return message.reply('❌ لا يمكن منح سمعة للبوتات!');
+        return message.reply('❌ ما تگدر تمنح سمعة للبوتات!');
     }
 
     if (targetUser.id === message.author.id) {
-        return message.reply('❌ لا يمكنك منح سمعة لنفسك! 😅');
+        return message.reply('❌ ما تگدر تمنح سمعة لنفسك! 😅');
     }
 
     const senderData = db.getUserData(message.author.id);
@@ -52,10 +52,10 @@ async function giveRep(message, targetUser) {
 
         const embed = new EmbedBuilder()
             .setColor('#FF8C00')
-            .setTitle('⏰ كولداون السمعة')
+            .setTitle('⏰ انتظر شوي على السمعة')
             .setDescription([
-                `> لقد أعطيت سمعة لـ **${targetUser.displayName}** منذ فترة قريبة`,
-                `> ⏱️ انتظر **${hours} ساعة ${mins} دقيقة** أخرى`,
+                `> تَوّك معطي سمعة لـ **${targetUser.displayName}**`,
+                `> ⏱️ انتظر **${hours} ساعة و${mins} دقيقة** بعد`,
             ].join('\n'))
             .setTimestamp();
         return message.reply({ embeds: [embed] });
@@ -88,19 +88,19 @@ async function giveRep(message, targetUser) {
 
     const embed = new EmbedBuilder()
         .setColor('#FFD700')
-        .setTitle('⭐ سمعة ممنوحة!')
+        .setTitle('⭐ انمنحت سمعة!')
         .setDescription([
-            `> ${message.author} منح سمعة لـ ${targetUser}`,
-            `> ⭐ **سمعة ${targetUser.displayName} الجديدة:** \`${newRep}\` نقطة`,
+            `> ${message.author} عطى سمعة لـ ${targetUser}`,
+            `> ⭐ **سمعة ${targetUser.displayName} هسه:** \`${newRep}\` نقطة`,
             `> ${badge.badge} **الشارة:** ${badge.title}`,
-            `> 💰 **مكافأة:** \`${bonusCoins}\` 💰 لـ ${targetUser.displayName}`,
+            `> 💰 **المكافأة:** \`${bonusCoins}\` 💰 لـ ${targetUser.displayName}`,
         ].join('\n'))
         .setThumbnail(targetUser.displayAvatarURL())
         .setTimestamp();
 
     if (levelUp) {
         embed.addFields({
-            name: '🎉 ترقية في الشارة!',
+            name: '🎉 ترقيت بالشارة!',
             value: `> ${prevBadge.badge} → ${badge.badge} **${badge.title}**`,
         });
     }
@@ -108,7 +108,7 @@ async function giveRep(message, targetUser) {
     await message.reply({ embeds: [embed] });
 }
 
-// ─── عرض سمعة مستخدم ────────────────────────────────────────────────────
+// عرض سمعة مستخدم
 async function showReputation(message, targetUser) {
     const target = targetUser || message.author;
     const userData = db.getUserData(target.id);
@@ -123,25 +123,25 @@ async function showReputation(message, targetUser) {
         .setTitle(`${badge.badge} سمعة ${target.displayName}`)
         .addFields(
             { name: '⭐ السمعة', value: `\`${rep}\` نقطة`, inline: true },
-            { name: `${badge.badge} الشارة`, value: badge.title, inline: true },
+            { name: `${badge.badge} شارتك`, value: badge.title, inline: true },
         );
 
     if (nextBadge) {
         const needed = nextBadge.min - rep;
         embed.addFields({
-            name: `📈 الشارة التالية`,
-            value: `${nextBadge.badge} ${nextBadge.title} — بعد **${needed}** نقطة`,
+            name: `📈 الشارة الجاية`,
+            value: `${nextBadge.badge} ${nextBadge.title} — باقي **${needed}** نقطة`,
             inline: false,
         });
     }
 
     embed
         .addFields({
-            name: '📊 تأثير السمعة',
+            name: '📊 شنو تفيدك السمعة',
             value: [
-                `💰 فائدة قرض أفضل: ${rep >= 50 ? '✅ نعم (-2%)' : '❌ بعد 50 سمعة'}`,
-                `🎰 حظ أفضل في الألعاب: ${rep >= 30 ? '✅ نعم (+5%)' : '❌ بعد 30 سمعة'}`,
-                `👑 شارة خاصة في البروفايل: ${rep >= 15 ? '✅ نعم' : '❌ بعد 15 سمعة'}`,
+                `💰 قرض أحسن: ${rep >= 50 ? '✅ إي (-2%)' : '❌ تحتاج 50 سمعة'}`,
+                `🎰 حظ أحسن بالألعاب: ${rep >= 30 ? '✅ إي (+5%)' : '❌ تحتاج 30 سمعة'}`,
+                `👑 شارة خاصة بحسابك: ${rep >= 15 ? '✅ إي' : '❌ تحتاج 15 سمعة'}`,
             ].join('\n'),
             inline: false,
         })
@@ -151,7 +151,7 @@ async function showReputation(message, targetUser) {
     return message.reply({ embeds: [embed] });
 }
 
-// ─── لوحة صدارة السمعة ──────────────────────────────────────────────────
+// لوحة صدارة السمعة
 async function repLeaderboard(message) {
     const allUsers = db.getAllUsers() || {};
     const ranked = Object.entries(allUsers)
@@ -160,15 +160,15 @@ async function repLeaderboard(message) {
         .slice(0, 10);
 
     if (ranked.length === 0) {
-        return message.reply('📊 لا يوجد تقييمات سمعة بعد! ابدأ بـ `rep @شخص`');
+        return message.reply('📊 ماكو تقييمات سمعة لحد هسه! ابدي بـ `rep @شخص`');
     }
 
     const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
 
     const embed = new EmbedBuilder()
         .setColor('#FFD700')
-        .setTitle('⭐ لوحة صدارة السمعة')
-        .setDescription('> أكثر الأعضاء ثقة ومحبة في السيرفر!')
+        .setTitle('⭐ متصدرين السمعة')
+        .setDescription('> أكثر الأعضاء ثقة ومحبة بالسيرفر!')
         .setTimestamp();
 
     const lines = ranked.map(([id, u], i) => {
@@ -177,7 +177,7 @@ async function repLeaderboard(message) {
         return `${medals[i]} <@${id}> — \`${rep}\` نقطة ${badge.badge}`;
     }).join('\n');
 
-    embed.addFields({ name: '🏆 أفضل 10 أعضاء', value: lines });
+    embed.addFields({ name: '🏆 أكثر 10 أعضاء سمعة', value: lines });
 
     return message.reply({ embeds: [embed] });
 }
@@ -185,7 +185,7 @@ async function repLeaderboard(message) {
 module.exports = {
     name: 'reputation',
     aliases: ['rep', 'سمعة', '+rep', 'سمعه'],
-    description: 'نظام السمعة',
+    description: 'نظام السمعة والتقييم',
     category: 'اجتماعي',
 
     async execute(message, args) {

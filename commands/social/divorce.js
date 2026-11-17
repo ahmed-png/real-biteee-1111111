@@ -7,7 +7,7 @@ const config = require('../../config');
 module.exports = {
     name: 'divorce',
     aliases: ['طلاق', 'خلع', 'فراق'],
-    description: 'إنهاء علاقة الزواج مع شريكك الحالي',
+    description: 'طلّق شريكك الحالي',
     usage: 'طلاق',
 
     async execute(message) {
@@ -22,9 +22,9 @@ module.exports = {
                 embeds: [
                     new EmbedBuilder()
                         .setColor('#ED4245')
-                        .setTitle('❌ لست متزوجاً')
+                        .setTitle('❌ إنت مو متزوج')
                         .setDescription(
-                            '> لا يوجد زواج قائم لإنهائه.\n> استخدم `زواج @شخص` للزواج.'
+                            '> ما عندك زواج حتى تنهيه.\n> استخدم `زواج @شخص` إذا تريد تتزوج.'
                         )
                         .setTimestamp(),
                 ],
@@ -34,7 +34,7 @@ module.exports = {
         const partnerUser = await message.client.users.fetch(partnerId).catch(() => null);
         const partnerName = partnerUser?.username ?? `مستخدم محذوف (${partnerId})`;
 
-        // ── إحصائيات الزواج ───────────────────────────────────────────
+        // إحصائيات الزواج
         const since = userData.marriedSince || userData.marriageDate || null;
         const days = since ? Math.floor((Date.now() - since) / 86_400_000) : 0;
 
@@ -43,19 +43,19 @@ module.exports = {
             .setTitle('💔 تأكيد الطلاق')
             .setDescription(
                 [
-                    `> هل أنت متأكد من رغبتك في الطلاق من **${partnerName}**؟`,
+                    `> متأكد تريد تطلّق **${partnerName}**؟`,
                     ``,
-                    `> 🗓️ مدة الزواج: **${days} يوم**`,
-                    `> ⚠️ هذا الإجراء **لا يمكن التراجع عنه**.`,
+                    `> 🗓️ صارلكم متزوجين **${days} يوم**`,
+                    `> ⚠️ هالقرار **ماكو رجعة بيه**.`,
                 ].join('\n')
             )
-            .setFooter({ text: '⏰ ينتهي هذا الطلب خلال 30 ثانية' })
+            .setFooter({ text: '⏰ الطلب ينتهي بعد 30 ثانية' })
             .setTimestamp();
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId(`divorce_confirm_${userId}`)
-                .setLabel('✅ تأكيد الطلاق')
+                .setLabel('✅ إي، طلّق')
                 .setStyle(ButtonStyle.Danger),
             new ButtonBuilder()
                 .setCustomId(`divorce_cancel_${userId}`)
@@ -77,8 +77,8 @@ module.exports = {
                     embeds: [
                         new EmbedBuilder()
                             .setColor('#95A5A6')
-                            .setTitle('⏰ انتهى الوقت')
-                            .setDescription('> تم إلغاء طلب الطلاق تلقائياً.')
+                            .setTitle('⏰ خلص الوقت')
+                            .setDescription('> انلغى طلب الطلاق وحده.')
                             .setTimestamp(),
                     ],
                     components: [],
@@ -89,14 +89,14 @@ module.exports = {
 
         await interaction.deferUpdate();
 
-        // ── إلغاء ─────────────────────────────────────────────────────
+        // إلغاء
         if (interaction.customId.startsWith('divorce_cancel_')) {
             await confirmMsg.edit({
                 embeds: [
                     new EmbedBuilder()
                         .setColor('#57F287')
                         .setTitle('❤️ تراجعت عن الطلاق')
-                        .setDescription('> الزواج لا يزال قائماً. قرار حكيم!')
+                        .setDescription('> بعدكم متزوجين. خوش قرار 😄')
                         .setTimestamp(),
                 ],
                 components: [],
@@ -104,7 +104,7 @@ module.exports = {
             return;
         }
 
-        // ── تنفيذ الطلاق — تنظيف الحقلين القديم والجديد ─────────────
+        // تنفيذ الطلاق — تنظيف الحقلين القديم والجديد
         db.updateFields(userId, {
             marriedTo: null,
             marriedSince: null,
@@ -122,13 +122,13 @@ module.exports = {
             embeds: [
                 new EmbedBuilder()
                     .setColor('#808080')
-                    .setTitle('💔 تم الطلاق')
+                    .setTitle('💔 صار الطلاق')
                     .setDescription(
                         [
-                            `> تم فسخ عقد الزواج بين **${message.author.username}** و **${partnerName}**.`,
-                            `> مدة الزواج كانت **${days} يوم**.`,
+                            `> انتهى الزواج بين **${message.author.username}** و **${partnerName}**.`,
+                            `> بقيتوا متزوجين **${days} يوم**.`,
                             '',
-                            `> 🕊️ نتمنى لكما التوفيق في المستقبل.`,
+                            `> 🕊️ نتمنالكم التوفيق الجاي.`,
                         ].join('\n')
                     )
                     .setTimestamp(),

@@ -1,3 +1,4 @@
+const appLogger = require('../../utils/app-logger');
 const { EmbedBuilder } = require('discord.js');
 const db = require('../../utils/database');
 const config = require('../../config');
@@ -6,7 +7,7 @@ const levels = require('../../utils/levels');
 module.exports = {
     name: 'weekly',
     aliases: ['اسبوعي', 'أسبوعي', 'راتب'],
-    description: 'الحصول على الراتب الأسبوعي',
+    description: 'خذ راتبك الأسبوعي',
     usage: 'راتب',
 
     async execute(message) {
@@ -20,7 +21,7 @@ module.exports = {
                 const days = Math.floor(timeLeft / (24 * 60 * 60 * 1000));
                 const hours = Math.floor((timeLeft % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
 
-                return message.reply(`⏰ يمكنك الحصول على راتبك الأسبوعي بعد **${days} يوم و ${hours} ساعة**!`);
+                return message.reply(`⏰ تگدر تاخذ راتبك الأسبوعي بعد **${days} يوم و ${hours} ساعة**!`);
             }
 
             let weeklyAmount = config.weeklyPayAmount || 2000;
@@ -34,13 +35,13 @@ module.exports = {
                 lastWeekly: now
             });
 
-            db.addTransaction(message.author.id, 'weekly', weeklyAmount, 'Weekly Salary');
+            db.addTransaction(message.author.id, 'weekly', weeklyAmount, 'راتب أسبوعي');
             levels.addXP(message.author.id, 20, message);
 
             const embed = new EmbedBuilder()
                 .setColor('#FFD700')
-                .setTitle('💼 راتب أسبوعي!')
-                .setDescription(`تم إضافة **${weeklyAmount.toLocaleString()} ${config.currency}** إلى محفظتك!`)
+                .setTitle('💼 راتبك الأسبوعي!')
+                .setDescription(`انضاف **${weeklyAmount.toLocaleString()} ${config.currency}** لمحفظتك!`)
                 .addFields(
                     { name: '💰 رصيدك الحالي', value: `${((userData.balance || 0) + weeklyAmount).toLocaleString()} ${config.currency}` }
                 )
@@ -48,8 +49,8 @@ module.exports = {
 
             message.reply({ embeds: [embed] });
         } catch (error) {
-            console.error('[weekly error]:', error);
-            message.reply('❌ حدث خطأ في أمر الراتب الأسبوعي.').catch(() => { });
+            appLogger.error('[weekly error]:', error);
+            message.reply('❌ صار خطأ بأمر الراتب الأسبوعي.').catch(() => { });
         }
     }
 };

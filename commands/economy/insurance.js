@@ -6,7 +6,7 @@ const { PremiumEmbedBuilder } = require('../../utils/embed-builder');
 module.exports = {
     name: 'insurance',
     aliases: ['تأمين', 'تامين', 'حماية_بنكية'],
-    description: 'نظام التأمين وحماية الأموال',
+    description: 'نظام التأمين وحماية الفلوس',
     usage: 'تأمين [معلومات/اشتراك]',
 
     async execute(message, args) {
@@ -21,30 +21,30 @@ module.exports = {
         if (!action || action === 'info' || action === 'معلومات') {
             const embed = PremiumEmbedBuilder.custom({
                 color: hasActive ? '#2ECC71' : '#E74C3C',
-                title: '🛡️ مكتب التأمين العربي',
-                description: hasActive ? '✅ باقتك مفعلة حالياً.' : '❌ ليس لديك تأمين نشط.',
+                title: '🛡️ مكتب التأمين',
+                description: hasActive ? '✅ تأمينك مفعّل هسه.' : '❌ ما عندك تأمين فعّال.',
                 fields: [
-                    { name: 'قيمة الاشتراك', value: `${cost.toLocaleString()} ${config.currency}`, inline: true },
+                    { name: 'سعر الباقة', value: `${cost.toLocaleString()} ${config.currency}`, inline: true },
                     { name: 'مدة الحماية', value: '30 يوم كاملة', inline: true },
-                    { name: 'المزايا', value: '• حماية كاملة من السرقة\n• تعويض 50% عند خسارة الألعاب' }
+                    { name: 'المزايا', value: '• حماية كاملة من السرقة\n• تعويض 50% إذا خسرت بالألعاب' }
                 ]
             });
 
             if (hasActive) {
                 const daysLeft = Math.ceil((userData.insurance.expiresAt - now) / (24 * 60 * 60 * 1000));
-                embed.addFields({ name: 'صلاحية التأمين', value: `تنتهي خلال ${daysLeft} يوم` });
+                embed.addFields({ name: 'باقي على التأمين', value: `ينتهي بعد ${daysLeft} يوم` });
             } else {
-                embed.addFields({ name: '💡 اشترك الآن', value: 'اكتب `تأمين اشتراك` لتفعيل الحماية' });
+                embed.addFields({ name: '💡 اشترك هسه', value: 'اكتب `تأمين اشتراك` حتى تفعّل الحماية' });
             }
 
             return message.reply({ embeds: [embed] });
         }
 
         if (action === 'buy' || action === 'اشتراك' || action === 'تجديد') {
-            if (hasActive) return message.reply('❌ لديك تأمين نشط بالفعل! يمكنك التجديد بعد انتهائه.');
+            if (hasActive) return message.reply('❌ تأمينك فعّال هسه! تگدر تجدده من ينتهي.');
 
             if (userData.balance < cost) {
-                return message.reply(`❌ رصيدك لا يكفي! تحتاج **${cost.toLocaleString()}** ${config.currency}`);
+                return message.reply(`❌ رصيدك ما يكفي! تحتاج **${cost.toLocaleString()}** ${config.currency}`);
             }
 
             userData.balance -= cost;
@@ -56,7 +56,7 @@ module.exports = {
 
             db.updateUserData(message.author.id, userData);
 
-            return message.reply(`✅ تم تفعيل التأمين بنجاح لمدة 30 يوم! أنت الآن محمي من السرقة والنهب.`);
+            return message.reply(`✅ تفعّل التأمين بنجاح لمدة 30 يوم! هسه فلوسك محمية من السرقة والنهب.`);
         }
     }
 };

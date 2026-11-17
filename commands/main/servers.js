@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../../utils/app-logger');
 
 /**
  * 🌐 أمر قائمة السيرفرات — للمالك فقط
@@ -11,7 +12,7 @@ const config = require('../../config');
 module.exports = {
     name: 'servers',
     aliases: ['السيرفرات', 'سيرفرات'],
-    description: 'عرض السيرفرات التي يتواجد فيها البوت (للمالك فقط)',
+    description: 'شوف السيرفرات اللي البوت موجود بيها (للمالك بس)',
 
     async execute(message) {
         // فحص المالك فقط
@@ -100,7 +101,7 @@ module.exports = {
                 .setTimestamp();
 
             await message.channel.send({ embeds: [embed] }).catch(e => {
-                console.error('[Servers] خطأ:', e.message);
+                appLogger.error('[Servers] خطأ:', e.message);
             });
 
             // تأخير صغير بين الرسائل

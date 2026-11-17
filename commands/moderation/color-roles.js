@@ -1,3 +1,4 @@
+const appLogger = require('../../utils/app-logger');
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, MessageFlags } = require('discord.js');
 
 // 20 لون متنوع
@@ -5,32 +6,32 @@ const COLORS = {
     red: { name: 'أحمر', hex: '#FF0000', emoji: '🔴' },
     orange: { name: 'برتقالي', hex: '#FF8800', emoji: '🟠' },
     yellow: { name: 'أصفر', hex: '#FFFF00', emoji: '🟡' },
-    lime: { name: 'أخضر ليموني', hex: '#88FF00', emoji: '🟢' },
+    lime: { name: 'أخضر فستقي', hex: '#88FF00', emoji: '🟢' },
     green: { name: 'أخضر', hex: '#00FF00', emoji: '💚' },
     cyan: { name: 'سماوي', hex: '#00FFFF', emoji: '💠' },
     blue: { name: 'أزرق', hex: '#0088FF', emoji: '🔵' },
     navy: { name: 'أزرق غامق', hex: '#0000FF', emoji: '💙' },
     purple: { name: 'بنفسجي', hex: '#8800FF', emoji: '💜' },
-    magenta: { name: 'ماجنتا', hex: '#FF00FF', emoji: '🩷' },
-    pink: { name: 'وردي', hex: '#FF88FF', emoji: '🌸' },
+    magenta: { name: 'فوشي', hex: '#FF00FF', emoji: '🩷' },
+    pink: { name: 'زهري', hex: '#FF88FF', emoji: '🌸' },
     brown: { name: 'بني', hex: '#8B4513', emoji: '🤎' },
     black: { name: 'أسود', hex: '#000000', emoji: '⚫' },
     white: { name: 'أبيض', hex: '#FFFFFF', emoji: '⚪' },
     gold: { name: 'ذهبي', hex: '#FFD700', emoji: '🟡' },
     silver: { name: 'فضي', hex: '#C0C0C0', emoji: '⚪' },
-    rose: { name: 'وردي فاتح', hex: '#FF69B4', emoji: '🌹' },
-    teal: { name: 'أزرق مخضر', hex: '#008080', emoji: '🩵' },
+    rose: { name: 'زهري فاتح', hex: '#FF69B4', emoji: '🌹' },
+    teal: { name: 'تركوازي', hex: '#008080', emoji: '🩵' },
     coral: { name: 'مرجاني', hex: '#FF7F50', emoji: '🧡' },
-    lavender: { name: 'لافندر', hex: '#E6E6FA', emoji: '💟' }
+    lavender: { name: 'بنفسجي فاتح', hex: '#E6E6FA', emoji: '💟' }
 };
 
 // تفعيل نظام الألوان (للإدمن فقط)
 async function setupColors(message) {
     if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
-        return message.reply('❌ هذا الأمر للإداريين فقط!');
+        return message.reply('❌ هالأمر للإدارة بس.');
     }
 
-    const msg = await message.reply('⏳ جاري إنشاء رتب الألوان...');
+    const msg = await message.reply('⏳ دا أنشئ رتب الألوان...');
 
     try {
         let created = 0;
@@ -49,7 +50,7 @@ async function setupColors(message) {
                     color: color.hex,
                     permissions: [],
                     mentionable: false,
-                    reason: 'Color role system'
+                    reason: 'إعداد نظام رتب الألوان'
                 });
                 created++;
             } else {
@@ -59,16 +60,16 @@ async function setupColors(message) {
 
         const embed = new EmbedBuilder()
             .setColor('#00FF00')
-            .setTitle('✅ تم تفعيل نظام الألوان!')
-            .setDescription(`تم إنشاء **${created} رتبة** جديدة\nرتب موجودة: **${existing}**\n\nالآن يمكن للأعضاء استخدام \`الوان\` لاختيار ألوانهم!`)
-            .addFields({ name: '📝 ملاحظة', value: 'تأكد من وضع رتبة البوت فوق رتب الألوان في إعدادات السيرفر!' })
+            .setTitle('✅ نظام الألوان صار جاهز!')
+            .setDescription(`انضافت **${created} رتبة** جديدة\nالرتب الموجودة: **${existing}**\n\nهسه الأعضاء يگدرون يستخدمون \`الوان\` ويختارون لونهم.`)
+            .addFields({ name: '📝 ملاحظة', value: 'تأكد رتبة البوت تكون فوق رتب الألوان بإعدادات السيرفر.' })
             .setTimestamp();
 
         await msg.edit({ content: null, embeds: [embed] });
 
     } catch (error) {
-        console.error('خطأ في إنشاء الرتب:', error);
-        await msg.edit('❌ حدث خطأ! تأكد من أن البوت لديه صلاحيات إدارة الرتب.');
+        appLogger.error('خطأ في إنشاء الرتب:', error);
+        await msg.edit('❌ صار خطأ. تأكد إن البوت عنده صلاحية إدارة الرتب.');
     }
 }
 
@@ -76,9 +77,9 @@ async function setupColors(message) {
 async function showColors(message) {
     const embed = new EmbedBuilder()
         .setColor('#9B59B6')
-        .setTitle('🎨 اختر لونك المفضل!')
-        .setDescription('اضغط على الزر لتغيير لون اسمك في السيرفر\n**20 لون** متاح للاختيار!')
-        .setFooter({ text: 'يمكنك التبديل بين الألوان في أي وقت' })
+        .setTitle('🎨 اختار لونك!')
+        .setDescription('اضغط الزر حتى تغيّر لون اسمك بالسيرفر\n**20 لون** متوفر للاختيار.')
+        .setFooter({ text: 'تگدر تغيّر لونك بأي وقت' })
         .setTimestamp();
 
     // صف أزرار (5x4 = 20 زر)
@@ -154,7 +155,7 @@ async function assignColorRole(interaction, identifier) {
     }
 
     if (!color) {
-        return interaction.editReply({ content: '❌ لون غير معروف!' });
+        return interaction.editReply({ content: '❌ ما أعرف هاللون.' });
     }
 
     try {
@@ -169,11 +170,11 @@ async function assignColorRole(interaction, identifier) {
                     color: color.hex,
                     permissions: [],
                     mentionable: false,
-                    reason: 'Dynamic color role creation'
+                    reason: 'إنشاء رتبة لون تلقائياً'
                 });
             } catch (err) {
                 return interaction.editReply({
-                    content: '❌ هذا اللون غير متاح ولم يتمكن البوت من إنشائه تلقائياً. تأكد من أن البوت لديه صلاحية إدارة الرتب.'
+                    content: '❌ هاللون مو متوفر، وما كدرت أنشئ رتبته تلقائياً. تأكد إن البوت عنده صلاحية إدارة الرتب.'
                 });
             }
         }
@@ -189,17 +190,17 @@ async function assignColorRole(interaction, identifier) {
 
         const embed = new EmbedBuilder()
             .setColor(color.hex)
-            .setTitle(`${color.emoji} تم تغيير اللون!`)
-            .setDescription(`لونك الآن: **${color.name}**`)
-            .setFooter({ text: 'يمكنك تغيير اللون في أي وقت!' })
+            .setTitle(`${color.emoji} تغيّر لونك!`)
+            .setDescription(`لونك هسه: **${color.name}**`)
+            .setFooter({ text: 'تگدر تغيّر لونك بأي وقت!' })
             .setTimestamp();
 
         await interaction.editReply({ embeds: [embed] });
 
     } catch (error) {
-        console.error('خطأ في إسناد اللون:', error);
+        appLogger.error('خطأ في إسناد اللون:', error);
         await interaction.editReply({
-            content: '❌ حدث خطأ! تأكد من أن رتبة البوت فوق رتب الألوان في قائمة الرتب ولديه صلاحية إدارة الرتب.'
+            content: '❌ صار خطأ. تأكد إن رتبة البوت فوق رتب الألوان وعنده صلاحية إدارة الرتب.'
         });
     }
 }
@@ -216,7 +217,7 @@ async function createGuildColorRoles(guild) {
                 color: color.hex,
                 permissions: [],
                 mentionable: false,
-                reason: 'Color role system setup'
+                reason: 'إعداد نظام رتب الألوان'
             }).catch(() => {});
             created++;
         }
@@ -229,22 +230,22 @@ async function removeColor(message) {
     const colorRoles = message.member.roles.cache.filter(r => r.name.startsWith('🎨'));
 
     if (colorRoles.size === 0) {
-        return message.reply('❌ ليس لديك لون حالياً!');
+        return message.reply('❌ ما مختار أي لون حالياً.');
     }
 
     try {
         await message.member.roles.remove(colorRoles);
-        message.reply('✅ تم إزالة اللون من حسابك!');
+        message.reply('✅ انشال اللون من حسابك.');
     } catch (error) {
-        message.reply('❌ حدث خطأ في إزالة اللون!');
+        message.reply('❌ صار خطأ وإني أشيل اللون.');
     }
 }
 
 module.exports = {
-    // ─── واجهة الأمر المطلوبة من commandHandler ──────────────────
+    // واجهة الأمر المطلوبة من commandHandler
     name: 'color-roles',
     aliases: ['الوان', 'ألوان', 'لوني', 'تفعيل-الوان'],
-    description: 'نظام ألوان الأعضاء — 20 لون للاختيار',
+    description: 'نظام ألوان للأعضاء — اختار من 20 لون',
     usage: 'الوان | تفعيل-الوان (للإدمن)',
 
     async execute(message, args) {
@@ -254,7 +255,7 @@ module.exports = {
         return showColors(message);
     },
 
-    // ─── export الدوال للاستخدام المباشر ────────────────────────
+    // export الدوال للاستخدام المباشر
     setupColors,
     showColors,
     handleColorButton,

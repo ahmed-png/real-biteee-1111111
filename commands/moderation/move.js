@@ -1,10 +1,11 @@
+const appLogger = require('../../utils/app-logger');
 const { EmbedBuilder, PermissionFlagsBits, ChannelType } = require('discord.js');
 const { isOwner } = require('../../utils/permissions');
 
 module.exports = {
     name: 'move',
     aliases: ['pull', 'اسحب', 'نقل', 'mv', 'bring'],
-    description: 'نقل الأعضاء إلى الروم الصوتي الخاص بك (استخدم: !اسحب)',
+    description: 'ينقل الأعضاء للروم الصوتي مالك (استخدم: !اسحب)',
     usage: '!move <all/half/@user>',
     permissions: [PermissionFlagsBits.MoveMembers],
 
@@ -12,7 +13,7 @@ module.exports = {
         // 1. فحص الصلاحيات (صاحب البوت يتخطى)
         if (!isOwner(message.author.id) && !message.member.permissions.has(PermissionFlagsBits.MoveMembers)) {
             return message.reply({
-                content: '❌ **ليس لديك صلاحية نقل الأعضاء (Move Members)!**',
+                content: '❌ **ما عندك صلاحية تنقل الأعضاء (Move Members).**',
                 ephemeral: true
             });
         }
@@ -25,12 +26,12 @@ module.exports = {
                 const member = await message.guild.members.fetch({ user: message.author.id, force: true });
                 targetChannel = member.voice?.channel;
             } catch (e) {
-                console.error("Failed to fetch fresh member state:", e);
+                appLogger.error("Failed to fetch fresh member state:", e);
             }
         }
 
         if (!targetChannel) {
-            return message.reply('❌ **يجب أن تكون في روم صوتي أولاً! (تأكد من تفعيل الـ Intents وإعادة تشغيل البوت)**');
+            return message.reply('❌ **لازم تكون بروم صوتي بالبداية! تأكد من تفعيل الـ Intents وإعادة تشغيل البوت.**');
         }
 
         const type = args[0]?.toLowerCase();
@@ -42,18 +43,18 @@ module.exports = {
         const targetMember = message.mentions.members.first();
         if (targetMember) {
             if (!targetMember.voice.channel) {
-                return message.reply('❌ **هذا العضو ليس في روم صوتي!**');
+                return message.reply('❌ **هالعضو مو بروم صوتي.**');
             }
             if (targetMember.voice.channelId === targetChannel.id) {
-                return message.reply('❌ **هذا العضو موجود معك بالفعل!**');
+                return message.reply('❌ **هالعضو وياك بنفس الروم أصلاً.**');
             }
 
             try {
                 await targetMember.voice.setChannel(targetChannel);
-                return message.reply(`✅ **تم سحب ${targetMember} إلى ${targetChannel}!**`);
+                return message.reply(`✅ **نقلت ${targetMember} إلى ${targetChannel}!**`);
             } catch (error) {
-                console.error(error);
-                return message.reply('❌ **حدث خطأ أثناء محاولة سحب العضو. تأكد من صلاحياتي!**');
+                appLogger.error(error);
+                return message.reply('❌ **صار خطأ وأنا أنقل العضو. تأكد من صلاحياتي.**');
             }
         }
 
@@ -71,10 +72,10 @@ module.exports = {
             });
 
             if (moveableMembers.length === 0) {
-                return message.reply('❌ **لا يوجد أعضاء في رومات صوتية أخرى لسحبهم!**');
+                return message.reply('❌ **ماكو أعضاء برومات صوتية ثانية حتى أنقلهم.**');
             }
 
-            const msg = await message.reply(`🔄 **جاري سحب ${moveableMembers.length} عضو إلى ${targetChannel}...**`);
+            const msg = await message.reply(`🔄 **دا أنقل ${moveableMembers.length} عضو إلى ${targetChannel}...**`);
 
             let count = 0;
             for (const member of moveableMembers) {
@@ -83,11 +84,11 @@ module.exports = {
                     count++;
                     await sleep(500); // 0.5s delay to be safe
                 } catch (err) {
-                    console.error(`Failed to move ${member.user.tag}:`, err);
+                    appLogger.error(`Failed to move ${member.user.tag}:`, err);
                 }
             }
 
-            return msg.edit(`✅ **تم سحب كامـل الأعضاء بنجاح! (${count}/${moveableMembers.length})**`);
+            return msg.edit(`✅ **اننقلوا الأعضاء! (${count}/${moveableMembers.length})**`);
         }
 
         // --- OPTION 3: MOVE HALF (سحب نصف) ---
@@ -104,7 +105,7 @@ module.exports = {
             });
 
             if (moveableMembers.length === 0) {
-                return message.reply('❌ **لا يوجد أعضاء لسحبهم!**');
+                return message.reply('❌ **ماكو أعضاء حتى أنقلهم.**');
             }
 
             // Shuffle array
@@ -114,7 +115,7 @@ module.exports = {
             const halfCount = Math.ceil(moveableMembers.length / 2);
             const selectedMembers = moveableMembers.slice(0, halfCount);
 
-            const msg = await message.reply(`🔄 **جاري سحب نصف الأعضاء (${selectedMembers.length}) إلى ${targetChannel}...**`);
+            const msg = await message.reply(`🔄 **دا أنقل نص الأعضاء (${selectedMembers.length}) إلى ${targetChannel}...**`);
 
             let count = 0;
             for (const member of selectedMembers) {
@@ -123,24 +124,24 @@ module.exports = {
                     count++;
                     await sleep(500);
                 } catch (err) {
-                    console.error(`Failed to move ${member.user.tag}:`, err);
+                    appLogger.error(`Failed to move ${member.user.tag}:`, err);
                 }
             }
 
-            return msg.edit(`✅ **تم سحب نصف الأعضاء بنجاح! (${count}/${selectedMembers.length})**`);
+            return msg.edit(`✅ **اننقل نص الأعضاء! (${count}/${selectedMembers.length})**`);
         }
 
         // --- DEFAULT: HELP MSG ---
         const embed = new EmbedBuilder()
             .setColor('#3498db')
-            .setTitle('🎮 أوامر السحب والنقل')
-            .setDescription('استخدم الأوامر التالية لنقل الأعضاء:')
+            .setTitle('🎮 أوامر نقل الأعضاء')
+            .setDescription('استخدم هالأوامر حتى تنقل الأعضاء:')
             .addFields(
-                { name: 'سحب عضو محدد', value: `\`!سحب @user\``, inline: false },
-                { name: 'سحب كامل (الكل)', value: `\`!سحب كامل\``, inline: false },
-                { name: 'سحب نصف (عشوائي)', value: `\`!سحب نصف\``, inline: false }
+                { name: 'نقل عضو معيّن', value: `\`!سحب @user\``, inline: false },
+                { name: 'نقل الكل', value: `\`!سحب كامل\``, inline: false },
+                { name: 'نقل النص عشوائياً', value: `\`!سحب نصف\``, inline: false }
             )
-            .setFooter({ text: 'Bot provided by Antigravity' });
+            .setFooter({ text: 'بوتكم حاضر للخدمة 🤖' });
 
         message.reply({ embeds: [embed] });
     }

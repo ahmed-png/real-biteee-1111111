@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../../utils/app-logger');
 const { BotSetting } = require('./models');
 
 const DEFAULTS = {
@@ -38,21 +39,21 @@ async function loadBotSettings() {
         if (process.env.NODE_ENV === 'production') {
             throw new Error('MongoDB is not connected; refusing to load non-persistent production settings.');
         }
-        console.warn('[BotSettingsDB] ⚠️ MongoDB غير متصل — استخدام الإعدادات الافتراضية.');
+        appLogger.warn('[BotSettingsDB] MongoDB غير متصل — استخدام الإعدادات الافتراضية.');
         return;
     }
-    console.log('[BotSettingsDB] ⏳ Loading bot settings from MongoDB...');
+    appLogger.info('[BotSettingsDB] Loading bot settings from MongoDB...');
     try {
         const settings = await BotSetting.find({}).lean();
         for (const s of settings) {
             cache.set(s.key, s.value);
         }
-        console.log(`[BotSettingsDB] ✅ Loaded ${settings.length} settings into memory.`);
+        appLogger.info(`[BotSettingsDB] Loaded ${settings.length} settings into memory.`);
     } catch (err) {
         if (process.env.NODE_ENV === 'production') {
             throw new Error(`Failed to load persistent bot settings: ${err.message}`, { cause: err });
         }
-        console.warn('[BotSettingsDB] ⚠️ تعذر تحميل الإعدادات من MongoDB:', err.message);
+        appLogger.warn('[BotSettingsDB] تعذر تحميل الإعدادات من MongoDB:', err.message);
     }
 }
 
@@ -65,7 +66,7 @@ function _set(key, value) {
     const valStr = String(value);
     cache.set(key, valStr);
     BotSetting.updateOne({ key }, { $set: { value: valStr } }, { upsert: true })
-        .catch(e => console.error('[BotSettingsDB] Update Error:', e.message));
+        .catch(e => appLogger.error('[BotSettingsDB] Update Error:', e.message));
 }
 
 function get(key) {

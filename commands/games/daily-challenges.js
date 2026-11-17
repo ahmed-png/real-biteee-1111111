@@ -8,24 +8,24 @@ class DailyChallengeSystem {
     constructor() {
         this.challengeTypes = [
             // مهام اقتصادية
-            { id: 'earn_money', type: 'economy', target: 5000, reward: 2000, title: 'جامع الثروة', desc: 'اجمع {target} عملة', emoji: '💰' },
-            { id: 'invest', type: 'economy', target: 10000, reward: 3000, title: 'المستثمر', desc: 'استثمر {target} عملة', emoji: '📈' },
-            { id: 'work_times', type: 'economy', target: 5, reward: 1500, title: 'العامل الن ون (3 خطوط اه ...', desc: 'اعمل {target} مرات', emoji: '⚒️' },
+            { id: 'earn_money', type: 'economy', target: 5000, reward: 2000, title: 'جامع الفلوس', desc: 'اجمع {target} عملة', emoji: '💰' },
+            { id: 'invest', type: 'economy', target: 10000, reward: 3000, title: 'المستثمر الشاطر', desc: 'استثمر {target} عملة', emoji: '📈' },
+            { id: 'work_times', type: 'economy', target: 5, reward: 1500, title: 'شغيلنا', desc: 'اشتغل {target} مرات', emoji: '⚒️' },
 
             // مهام الألعاب
-            { id: 'play_games', type: 'games', target: 10, reward: 2500, title: 'اللاعب', desc: 'العب {target} ألعاب', emoji: '🎮' },
-            { id: 'win_games', type: 'games', target: 5, reward: 3500, title: 'المنتصر', desc: 'اربح {target} ألعاب', emoji: '🏆' },
-            { id: 'trivia_correct', type: 'games', target: 3, reward: 2000, title: 'العبقري', desc: 'أجب صحيحاً على {target} أسئلة', emoji: '🧠' },
+            { id: 'play_games', type: 'games', target: 10, reward: 2500, title: 'محب الألعاب', desc: 'العب {target} ألعاب', emoji: '🎮' },
+            { id: 'win_games', type: 'games', target: 5, reward: 3500, title: 'الفايز', desc: 'اربح {target} ألعاب', emoji: '🏆' },
+            { id: 'trivia_correct', type: 'games', target: 3, reward: 2000, title: 'الذكي', desc: 'جاوب صح على {target} أسئلة', emoji: '🧠' },
 
             // مهام اجتماعية
-            { id: 'messages', type: 'social', target: 50, reward: 1000, title: 'الثرثار', desc: 'أرسل {target} رسالة', emoji: '💬' },
-            { id: 'help_others', type: 'social', target: 3, reward: 2500, title: 'المساعد', desc: 'ساعد {target} أشخاص', emoji: '🤝' },
-            { id: 'voice_time', type: 'social', target: 60, reward: 2000, title: 'المتحدث', desc: 'ابقَ في الفويس {target} دقيقة', emoji: '🎙️' },
+            { id: 'messages', type: 'social', target: 50, reward: 1000, title: 'الحچي ما يخلص', desc: 'دز {target} رسالة', emoji: '💬' },
+            { id: 'help_others', type: 'social', target: 3, reward: 2500, title: 'الفزّاع', desc: 'ساعد {target} أشخاص', emoji: '🤝' },
+            { id: 'voice_time', type: 'social', target: 60, reward: 2000, title: 'راعي الفويس', desc: 'ابقَ بالفويس {target} دقيقة', emoji: '🎙️' },
 
             // مهام متقدمة
-            { id: 'daily_streak', type: 'special', target: 7, reward: 5000, title: 'الملتزم', desc: 'حافظ على Streak لمدة {target} أيام', emoji: '🔥' },
-            { id: 'level_up', type: 'special', target: 1, reward: 3000, title: 'المتطور', desc: 'ارتقِ بمستوى واحد', emoji: '⬆️' },
-            { id: 'buy_items', type: 'special', target: 3, reward: 2000, title: 'المتسوق', desc: 'اشترِ {target} عناصر', emoji: '🛒' }
+            { id: 'daily_streak', type: 'special', target: 7, reward: 5000, title: 'المواظب', desc: 'حافظ على سلسلة دخولك {target} أيام', emoji: '🔥' },
+            { id: 'level_up', type: 'special', target: 1, reward: 3000, title: 'تطوّر مستواك', desc: 'ارفع مستواك درجة وحدة', emoji: '⬆️' },
+            { id: 'buy_items', type: 'special', target: 3, reward: 2000, title: 'المتسوّق', desc: 'اشتري {target} أغراض', emoji: '🛒' }
         ];
     }
 
@@ -81,12 +81,12 @@ class DailyChallengeSystem {
     // المطالبة بالمكافأة
     claimReward(userId, challengeIndex) {
         const userData = db.getUserData(userId);
-        if (!userData.dailyChallenges) return { success: false, error: 'لا توجد مهام!' };
+        if (!userData.dailyChallenges) return { success: false,         error: 'ماكو مهام!' };
 
         const challenge = userData.dailyChallenges.challenges[challengeIndex];
-        if (!challenge) return { success: false, error: 'مهمة غير موجودة!' };
-        if (!challenge.completed) return { success: false, error: 'المهمة غير مكتملة!' };
-        if (challenge.claimed) return { success: false, error: 'تم المطالبة بالمكافأة بالفعل!' };
+        if (!challenge)         return { success: false, error: 'المهمة مو موجودة!' };
+        if (!challenge.completed) return { success: false, error: 'المهمة بعدها ما اكتملت!' };
+        if (challenge.claimed) return { success: false, error: 'أخذت مكافأة هالمهمة من قبل!' };
 
         challenge.claimed = true;
         db.addMoney(userId, challenge.reward);
@@ -110,7 +110,7 @@ class DailyChallengeSystem {
         const embed = PremiumEmbedBuilder.custom({
             color: '#F39C12',
             title: `${ICONS.FIRE} المهام اليومية`,
-            description: `**${username}** - إكمل المهام واحصل على مكافآت رائعة!`
+            description: `**${username}** — كمّل المهام وخذ مكافآتك!`
         });
 
         challenges.challenges.forEach((challenge, index) => {
@@ -118,7 +118,7 @@ class DailyChallengeSystem {
             const progressPercent = (progress / challenge.target) * 100;
             const progressBar = createProgressBar(progressPercent, 10);
 
-            const status = challenge.claimed ? '✅ تم المطالبة' :
+            const status = challenge.claimed ? '✅ انأخذت' :
                 challenge.completed ? '🎁 جاهزة!' :
                     `${progress}/${challenge.target}`;
 
@@ -127,7 +127,7 @@ class DailyChallengeSystem {
                 value:
                     `${challenge.desc.replace('{target}', challenge.target)}\n` +
                     `${progressBar} ${status}\n` +
-                    `💰 المكافأة: **${challenge.reward.toLocaleString()}** ${config.currency}`,
+                    `💰 الجائزة: **${challenge.reward.toLocaleString()}** ${config.currency}`,
                 inline: false
             });
         });
@@ -140,7 +140,7 @@ class DailyChallengeSystem {
         const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
 
         embed.setFooter({
-            text: `التحديث بعد: ${hoursLeft}س ${minutesLeft}د | تحديث تلقائي كل 24 ساعة`
+            text: `يتحدّث بعد: ${hoursLeft}س ${minutesLeft}د | يتحدّث وحده كل 24 ساعة`
         });
 
         return embed;
@@ -156,7 +156,7 @@ class DailyChallengeSystem {
                 buttons.push(
                     new ButtonBuilder()
                         .setCustomId(`claim_challenge_${index}`)
-                        .setLabel(`مطالبة ${index + 1}`)
+                        .setLabel(`خذ الجائزة ${index + 1}`)
                         .setEmoji('🎁')
                         .setStyle(ButtonStyle.Success)
                 );
@@ -174,7 +174,7 @@ class DailyChallengeSystem {
                 .addComponents(
                     new ButtonBuilder()
                         .setCustomId('refresh_challenges')
-                        .setLabel('تحديث')
+                        .setLabel('حدّث')
                         .setEmoji('🔄')
                         .setStyle(ButtonStyle.Primary)
                 )
@@ -217,8 +217,8 @@ async function handleChallengeButton(interaction) {
         }
 
         const successEmbed = PremiumEmbedBuilder.success(
-            '🎉 مكافأة مُستلمة!',
-            `أكملت مهمة **${result.challenge.title}**!\nحصلت على: **${result.reward.toLocaleString()}** ${config.currency}`
+            '🎉 وصلت الجائزة!',
+            `كمّلت مهمة **${result.challenge.title}**!\nأخذت: **${result.reward.toLocaleString()}** ${config.currency}`
         );
 
         await interaction.reply({ embeds: [successEmbed], flags: (require('discord.js').MessageFlags).Ephemeral });
@@ -236,7 +236,7 @@ module.exports = {
     // ─── واجهة الأمر المطلوبة من commandHandler ──────────────────
     name: 'daily-challenges',
     aliases: ['مهام-يومية', 'تحديات-العاب'],
-    description: 'عرض المهام اليومية والمطالبة بمكافآتها',
+    description: 'شوف مهامك اليومية وخذ جوائزها',
     usage: 'daily-challenges',
 
     async execute(message, args) {

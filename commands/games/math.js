@@ -66,7 +66,7 @@ function generateChoices(correct) {
 module.exports = {
     name: 'math',
     aliases: ['رياضيات', 'حساب', 'مسألة'],
-    description: 'حل مسألة رياضية بخيارات متعددة',
+    description: 'حل مسألة رياضيات واختار الجواب من الأزرار',
     usage: 'رياضيات [سهل|متوسط|صعب]',
 
     async execute(message, args) {
@@ -81,14 +81,14 @@ module.exports = {
 
         const embed = new EmbedBuilder()
             .setColor('#9B59B6')
-            .setTitle('🧮 مسألة رياضية')
-            .setDescription(`> ${message.author} — ما ناتج:\n\n# ${question} = ?\n\n> اختر الإجابة الصحيحة!`)
+            .setTitle('🧮 مسألة رياضيات')
+            .setDescription(`> ${message.author} — شكد الناتج؟\n\n# ${question} = ?\n\n> اختار الجواب الصح!`)
             .addFields(
                 { name: '🏆 الجائزة', value: `**${reward} ${config.currency}**`, inline: true },
-                { name: '📊 الصعوبة', value: diffLabel, inline: true },
+                { name: '📊 المستوى', value: diffLabel, inline: true },
                 { name: '⏰ الوقت', value: '**20 ثانية**', inline: true },
             )
-            .setFooter({ text: 'الأزرار ستنتهي بعد 20 ثانية' });
+            .setFooter({ text: 'الأزرار تتعطّل بعد 20 ثانية' });
 
         const gameId = `${message.author.id}_${Date.now()}`;
         const row = new ActionRowBuilder().addComponents(
@@ -106,8 +106,8 @@ module.exports = {
         setTimeout(async () => {
             const timeoutEmbed = new EmbedBuilder()
                 .setColor('#ED4245')
-                .setTitle('⏰ انتهى الوقت!')
-                .setDescription(`> ${message.author} لم يجب في الوقت المحدد!\n\n> ✅ **الإجابة الصحيحة كانت:** \`${answer}\``);
+                .setTitle('⏰ خلص الوقت!')
+                .setDescription(`> ${message.author} ما جاوب بالوقت المحدد!\n\n> ✅ **الجواب الصح هو:** \`${answer}\``);
 
             // تلوين الأزرار
             const revealRow = new ActionRowBuilder().addComponents(
@@ -133,7 +133,7 @@ module.exports = {
         const chosenValue = parts[5];
 
         if (interaction.user.id !== userId) {
-            return interaction.reply({ content: '❌ هذه اللعبة ليست لك!', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: '❌ هاللعبة مو إلك!', flags: MessageFlags.Ephemeral });
         }
 
         // استخراج معلومات الأزرار لتلوينها
@@ -166,13 +166,13 @@ module.exports = {
 
             embed
                 .setColor('#57F287')
-                .setTitle('✅ إجابة صحيحة!')
-                .setDescription(`> 🎉 ${interaction.user} **أجاب بشكل صحيح!**\n\n> ✅ الإجابة: \`${correctValue}\`\n> 💰 جائزة: **+${reward} ${config.currency}**`);
+                .setTitle('✅ جوابك صح!')
+                .setDescription(`> 🎉 ${interaction.user} **جاوب صح!**\n\n> ✅ الجواب: \`${correctValue}\`\n> 💰 الجائزة: **+${reward} ${config.currency}**`);
         } else {
             embed
                 .setColor('#ED4245')
-                .setTitle('❌ إجابة خاطئة!')
-                .setDescription(`> 😔 ${interaction.user} **اختار خطأ!**\n\n> ❌ اخترت: \`${chosenValue}\`\n> ✅ الصحيح: \`${correctValue}\``);
+                .setTitle('❌ جوابك غلط!')
+                .setDescription(`> 😔 ${interaction.user} **اختار غلط!**\n\n> ❌ اختيارك: \`${chosenValue}\`\n> ✅ الصح: \`${correctValue}\``);
         }
 
         await interaction.update({ embeds: [embed], components: [revealRow] });

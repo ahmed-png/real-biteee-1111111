@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('./app-logger');
 
 const { PermissionsBitField } = require('discord.js');
 const db = require('./database');
@@ -46,7 +47,7 @@ function startBackfill(client, guildId) {
 
     const job = runBackfill(client, guildId, guildData.autoRoleId)
         .catch(error => {
-            console.error(`[AutoRole] Backfill failed unexpectedly in guild ${guildId}:`, error);
+            appLogger.error(`[AutoRole] Backfill failed unexpectedly in guild ${guildId}:`, error);
             updateBackfill(guildId, {
                 status: 'failed',
                 error: error.message || 'تعذر إكمال توزيع الرتبة',
@@ -202,7 +203,7 @@ async function runBackfill(client, guildId, roleId) {
     const status = failed > 0 ? 'partial' : 'completed';
     const error = errorSamples.length > 0 ? errorSamples.join('\n').slice(0, 1000) : null;
     saveProgress(status, error, new Date().toISOString());
-    console.log(`[AutoRole] Backfill ${status} in guild ${guildId}: ${assigned} assigned, ${skipped} skipped, ${failed} failed`);
+    appLogger.info(`[AutoRole] Backfill ${status} in guild ${guildId}: ${assigned} assigned, ${skipped} skipped, ${failed} failed`);
 }
 
 async function assignAutoRole(member) {
@@ -213,7 +214,7 @@ async function assignAutoRole(member) {
 
     const roleId = guildData.autoRoleId;
     if (!roleId) {
-        console.error(`[AutoRole] Enabled without a role ID in guild ${member.guild.id}`);
+        appLogger.error(`[AutoRole] Enabled without a role ID in guild ${member.guild.id}`);
         return false;
     }
 
@@ -223,12 +224,12 @@ async function assignAutoRole(member) {
         try {
             botMember = await guild.members.fetchMe();
         } catch (error) {
-            console.error(`[AutoRole] Failed to fetch bot member in guild ${guild.id}:`, error);
+            appLogger.error(`[AutoRole] Failed to fetch bot member in guild ${guild.id}:`, error);
             return false;
         }
     }
     if (!botMember.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
-        console.error(`[AutoRole] Missing ManageRoles permission in guild ${guild.id}`);
+        appLogger.error(`[AutoRole] Missing ManageRoles permission in guild ${guild.id}`);
         return false;
     }
 
@@ -237,40 +238,40 @@ async function assignAutoRole(member) {
         try {
             role = await guild.roles.fetch(roleId);
         } catch (error) {
-            console.error(`[AutoRole] Failed to fetch role ${roleId} in guild ${guild.id}:`, error);
+            appLogger.error(`[AutoRole] Failed to fetch role ${roleId} in guild ${guild.id}:`, error);
             return false;
         }
     }
 
     if (!role || role.guild?.id !== guild.id) {
-        console.error(`[AutoRole] Configured role ${roleId} is missing from guild ${guild.id}`);
+        appLogger.error(`[AutoRole] Configured role ${roleId} is missing from guild ${guild.id}`);
         return false;
     }
     if (!hasSafePermissions(role)) {
         const unsupportedPermissions = role.permissions.toArray()
             .filter(permission => !AUTO_ROLE_PERMISSION_NAMES.has(permission));
-        console.error(
+        appLogger.error(
             `[AutoRole] Role ${roleId} has permissions outside the allowed auto-role set in guild ${guild.id}:`,
             unsupportedPermissions
         );
         return false;
     }
     if (!roleCanBeManaged(role, guild, botMember)) {
-        console.error(`[AutoRole] Configured role ${roleId} is not manageable in guild ${guild.id}`);
+        appLogger.error(`[AutoRole] Configured role ${roleId} is not manageable in guild ${guild.id}`);
         return false;
     }
     if (member.id === guild.ownerId || member.roles.highest.comparePositionTo(botMember.roles.highest) >= 0) {
-        console.error(`[AutoRole] Member ${member.id} is above the bot's role hierarchy in guild ${guild.id}`);
+        appLogger.error(`[AutoRole] Member ${member.id} is above the bot's role hierarchy in guild ${guild.id}`);
         return false;
     }
     if (member.roles.cache.has(role.id)) return true;
 
     try {
         await member.roles.add(role, 'Auto role assigned to a new member');
-        console.log(`[AutoRole] Assigned role ${role.id} to member ${member.id} in guild ${guild.id}`);
+        appLogger.info(`[AutoRole] Assigned role ${role.id} to member ${member.id} in guild ${guild.id}`);
         return true;
     } catch (error) {
-        console.error(`[AutoRole] Failed to assign role ${role.id} to member ${member.id} in guild ${guild.id}:`, error);
+        appLogger.error(`[AutoRole] Failed to assign role ${role.id} to member ${member.id} in guild ${guild.id}:`, error);
         return false;
     }
 }

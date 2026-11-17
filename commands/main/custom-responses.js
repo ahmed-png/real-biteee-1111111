@@ -15,11 +15,11 @@ let responses = require(responsesPath);
 module.exports = {
     name: 'custom_responses',
     aliases: ['اضافة_رد', 'تعديل_رد', 'ردود'],
-    description: 'إدارة الردود التلقائية (للمالك فقط)',
+    description: 'إدارة الردود التلقائية (للمالك بس)',
     usage: 'اضافة_رد / تعديل_رد',
 
     async execute(message, args) {
-        if (message.author.id !== config.ownerId) return message.reply('❌ هذا الأمر مخصص لصاحب البوت فقط!');
+        if (message.author.id !== config.ownerId) return message.reply('هالأمر خاص بمالك البوت.');
 
         const cmd = args[0] ? args[0].toLowerCase() : (message.content.includes('اضافة') ? 'add' : 'edit');
 
@@ -43,32 +43,32 @@ module.exports = {
 
 async function addResponseModular(message) {
     const filter = m => m.author.id === message.author.id;
-    await message.reply('✍️ اكتب الكلمة التي تريد إضافة رد لها:');
+    await message.reply('اكتب الكلمة اللي تريد تضيفلها رد:');
     try {
         const wordCollector = await message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ['time'] });
         const word = wordCollector.first().content.toLowerCase().trim();
-        if (responses.responses[word]) return message.reply(`⚠️ كلمة **${word}** موجودة بالفعل!`);
-        await message.reply(`✍️ الآن اكتب الرد الذي تريده لكلمة **${word}**:`);
+        if (responses.responses[word]) return message.reply(`الكلمة **${word}** إلها رد من قبل.`);
+        await message.reply(`هسة اكتب الرد اللي تريده للكلمة **${word}**:`);
         const respCollector = await message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ['time'] });
         const respText = respCollector.first().content;
         responses.responses[word] = respText;
         fs.writeFileSync(responsesPath, JSON.stringify(responses, null, 4));
-        await message.reply(`✅ تم إضافة الرد بنجاح!\nالكلمة: **${word}**\nالرد: **${respText}**`);
-    } catch (e) { message.reply('⏰ انتهى الوقت أو حدث خطأ.'); }
+        await message.reply(`انضاف الرد.\nالكلمة: **${word}**\nالرد: **${respText}**`);
+    } catch (e) { message.reply('خلص الوقت أو صار خلل.'); }
 }
 
 async function editResponseModular(message) {
     const filter = m => m.author.id === message.author.id;
-    await message.reply('✍️ اكتب الكلمة التي تريد تعديل ردها:');
+    await message.reply('اكتب الكلمة اللي تريد تعدّل ردها:');
     try {
         const wordCollector = await message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ['time'] });
         const word = wordCollector.first().content.toLowerCase().trim();
-        if (!responses.responses[word]) return message.reply(`⚠️ كلمة **${word}** غير موجودة!`);
-        await message.reply(`✍️ الرد الحالي: **${responses.responses[word]}**\nاكتب الرد الجديد:`);
+        if (!responses.responses[word]) return message.reply(`ماكو رد للكلمة **${word}**.`);
+        await message.reply(`الرد الحالي: **${responses.responses[word]}**\nاكتب الرد الجديد:`);
         const respCollector = await message.channel.awaitMessages({ filter, max: 1, time: 60000, errors: ['time'] });
         const newText = respCollector.first().content;
         responses.responses[word] = newText;
         fs.writeFileSync(responsesPath, JSON.stringify(responses, null, 4));
-        await message.reply(`✅ تم تعديل الرد بنجاح!\nالكلمة: **${word}**\nالرد الجديد: **${newText}**`);
-    } catch (e) { message.reply('⏰ انتهى الوقت أو حدث خطأ.'); }
+        await message.reply(`تعدّل الرد.\nالكلمة: **${word}**\nالرد الجديد: **${newText}**`);
+    } catch (e) { message.reply('خلص الوقت أو صار خلل.'); }
 }

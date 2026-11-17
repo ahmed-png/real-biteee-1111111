@@ -22,7 +22,7 @@ setInterval(() => {
 module.exports = {
     name: 'stocks',
     aliases: ['بورصة', 'سهم', 'اسهم', 'أسهم'],
-    description: 'سوق الأسهم التجاري',
+    description: 'تداول بالأسهم وتابع أسعارها',
     usage: 'بورصة [قائمة/شراء/بيع/محفظتي]',
 
     async execute(message, args) {
@@ -31,13 +31,13 @@ module.exports = {
         if (!action || action === 'list' || action === 'قائمة') {
             const fields = Object.entries(stocks).map(([symbol, stock]) => ({
                 name: `${symbol} - ${stock.name}`,
-                value: `السعر: **${Math.floor(stock.price)}** ${config.currency}\nالتقلب: ${(stock.volatility * 100).toFixed(0)}%`,
+                value: `السعر: **${Math.floor(stock.price)}** ${config.currency}\nالتغيّر: ${(stock.volatility * 100).toFixed(0)}%`,
                 inline: true
             }));
 
             const embed = PremiumEmbedBuilder.economy(
                 '📈 سوق الأسهم',
-                'استثمر في الأسهم واربح!',
+                'استثمر بالأسهم وممكن تربح!',
                 fields
             );
 
@@ -56,18 +56,18 @@ module.exports = {
             const amount = parseInt(args[2]);
 
             if (!symbol || !stocks[symbol]) {
-                return message.reply('❌ رمز سهم غير صحيح! استخدم: `بورصة قائمة`');
+                return message.reply('❌ رمز السهم مو صحيح! اكتب: `بورصة قائمة`');
             }
 
             if (!amount || amount <= 0) {
-                return message.reply('❌ عدد الأسهم يجب أن يكون أكبر من 0');
+                return message.reply('❌ عدد الأسهم لازم يكون أكبر من 0.');
             }
 
             const stock = stocks[symbol];
             const totalCost = Math.floor(stock.price * amount);
 
             if (userData.balance < totalCost) {
-                return message.reply(`❌ ليس لديك ${totalCost} ${config.currency}! رصيدك: ${userData.balance}`);
+                return message.reply(`❌ ما عندك ${totalCost} ${config.currency}! رصيدك: ${userData.balance}`);
             }
 
             userData.balance -= totalCost;
@@ -78,7 +78,7 @@ module.exports = {
             db.updateUserData(message.author.id, userData);
 
             const embed = PremiumEmbedBuilder.success(
-                'تم الشراء! 📈',
+                'اشتريت! 📈',
                 `اشتريت **${amount}** سهم من ${stock.name}`,
                 [
                     { name: 'السعر', value: `${Math.floor(stock.price)} ${config.currency}`, inline: true },
@@ -95,15 +95,15 @@ module.exports = {
             const amount = parseInt(args[2]);
 
             if (!symbol || !stocks[symbol]) {
-                return message.reply('❌ رمز سهم غير صحيح!');
+                return message.reply('❌ رمز السهم مو صحيح!');
             }
 
             if (!amount || amount <= 0) {
-                return message.reply('❌ عدد الأسهم يجب أن يكون أكبر من 0');
+                return message.reply('❌ عدد الأسهم لازم يكون أكبر من 0.');
             }
 
             if (!userData.stocks || !userData.stocks[symbol] || userData.stocks[symbol] < amount) {
-                return message.reply(`❌ ليس لديك ${amount} سهم من ${symbol}!`);
+                return message.reply(`❌ ما عندك ${amount} سهم من ${symbol}!`);
             }
 
             const stock = stocks[symbol];
@@ -116,7 +116,7 @@ module.exports = {
             db.updateUserData(message.author.id, userData);
 
             const embed = PremiumEmbedBuilder.success(
-                'تم البيع! 💰',
+                'بعت! 💰',
                 `بعت **${amount}** سهم من ${stock.name}`,
                 [
                     { name: 'السعر', value: `${Math.floor(stock.price)} ${config.currency}`, inline: true },
@@ -130,7 +130,7 @@ module.exports = {
 
         if (action === 'portfolio' || action === 'محفظتي') {
             if (!userData.stocks || Object.keys(userData.stocks).length === 0) {
-                return message.reply('❌ ليس لديك أي أسهم!');
+                return message.reply('❌ ما عندك أسهم!');
             }
 
             const fields = [];

@@ -93,6 +93,7 @@ function buildLetterRows(game) {
 function buildHangmanEmbed(game) {
     const displayWord = game.word.split('').map(c => game.correctLetters.has(c) ? `**${c}**` : '\\_').join(' ');
     const wrongArr = [...game.wrongLetters];
+    const difficultyLabel = { easy: 'سهل', medium: 'متوسط', hard: 'صعب' }[game.difficulty] || game.difficulty;
 
     let color = '#5865F2';
     let title = '😵 المشنقة';
@@ -106,24 +107,24 @@ function buildHangmanEmbed(game) {
         .addFields(
             { name: '🔡 الكلمة', value: displayWord || '_ _ _', inline: false },
             { name: HANGMAN_STAGES[game.errors] ? '🖼️ المشنقة' : '\u200b', value: HANGMAN_STAGES[Math.min(game.errors, 6)], inline: false },
-            { name: '❌ الأخطاء', value: wrongArr.length > 0 ? wrongArr.join(' ') : '*لا يوجد*', inline: true },
+            { name: '❌ الغلطات', value: wrongArr.length > 0 ? wrongArr.join(' ') : '*ماكو*', inline: true },
             { name: '💔 المحاولات', value: `**${game.errors}/6**`, inline: true },
-            { name: '🎯 المستوى', value: `**${game.difficulty}**`, inline: true },
+            { name: '🎯 المستوى', value: `**${difficultyLabel}**`, inline: true },
         )
-        .setFooter({ text: game.won ? `🏆 الجائزة: +${game.prize} ${config.currency}` : game.lost ? `الكلمة كانت: ${game.word}` : `${game.difficulty} • اضغط حرفاً` });
+        .setFooter({ text: game.won ? `🏆 الجائزة: +${game.prize} ${config.currency}` : game.lost ? `الكلمة كانت: ${game.word}` : `${difficultyLabel} • اختار حرف` });
 }
 
 module.exports = {
     name: 'hangman',
     aliases: ['شنق', 'الرجل_المشنوق', 'كلمات', 'مشنقة'],
-    description: 'لعبة الرجل المشنوق بلوحة حروف تفاعلية',
+    description: 'لعبة المشنقة بلوحة حروف تفاعلية',
     usage: 'مشنقة [سهل|متوسط|صعب]',
 
     async execute(message, args) {
         const userId = message.author.id;
 
         if (hangmanGames.has(userId)) {
-            return message.reply('⚠️ لديك لعبة مشنقة نشطة بالفعل! أنهها أولاً.\n> اكتب `إلغاء` لإلغاء اللعبة الحالية.');
+            return message.reply('⚠️ عندك لعبة مشنقة شغّالة! خلّصها أول.\n> اكتب `إلغاء` حتى تلغيها.');
         }
 
         // اختيار الصعوبة
@@ -135,8 +136,8 @@ module.exports = {
             // عرض قائمة الاختيار
             const embed = new EmbedBuilder()
                 .setColor('#5865F2')
-                .setTitle('😵 المشنقة — اختر مستوى الصعوبة')
-                .setDescription('> اختر مستوى الصعوبة للبدء!\n\n> **سهل** — كلمات قصيرة ومعروفة\n> **متوسط** — كلمات تقنية\n> **صعب** — كلمات طويلة وصعبة');
+                .setTitle('😵 المشنقة — اختار المستوى')
+                .setDescription('> اختار المستوى ونبدي!\n\n> **سهل** — كلمات قصيرة ومعروفة\n> **متوسط** — كلمات تقنية\n> **صعب** — كلمات طويلة وتدوّخ شوي 😄');
 
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId(`hangman_diff_${userId}_easy`).setLabel('🟢 سهل').setStyle(ButtonStyle.Success),
@@ -160,10 +161,10 @@ module.exports = {
             const difficulty = parts[3];
 
             if (interaction.user.id !== userId) {
-                return interaction.reply({ content: '❌ هذه اللعبة ليست لك!', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: '❌ هاللعبة مو إلك!', flags: MessageFlags.Ephemeral });
             }
             if (hangmanGames.has(userId)) {
-                return interaction.reply({ content: '⚠️ لديك لعبة نشطة بالفعل!', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: '⚠️ عندك لعبة شغّالة أصلاً!', flags: MessageFlags.Ephemeral });
             }
 
             await interaction.deferUpdate();
@@ -178,12 +179,12 @@ module.exports = {
             const letter = parts.slice(3).join('_'); // الحرف قد يكون ء
 
             if (interaction.user.id !== userId) {
-                return interaction.reply({ content: '❌ هذه اللعبة ليست لك!', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: '❌ هاللعبة مو إلك!', flags: MessageFlags.Ephemeral });
             }
 
             const game = hangmanGames.get(userId);
             if (!game || game.ended) {
-                return interaction.reply({ content: '❌ اللعبة انتهت!', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: '❌ اللعبة خلصت!', flags: MessageFlags.Ephemeral });
             }
 
             // معالجة الحرف
@@ -248,7 +249,7 @@ async function startHangman(message, userId, difficulty) {
         if (hangmanGames.get(userId) === game) {
             game.ended = true;
             hangmanGames.delete(userId);
-            msg.edit({ content: `⏰ انتهت اللعبة! الكلمة كانت **${word}**`, components: [] }).catch(() => {});
+            msg.edit({ content: `⏰ خلصت اللعبة! الكلمة كانت **${word}**`, components: [] }).catch(() => {});
         }
     }, 5 * 60 * 1000);
 }
@@ -283,7 +284,7 @@ async function startHangmanOnMessage(originalMsg, user, userId, difficulty) {
         if (hangmanGames.get(userId) === game) {
             game.ended = true;
             hangmanGames.delete(userId);
-            originalMsg.edit({ content: `⏰ انتهت اللعبة! الكلمة كانت **${word}**`, embeds: [], components: [] }).catch(() => {});
+            originalMsg.edit({ content: `⏰ خلصت اللعبة! الكلمة كانت **${word}**`, embeds: [], components: [] }).catch(() => {});
         }
     }, 5 * 60 * 1000);
 }

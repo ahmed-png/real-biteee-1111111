@@ -17,7 +17,7 @@ const {
 const db = require('./database');
 const channelResolver = require('./channel-resolver');
 
-// ─── ألوان وأيقونات العقوبات ──────────────────────────────────────────────────
+// ألوان وأيقونات العقوبات
 const PUNISHMENT_CONFIG = {
     jail:    { color: '#E74C3C', icon: '🔒', label: 'سجن',     btnLabel: '🔓 فك السجن'    },
     mute:    { color: '#E67E22', icon: '🔇', label: 'كتم',     btnLabel: '🔊 فك الكتم'    },
@@ -73,7 +73,7 @@ async function sendPunishmentToChannel(guild, data) {
 
     const sent = await channelResolver.sendTo(guild, 'punishmentsChannel', { embeds: [embed], components });
 
-    // Fallback: إذا لم توجد قناة عقوبات → نبحث عن أي قناة إدارية
+    // Fallback: إذا لم توجد قناة عقوبات  نبحث عن أي قناة إدارية
     if (!sent) {
         const adminCh = channelResolver.resolve(guild, 'adminChannel')
                      || channelResolver.resolve(guild, 'logChannel');

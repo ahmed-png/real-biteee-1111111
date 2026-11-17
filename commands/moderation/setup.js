@@ -28,14 +28,14 @@ function reportOverwriteFailures(results, roleName, failures) {
     const examples = failures.slice(0, 3)
         .map(({ channel, reason }) => `${channel}: ${reason.slice(0, 120)}`)
         .join(' | ');
-    const remaining = failures.length > 3 ? ` | وقنوات أخرى (${failures.length - 3})` : '';
-    results.failed.push(`❌ صلاحيات ${roleName}: تعذر تحديث ${failures.length} قناة — ${examples}${remaining}`);
+    const remaining = failures.length > 3 ? ` | وقنوات ثانية (${failures.length - 3})` : '';
+    results.failed.push(`❌ صلاحيات ${roleName}: ما كدرت أحدّث ${failures.length} قناة — ${examples}${remaining}`);
 }
 
 module.exports = {
     name: 'setup',
     aliases: ['تفعيل', 'تفعيل رتب', 'تفعيل-رتب', 'اعداد', 'اعداد الرتب', 'اعداد-الرتب'],
-    description: 'إعداد وإنشاء الرتب الأساسية (الألوان، السجن، الكتم)',
+    description: 'يجهّز وينشئ الرتب الأساسية (الألوان، السجن، الكتم)',
     usage: 'تفعيل [رتب]',
     permissions: [PermissionFlagsBits.Administrator],
 
@@ -44,7 +44,7 @@ module.exports = {
         const isOwner = message.author.id === config.ownerId;
         const isAdmin = message.member?.permissions?.has(PermissionFlagsBits.Administrator);
         if (!isOwner && !isAdmin) {
-            return message.reply('❌ هذا الأمر يتطلب صلاحية **الأدمن**!');
+            return message.reply('❌ هالأمر يحتاج صلاحية **الأدمن**.');
         }
 
         const guild = message.guild;
@@ -52,8 +52,8 @@ module.exports = {
 
         const loadingEmbed = new EmbedBuilder()
             .setColor('#FFA500')
-            .setTitle('⚙️ جاري إنشاء الرتب الأساسية...')
-            .setDescription('```\n⏳ الرجاء الانتظار...\n```')
+            .setTitle('⚙️ دا أنشئ الرتب الأساسية...')
+            .setDescription('```\n⏳ انتظر شوي...\n```')
             .setTimestamp();
         const msg = await message.reply({ embeds: [loadingEmbed] });
 
@@ -71,11 +71,11 @@ module.exports = {
                     name: jailRoleName,
                     color: '#000000',
                     permissions: [],
-                    reason: 'إعداد الرتب التلقائي'
+                    reason: 'إعداد الرتب تلقائياً'
                 });
-                results.success.push(`✅ تم إنشاء رتبة السجن (**${jailRole.name}**)`);
+                results.success.push(`✅ انعملت رتبة السجن (**${jailRole.name}**)`);
             } else {
-                results.skipped.push(`🔄 رتبة السجن موجودة — سيتم تحديث صلاحياتها`);
+                results.skipped.push(`🔄 رتبة السجن موجودة — دا أحدّث صلاحياتها`);
             }
 
             const jailPermissions = await applyRoleOverwrites(guild, jailRole, {
@@ -83,7 +83,7 @@ module.exports = {
                 Speak: false,
                 ViewChannel: false
             }, channel => channel.name.toLowerCase().includes('سجن') || channel.name.toLowerCase().includes('jail'));
-            results.success.push(`✅ تم ضبط صلاحيات السجن على ${jailPermissions.applied} قناة`);
+            results.success.push(`✅ تضبطت صلاحيات السجن على ${jailPermissions.applied} قناة`);
             reportOverwriteFailures(results, 'السجن', jailPermissions.failed);
 
             db.updateGuildData(guild.id, { jailRole: jailRole.id });
@@ -101,7 +101,7 @@ module.exports = {
                         { id: jailRole.id, allow: ['ViewChannel', 'ReadMessageHistory'], deny: ['SendMessages'] }
                     ]
                 });
-                results.success.push(`✅ تم إنشاء قناة **${jailChannel.name}**`);
+                results.success.push(`✅ انعملت قناة **${jailChannel.name}**`);
             } else {
                 await jailChannel.permissionOverwrites.edit(jailRole.id, {
                     ViewChannel: true,
@@ -128,11 +128,11 @@ module.exports = {
                     name: muteRoleName,
                     color: '#808080',
                     permissions: [],
-                    reason: 'إعداد الرتب التلقائي'
+                    reason: 'إعداد الرتب تلقائياً'
                 });
-                results.success.push(`✅ تم إنشاء رتبة الكتم (**${muteRole.name}**)`);
+                results.success.push(`✅ انعملت رتبة الكتم (**${muteRole.name}**)`);
             } else {
-                results.skipped.push(`🔄 رتبة الكتم موجودة — سيتم تحديث صلاحياتها`);
+                results.skipped.push(`🔄 رتبة الكتم موجودة — دا أحدّث صلاحياتها`);
             }
 
             const mutePermissions = await applyRoleOverwrites(guild, muteRole, {
@@ -140,7 +140,7 @@ module.exports = {
                 Speak: false,
                 AddReactions: false
             });
-            results.success.push(`✅ تم ضبط صلاحيات الكتم على ${mutePermissions.applied} قناة`);
+            results.success.push(`✅ تضبطت صلاحيات الكتم على ${mutePermissions.applied} قناة`);
             reportOverwriteFailures(results, 'الكتم', mutePermissions.failed);
 
             db.updateGuildData(guild.id, { muteRole: muteRole.id });
@@ -150,12 +150,12 @@ module.exports = {
 
         // 3. رتب الألوان
         try {
-            await msg.edit({ embeds: [new EmbedBuilder().setColor('#FFA500').setTitle('🎨 جاري إنشاء رتب الألوان (20 لون)...')] });
+            await msg.edit({ embeds: [new EmbedBuilder().setColor('#FFA500').setTitle('🎨 دا أنشئ رتب الألوان (20 لون)...')] });
             const createdColorsCount = await colorRoles.createGuildColorRoles(guild);
             if (createdColorsCount > 0) {
-                results.success.push(`✅ تم إنشاء **${createdColorsCount}** رتب ألوان جديدة`);
+                results.success.push(`✅ انضافت **${createdColorsCount}** رتبة لون جديدة`);
             } else {
-                results.skipped.push(`🔄 جميع رتب الألوان موجودة مسبقاً`);
+                results.skipped.push(`🔄 كل رتب الألوان موجودة من قبل`);
             }
         } catch (e) {
             results.failed.push(`❌ رتب الألوان: ${e.message}`);
@@ -170,13 +170,13 @@ module.exports = {
 
         const finalEmbed = new EmbedBuilder()
             .setColor(color)
-            .setTitle('📊 تقرير إعداد الرتب')
-            .setDescription('تم الانتهاء من فحص وتجهيز الرتب والقنوات المطلوبة!')
+            .setTitle('📊 تقرير تجهيز الرتب')
+            .setDescription('خلصت مراجعة وتجهيز الرتب والقنوات المطلوبة.')
             .setTimestamp();
 
-        if (results.success.length > 0) finalEmbed.addFields({ name: '✅ تم إنشاؤها', value: results.success.join('\n') });
-        if (results.skipped.length > 0) finalEmbed.addFields({ name: '🔄 موجودة مسبقاً', value: results.skipped.join('\n') });
-        if (results.failed.length > 0) finalEmbed.addFields({ name: '❌ فشل إنشاؤها', value: results.failed.join('\n') });
+        if (results.success.length > 0) finalEmbed.addFields({ name: '✅ اللي انعمل', value: results.success.join('\n') });
+        if (results.skipped.length > 0) finalEmbed.addFields({ name: '🔄 موجودة من قبل', value: results.skipped.join('\n') });
+        if (results.failed.length > 0) finalEmbed.addFields({ name: '❌ اللي ما انعمل', value: results.failed.join('\n') });
 
         await msg.edit({ embeds: [finalEmbed] });
     }

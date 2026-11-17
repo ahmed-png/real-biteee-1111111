@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../../../utils/app-logger');
 const { ChannelType, PermissionsBitField } = require('discord.js');
 
 /**
@@ -21,9 +22,7 @@ const router = express.Router();
 // جميع الـ routes تتطلب Bot Owner
 router.use(requireBotOwner);
 
-// ──────────────────────────────────────────────────────────────────────────────
 // Stats الشاملة للبوت
-// ──────────────────────────────────────────────────────────────────────────────
 router.get('/stats', async (req, res) => {
     const client = req.app.get('client');
 
@@ -88,7 +87,7 @@ router.get('/stats', async (req, res) => {
             );
             fullGuilds = fullGuilds.filter(Boolean);
         } catch (e) {
-            console.error('[Stats] فشل جلب السيرفرات:', e.message);
+            appLogger.error('[Stats] فشل جلب السيرفرات:', e.message);
             fullGuilds = [...(client.guilds.cache.values())];
         }
     }
@@ -142,9 +141,7 @@ router.get('/stats', async (req, res) => {
     });
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // إعدادات البوت
-// ──────────────────────────────────────────────────────────────────────────────
 router.post('/settings', (req, res) => {
     const body = req.body;
     const allowed = [
@@ -170,7 +167,7 @@ router.post('/settings', (req, res) => {
         } catch {}
     }
 
-    // ── CORE FIX: مزامنة إعدادات الترحيب مع Guild DB ─────────────────────────
+    // CORE FIX: مزامنة إعدادات الترحيب مع Guild DB
     const targetGuildId = body.welcomeGuildId || botSettings.get('welcomeGuildId');
     if (targetGuildId && (body.welcomeChannelId !== undefined || body.welcomeEnabled !== undefined || body.welcomeGuildId !== undefined)) {
         const guildUpdates = {};
@@ -209,7 +206,7 @@ router.post('/settings', (req, res) => {
                 botSettings.set('welcomeImage', dynamicUrl);
                 guildUpdates.welcomeImage = dynamicUrl;
             } catch (uploadErr) {
-                console.error('[BotOwner/Settings] فشل حفظ الصورة المرفوعة في القاعدة:', uploadErr);
+                appLogger.error('[BotOwner/Settings] فشل حفظ الصورة المرفوعة في القاعدة:', uploadErr);
             }
         } else if (body.welcomeImage !== undefined) {
             guildUpdates.welcomeImage = body.welcomeImage || null;
@@ -217,16 +214,14 @@ router.post('/settings', (req, res) => {
 
         if (Object.keys(guildUpdates).length > 0) {
             db.updateGuildData(targetGuildId, guildUpdates);
-            console.log(`[BotOwner/Settings] ✅ مزامنة ترحيب Guild ${targetGuildId}:`, guildUpdates);
+            appLogger.info(`[BotOwner/Settings] مزامنة ترحيب Guild ${targetGuildId}:`, guildUpdates);
         }
     }
 
     res.json({ success: true });
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // إدارة الاقتصاد
-// ──────────────────────────────────────────────────────────────────────────────
 router.post('/economy', (req, res) => {
     const { userId, amount, action } = req.body;
     if (!userId || amount === undefined || !action) {
@@ -245,9 +240,7 @@ router.post('/economy', (req, res) => {
     res.json({ success: true });
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // تعطيل/تفعيل أمر
-// ──────────────────────────────────────────────────────────────────────────────
 router.post('/command', (req, res) => {
     const { command, action } = req.body;
     if (typeof command !== 'string' || !command.trim() || !action) {
@@ -269,9 +262,7 @@ router.post('/command', (req, res) => {
     res.json({ success: true, command: normalizedCommand, disabled: action === 'disable' });
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // إعلان عام
-// ──────────────────────────────────────────────────────────────────────────────
 router.post('/announce', async (req, res) => {
     const { channelId, message } = req.body;
     if (!channelId || !message) return res.status(400).json({ success: false, error: 'Missing data' });
@@ -287,17 +278,13 @@ router.post('/announce', async (req, res) => {
     }
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // Restart
-// ──────────────────────────────────────────────────────────────────────────────
 router.post('/restart', (req, res) => {
     res.json({ success: true, message: 'Restarting...' });
     setTimeout(() => process.exit(1), 1000);
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // الردود التلقائية
-// ──────────────────────────────────────────────────────────────────────────────
 router.post('/response', (req, res) => {
     const { trigger, response, exactMatch } = req.body;
     if (!trigger || !response) return res.status(400).json({ success: false, error: 'Missing data' });
@@ -314,9 +301,7 @@ router.delete('/response/:id', (req, res) => {
     res.json({ success: deleted });
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // تجربة الترحيب — مُصلحة بالكامل
-// ──────────────────────────────────────────────────────────────────────────────
 router.post('/test-welcome', async (req, res) => {
     const client = req.app.get('client');
     if (!client?.isReady()) {
@@ -334,7 +319,7 @@ router.post('/test-welcome', async (req, res) => {
         const guildId   = String(req.body?.guildId   || settings.welcomeGuildId   || '').trim();
         const channelId = String(req.body?.channelId || settings.welcomeChannelId || '').trim();
 
-        console.log(`[test-welcome] guildId=${guildId} | channelId=${channelId}`);
+        appLogger.info(`[test-welcome] guildId=${guildId} | channelId=${channelId}`);
 
         if (!channelId) {
             return res.status(400).json({
@@ -400,14 +385,12 @@ router.post('/test-welcome', async (req, res) => {
         });
 
     } catch (err) {
-        console.error('[test-welcome] خطأ:', err);
+        appLogger.error('[test-welcome] خطأ:', err);
         res.status(500).json({ success: false, error: `خطأ داخلي: ${err.message}` });
     }
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // الإشراف — تنفيذ إجراء على عضو من داشبورد مالك البوت
-// ──────────────────────────────────────────────────────────────────────────────
 router.post('/moderate', async (req, res) => {
     const { userId, guildId, action, reason } = req.body;
     const client = req.app.get('client');
@@ -454,7 +437,7 @@ router.post('/moderate', async (req, res) => {
                 return res.status(400).json({ success: false, error: `إجراء غير معروف: ${action}` });
         }
     } catch (err) {
-        console.error('[moderate]', err);
+        appLogger.error('[moderate]', err);
         res.status(500).json({ success: false, error: `خطأ: ${err.message}` });
     }
 });

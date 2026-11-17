@@ -1,9 +1,10 @@
 'use strict';
+const appLogger = require('../../utils/app-logger');
 
 const mongoose = require('mongoose');
 const { User, Guild, Clan, WebSession, BotSetting, WelcomeImage } = require('./models');
 
-// ─── Cache System (In-Memory) ────────────────────────────────────────────────
+// Cache System (In-Memory)
 // لتجنب تعديل 50+ ملف يستخدم `getUserData` بشكل متزامن، نُخزن البيانات في الذاكرة.
 const cache = {
     users: new Map(),
@@ -22,10 +23,10 @@ async function loadDatabase() {
         if (process.env.NODE_ENV === 'production') {
             throw new Error('MongoDB is not connected; refusing to start with non-persistent production data.');
         }
-        console.warn('[DB] ⚠️ MongoDB غير متصل — استخدام البيانات الافتراضية في الذاكرة المؤقتة (Local In-Memory Mode).');
+        appLogger.warn('[DB] MongoDB غير متصل — استخدام البيانات الافتراضية في الذاكرة المؤقتة (Local In-Memory Mode).');
         return { users: cache.users, guilds: cache.guilds };
     }
-    console.log('[DB] ⏳ Loading data from MongoDB to memory cache...');
+    appLogger.info('[DB] Loading data from MongoDB to memory cache...');
     
     try {
         const users = await User.find({}).lean();
@@ -50,12 +51,12 @@ async function loadDatabase() {
         for (const session of sessions) {
             cache.sessions.set(session.token, session);
         }
-        console.log(`[DB] ✅ Loaded ${users.length} Users, ${guilds.length} Guilds into memory.`);
+        appLogger.info(`[DB] Loaded ${users.length} Users, ${guilds.length} Guilds into memory.`);
     } catch (err) {
         if (process.env.NODE_ENV === 'production') {
             throw new Error(`Failed to load persistent data from MongoDB: ${err.message}`, { cause: err });
         }
-        console.warn('[DB] ⚠️ فشل استرداد البيانات من MongoDB:', err.message);
+        appLogger.warn('[DB] فشل استرداد البيانات من MongoDB:', err.message);
     }
     return { users: cache.users, guilds: cache.guilds };
 }
@@ -101,18 +102,18 @@ function _persistUser(userId) {
         ));
 
     userWriteQueues.set(userId, next);
-    next.catch(err => console.error('[MongoDB Error] Update User:', err.message))
+    next.catch(err => appLogger.error('[MongoDB Error] Update User:', err.message))
         .finally(() => {
             if (userWriteQueues.get(userId) === next) userWriteQueues.delete(userId);
         });
 }
 
-// ─── Users ────────────────────────────────────────────────────────────────
+// Users
 function getUserData(userId) {
     if (!cache.users.has(userId)) {
         const def = _defaultUser(userId);
         cache.users.set(userId, def);
-        User.create(def).catch(err => console.error('[MongoDB Error] Create User:', err.message));
+        User.create(def).catch(err => appLogger.error('[MongoDB Error] Create User:', err.message));
     }
     return cache.users.get(userId);
 }
@@ -199,7 +200,7 @@ function addTransaction(userId, type, amount, description) {
     updateUserData(userId, { transactions: user.transactions }); // Save to Mongo
 }
 
-// ─── Guilds ───────────────────────────────────────────────────────────────
+// Guilds
 function _defaultGuild(guildId) {
     return {
         guildId,
@@ -244,7 +245,7 @@ function getGuildData(guildId) {
     if (!cache.guilds.has(guildId)) {
         const def = _defaultGuild(guildId);
         cache.guilds.set(guildId, def);
-        Guild.create(def).catch(err => console.error('[MongoDB Error] Create Guild:', err.message));
+        Guild.create(def).catch(err => appLogger.error('[MongoDB Error] Create Guild:', err.message));
     }
     return cache.guilds.get(guildId);
 }
@@ -253,15 +254,15 @@ function updateGuildData(guildId, data) {
     const guild = getGuildData(guildId);
     Object.assign(guild, data);
     cache.guilds.set(guildId, guild);
-    Guild.updateOne({ guildId }, { $set: guild }, { upsert: true }).catch(err => console.error('[MongoDB Error] Update Guild:', err.message));
+    Guild.updateOne({ guildId }, { $set: guild }, { upsert: true }).catch(err => appLogger.error('[MongoDB Error] Update Guild:', err.message));
     return guild;
 }
 
-// ─── Web Sessions ─────────────────────────────────────────────────────────
+// Web Sessions
 function createWebSession(token, userId, username, avatar, role, guildId, expiresAt) {
     const session = { token, userId, username, avatar, role, guildId, expiresAt: Math.floor(expiresAt / 1000) };
     cache.sessions.set(token, session);
-    WebSession.create(session).catch(e => console.error(e));
+    WebSession.create(session).catch(e => appLogger.error(e));
 }
 
 function getWebSession(token) {
@@ -276,7 +277,7 @@ function getWebSession(token) {
 
 function deleteWebSession(token) {
     cache.sessions.delete(token);
-    WebSession.deleteOne({ token }).catch(e => console.error(e));
+    WebSession.deleteOne({ token }).catch(e => appLogger.error(e));
 }
 
 function cleanExpiredSessions() {
@@ -284,10 +285,10 @@ function cleanExpiredSessions() {
     for (const [token, session] of cache.sessions.entries()) {
         if (session.expiresAt < now) cache.sessions.delete(token);
     }
-    WebSession.deleteMany({ expiresAt: { $lt: now } }).catch(e => console.error(e));
+    WebSession.deleteMany({ expiresAt: { $lt: now } }).catch(e => appLogger.error(e));
 }
 
-// ─── Queries ──────────────────────────────────────────────────────────────
+// Queries
 function getAllUsers() {
     const result = {};
     for (const [id, user] of cache.users.entries()) result[id] = user;
@@ -311,13 +312,13 @@ function resetAllBanks() {
         user.bank = 0;
         user.inventory = [];
     }
-    User.updateMany({}, { $set: { bank: 0, inventory: [] } }).catch(e => console.error(e));
+    User.updateMany({}, { $set: { bank: 0, inventory: [] } }).catch(e => appLogger.error(e));
 }
 
 function saveAll() {}
 function saveDatabase() {}
 
-// ─── Welcome Images ─────────────────────────────────────────────────────────
+// Welcome Images
 async function getWelcomeImageBase64(guildId) {
     const doc = await WelcomeImage.findOne({ guildId }).lean();
     return doc ? doc.imageBase64 : null;
@@ -335,7 +336,7 @@ async function deleteWelcomeImageBase64(guildId) {
     await WelcomeImage.deleteOne({ guildId });
 }
 
-// ─── Exports ──────────────────────────────────────────────────────────────
+// Exports
 module.exports = {
     LIMITS, loadDatabase,
     getUserData, updateUserData, updateFields,

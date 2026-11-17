@@ -1,3 +1,4 @@
+const appLogger = require('./app-logger');
 const { EmbedBuilder } = require('discord.js');
 const db = require('./database');
 const { PremiumEmbedBuilder } = require('./embed-builder');
@@ -47,7 +48,7 @@ function autoBackup() {
 
         try {
             fs.copyFileSync(dbPath, backupPath);
-            console.log('✅ تم إنشاء نسخة احتياطية');
+            appLogger.info('تم إنشاء نسخة احتياطية');
 
             // حذف النسخ القديمة (أكثر من 7 أيام)
             const backupDir = path.join(__dirname, '../data');
@@ -63,7 +64,7 @@ function autoBackup() {
                 }
             });
         } catch (error) {
-            console.error('خطأ في النسخ الاحتياطي:', error);
+            appLogger.error('خطأ في النسخ الاحتياطي:', error);
         }
     }, 24 * 60 * 60 * 1000); // كل 24 ساعة
 }
@@ -126,7 +127,7 @@ async function enhancedWelcome(member) {
     const embed = PremiumEmbedBuilder.custom({
         color: '#2ECC71',
         title: '🎉 عضو جديد!',
-        description: `مرحباً ${member}! أنت العضو رقم **${memberCount}**`,
+        description: `هلا بيك ${member}! إنت العضو رقم **${memberCount}**`,
         fields: [
             { name: '📅 عمر الحساب', value: `${accountAge} يوم`, inline: true },
             { name: '🎁 مكافأة', value: '1000 عملة', inline: true }
@@ -197,16 +198,16 @@ async function updateServerStats(guild) {
 
 const randomInteractions = require('./random-interactions');
 
-// ─── 7. تنظيف الغرف المنتهية ────────────────────────────────────────────────
+// 7. تنظيف الغرف المنتهية
 async function cleanupExpiredRooms(client) {
     try {
         const roomCreator = require('../commands/moderation/room-creator');
         const deleted = await roomCreator.cleanupExpiredRooms(client);
-        if (deleted > 0) console.log(`[AutoTask] 🗑️ ${deleted} غرفة منتهية حذفت`);
+        if (deleted > 0) appLogger.info(`[AutoTask] ${deleted} غرفة منتهية حذفت`);
     } catch { /* ignore */ }
 }
 
-// ─── 8. تذكير اليومي ─────────────────────────────────────────────────────────
+// 8. تذكير اليومي
 async function remindDailyReward(client) {
     if (botSettings.get('dailyReminderEnabled') === false) return;
     if (botSettings.get('autoMessagesEnabled') === false) return;
@@ -240,7 +241,7 @@ async function remindDailyReward(client) {
     }
 }
 
-// ─── 9. ملخص نشاط السيرفر المسائي ────────────────────────────────────────────
+// 9. ملخص نشاط السيرفر المسائي
 async function dailySummary(client) {
     if (botSettings.get('dailySummaryEnabled') === false) return;
     if (botSettings.get('autoMessagesEnabled') === false) return;
@@ -271,7 +272,7 @@ async function dailySummary(client) {
                 { name: '📝 الموضوع الأشهر', value: stats.topTopic, inline: true },
                 {
                     name: '🏆 أكثر الأعضاء نشاطاً',
-                    value: topUsers.map((u, i) => `\`${i + 1}.\` <@${u.id}> — \`${u.count}\` رسالة`).join('\n') || 'لا يوجد بيانات بعد',
+                    value: topUsers.map((u, i) => `\`${i + 1}.\` <@${u.id}> — \`${u.count}\` رسالة`).join('\n') || 'ماكو بيانات لحد هسه.',
                     inline: false,
                 }
             )
@@ -282,7 +283,7 @@ async function dailySummary(client) {
     }
 }
 
-// ─── 10. تصفير البنك الأسبوعي ──────────────────────────────────────────────
+// 10. تصفير البنك الأسبوعي
 async function weeklyBankReset(client) {
     const now = Date.now();
     const lastReset = botSettings.get('lastBankReset') || 0;
@@ -290,11 +291,11 @@ async function weeklyBankReset(client) {
     
     // التحقق مما إذا مر أسبوع على آخر تصفير
     if (now - lastReset > WEEK_MS) {
-        console.log('[AutoTask] 🏦 بدء تصفير البنك الأسبوعي...');
+        appLogger.info('[AutoTask] بدء تصفير البنك الأسبوعي...');
         try {
             db.resetAllBanks();
             botSettings.set('lastBankReset', now);
-            console.log('[AutoTask] ✅ تم تصفير البنك لجميع المستخدمين بنجاح!');
+            appLogger.info('[AutoTask] تم تصفير البنك لجميع المستخدمين بنجاح!');
             
             // إرسال إشعار عام إذا كانت الرسائل مفعلة
             if (botSettings.get('autoMessagesEnabled') !== false) {
@@ -315,14 +316,13 @@ async function weeklyBankReset(client) {
                 }
             }
         } catch (error) {
-            console.error('[AutoTask] ❌ خطأ أثناء تصفير البنك الأسبوعي:', error);
+            appLogger.error('[AutoTask] خطأ أثناء تصفير البنك الأسبوعي:', error);
         }
     }
 }
 
-
 function initializeAutoTasks(client) {
-    console.log('🤖 بدء المهام التلقائية...');
+    appLogger.info('بدء المهام التلقائية...');
 
     // Birthday checks
     checkBirthdays(client);
@@ -337,12 +337,12 @@ function initializeAutoTasks(client) {
         });
     }, 10 * 60 * 1000);
 
-    // ─── تنظيف الغرف المنتهية (كل ساعة) ───────────────────────────────────
+    // تنظيف الغرف المنتهية (كل ساعة)
     setInterval(() => {
         cleanupExpiredRooms(client).catch(() => {});
     }, 60 * 60 * 1000);
 
-    // ─── التذكير اليومي + الملخص المسائي (كل 5 دقائق للتحقق من الوقت) ───
+    // التذكير اليومي + الملخص المسائي (كل 5 دقائق للتحقق من الوقت)
     setInterval(() => {
         remindDailyReward(client).catch(() => {});
         dailySummary(client).catch(() => {});
@@ -352,12 +352,12 @@ function initializeAutoTasks(client) {
     // تفاعلات عشوائية
     randomInteractions.initialize(client);
 
-    console.log('✅ [AutoTasks] جميع المهام التلقائية نشطة:');
-    console.log('   🕐 تنظيف الغرف المنتهية: كل ساعة');
-    console.log('   ☀️ التذكير اليومي: 9 صباحاً');
-    console.log('   🌙 الملخص المسائي: 9 مساءً');
-    console.log('   🏦 تصفير البنك: كل أسبوع');
-    console.log('   💾 النسخ الاحتياطي: يومياً');
+    appLogger.info('[AutoTasks] جميع المهام التلقائية نشطة:');
+    appLogger.info('تنظيف الغرف المنتهية: كل ساعة');
+    appLogger.info('التذكير اليومي: 9 صباحاً');
+    appLogger.info('الملخص المسائي: 9 مساءً');
+    appLogger.info('تصفير البنك: كل أسبوع');
+    appLogger.info('النسخ الاحتياطي: يومياً');
 }
 
 module.exports = {

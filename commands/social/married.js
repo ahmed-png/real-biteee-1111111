@@ -6,7 +6,7 @@ const db = require('../../utils/database');
 module.exports = {
     name: 'married',
     aliases: ['couples', 'partners', 'المتزوجين', 'ازواج', 'زواجي'],
-    description: 'قائمة المتزوجين في السيرفر',
+    description: 'شوف المتزوجين بالسيرفر',
     usage: 'المتزوجين',
 
     async execute(message) {
@@ -37,9 +37,9 @@ module.exports = {
                 embeds: [
                     new EmbedBuilder()
                         .setColor('#ED4245')
-                        .setTitle('💔 لا يوجد أزواج حالياً')
+                        .setTitle('💔 ماكو متزوجين هسه')
                         .setDescription(
-                            '> لم يتزوج أحد بعد في هذا السيرفر.\n> استخدم `زواج @شخص` لتكون الأول!'
+                            '> محد متزوج بهالسيرفر لحد هسه.\n> استخدم `زواج @شخص` وكن أول واحد!'
                         )
                         .setTimestamp(),
                 ],
@@ -61,7 +61,7 @@ module.exports = {
                     : null;
                 const dateStr = couple.since
                     ? `<t:${Math.floor(couple.since / 1000)}:D>`
-                    : 'تاريخ غير معروف';
+                    : 'تاريخه مو معروف';
                 const durationStr = days !== null ? ` — **${days}** يوم` : '';
                 const medal = i === 0 ? '👑' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
                 return `${medal} **${p1.username}** ❤️ **${p2.username}** ${dateStr}${durationStr}`;
@@ -70,7 +70,7 @@ module.exports = {
 
         const embed = new EmbedBuilder()
             .setColor('#FF69B4')
-            .setTitle(`💍 قائمة الأزواج (${couples.length} زوج)`)
+            .setTitle(`💍 قائمة المتزوجين (${couples.length})`)
             .setDescription(rows.join('\n'))
             .setFooter({
                 text: message.guild.name,

@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('./app-logger');
 
 const {
     ActionRowBuilder,
@@ -19,12 +20,12 @@ function buildTicketPanel(guild) {
         .setColor('#5865F2')
         .setTitle('🎫 الدعم الفني')
         .setDescription([
-            `مرحباً بك في دعم **${guild.name}**.`,
-            'اضغط الزر أدناه لفتح تكت خاص، وسيتمكن فريق الإدارة من مساعدتك.',
+            `هلا بيك بدعم **${guild.name}**.`,
+            'اضغط الزر الجوه حتى تفتح تذكرة خاصة، وفريق الإدارة يساعدك.',
             '',
-            '🔒 لا يمكن للأعضاء الآخرين رؤية محادثتك.',
+            '🔒 بس إنت وفريق الإدارة تشوفون المحادثة.',
         ].join('\n'))
-        .setFooter({ text: 'يرجى فتح تكت واحد فقط للمشكلة نفسها.' });
+        .setFooter({ text: 'افتح تذكرة وحدة لكل مشكلة حتى ما تتكرر السوالف.' });
 
     const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
@@ -337,7 +338,7 @@ async function openTicket(interaction) {
         ticketReady = true;
         await interaction.editReply(`✅ تم فتح تكتك الخاص: ${ticketChannel}`);
     } catch (error) {
-        console.error(`[TicketSystem] Failed to open ticket in guild ${interaction.guild.id}:`, error);
+        appLogger.error(`[TicketSystem] Failed to open ticket in guild ${interaction.guild.id}:`, error);
         if (ticketChannel && !ticketReady) {
             try {
                 await ticketChannel.delete('تعذّر إكمال إعداد التكت');
@@ -348,12 +349,12 @@ async function openTicket(interaction) {
                     updateOpenTickets(interaction.guild.id, openTickets);
                 }
             } catch (deleteError) {
-                console.error(`[TicketSystem] Failed to clean up ticket channel ${ticketChannel.id}:`, deleteError);
+                appLogger.error(`[TicketSystem] Failed to clean up ticket channel ${ticketChannel.id}:`, deleteError);
             }
         }
         if (responseDeferred && !ticketReady) {
             await interaction.editReply('❌ تعذّر إنشاء التكت. تحقق من صلاحيات البوت ثم حاول مجدداً.')
-                .catch(replyError => console.error('[TicketSystem] Failed to report ticket creation error:', replyError));
+                .catch(replyError => appLogger.error('[TicketSystem] Failed to report ticket creation error:', replyError));
         }
     } finally {
         openingTickets.delete(lockKey);
@@ -421,7 +422,7 @@ async function closeTicket(interaction) {
 
     if (interaction.user.id !== ticket.ownerId && !isTicketStaff(interaction.member)) {
         return interaction.reply({
-            content: '❌ يمكنك إنهاء تكتك فقط، أو اطلب من أحد الإداريين إغلاقه.',
+            content: 'ما تگدر تسكر إلا تذكرتك؛ أو خلي أحد المشرفين يسكرها.',
             flags: MessageFlags.Ephemeral,
         });
     }
@@ -448,9 +449,9 @@ async function closeTicket(interaction) {
         }
         await interaction.channel.delete(`انتهت التذكرة بواسطة ${interaction.user.tag || interaction.user.id}`);
     } catch (error) {
-        console.error(`[TicketSystem] Failed to lock or delete ticket ${interaction.channelId}:`, error);
+        appLogger.error(`[TicketSystem] Failed to lock or delete ticket ${interaction.channelId}:`, error);
         await interaction.editReply('❌ تعذّر إغلاق التكت وحذف الروم. تحقق من صلاحية إدارة القنوات وحاول مجدداً.')
-            .catch(replyError => console.error('[TicketSystem] Failed to report ticket close error:', replyError));
+            .catch(replyError => appLogger.error('[TicketSystem] Failed to report ticket close error:', replyError));
         return;
     }
 
@@ -458,7 +459,7 @@ async function closeTicket(interaction) {
     delete openTickets[ticket.ownerId];
     updateOpenTickets(interaction.guild.id, openTickets);
     await interaction.editReply('✅ انتهى التكت وتم حذف الروم المؤقت.')
-        .catch(error => console.error('[TicketSystem] Ticket was deleted but close confirmation failed:', error));
+        .catch(error => appLogger.error('[TicketSystem] Ticket was deleted but close confirmation failed:', error));
 }
 
 async function handleTicketInteraction(interaction) {

@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../utils/app-logger');
 
 const fs = require('fs');
 const path = require('path');
@@ -29,7 +30,7 @@ module.exports = (client) => {
 
     _loadFromDir(commandsPath, commandsPath, client, () => { loaded++; }, () => { failed++ });
 
-    console.log(`[CommandHandler] ✅ تم تحميل ${loaded} أمر${failed > 0 ? ` | ⚠️ فشل ${failed}` : ''}`);
+    appLogger.info(`[CommandHandler] تم تحميل ${loaded} أمر${failed > 0 ? `|  فشل ${failed}` : ''}`);
 };
 
 /**
@@ -42,7 +43,7 @@ function _loadFromDir(dir, rootPath, client, onSuccess, onFail) {
     try {
         entries = fs.readdirSync(dir, { withFileTypes: true });
     } catch (e) {
-        console.error(`[CommandHandler] لا يمكن قراءة المجلد: ${dir}`, e.message);
+        appLogger.error(`[CommandHandler] لا يمكن قراءة المجلد: ${dir}`, e.message);
         return;
     }
 
@@ -63,7 +64,7 @@ function _loadFromDir(dir, rootPath, client, onSuccess, onFail) {
 
             // التحقق من صحة الأمر
             if (typeof command.name !== 'string' || typeof command.execute !== 'function') {
-                console.warn(`[CommandHandler] ⚠️ تم تجاهل ${entry.name} — يجب أن يُصدّر { name, execute }`);
+                appLogger.warn(`[CommandHandler] تم تجاهل ${entry.name} — يجب أن يُصدّر { name, execute }`);
                 onFail();
                 continue;
             }
@@ -81,12 +82,12 @@ function _loadFromDir(dir, rootPath, client, onSuccess, onFail) {
 
                     // تحقق: هل الاسم المستعار مُسجَّل كأمر رئيسي؟
                     if (client.commands.has(aliasLower)) {
-                        console.warn(`[CommandHandler] ⚠️ تعارض alias: "${aliasLower}" في ${entry.name} (يتعارض مع أمر آخر)`);
+                        appLogger.warn(`[CommandHandler] تعارض alias: "${aliasLower}"في ${entry.name} (يتعارض مع أمر آخر)`);
                         continue;
                     }
                     // تحقق: هل مُسجَّل بالفعل كـ alias لأمر آخر؟
                     if (client.aliases.has(aliasLower)) {
-                        console.warn(`[CommandHandler] ⚠️ تعارض alias: "${aliasLower}" في ${entry.name} (مسجَّل مسبقاً لـ: ${client.aliases.get(aliasLower)})`);
+                        appLogger.warn(`[CommandHandler] تعارض alias: "${aliasLower}"في ${entry.name} (مسجَّل مسبقاً لـ: ${client.aliases.get(aliasLower)})`);
                         continue;
                     }
                     client.aliases.set(aliasLower, cmdName);
@@ -95,7 +96,7 @@ function _loadFromDir(dir, rootPath, client, onSuccess, onFail) {
 
             onSuccess();
         } catch (err) {
-            console.error(`[CommandHandler] ❌ فشل تحميل ${entry.name}:`, err.message);
+            appLogger.error(`[CommandHandler] فشل تحميل ${entry.name}:`, err.message);
             onFail();
         }
     }

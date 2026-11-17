@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../../utils/app-logger');
 
 /**
  * ═══════════════════════════════════════════════════════════
@@ -19,7 +20,7 @@ const {
 const db = require('../../utils/database');
 const config = require('../../config');
 
-// ─── بناء بيانات المتصدرين ────────────────────────────────
+// بناء بيانات المتصدرين
 async function buildLeaderboardData(client, guildId) {
     const allUsers = db.getAllUsers() || {};
 
@@ -83,7 +84,7 @@ async function buildLeaderboardData(client, guildId) {
     return { topWealth, topLevel, topRep, totalPlayers: entries.length };
 }
 
-// ─── بناء Embed الصدارة ───────────────────────────────────
+// بناء Embed الصدارة
 function buildLeaderboardEmbed(data, type = 'all') {
     const { topWealth, topLevel, topRep, totalPlayers } = data;
 
@@ -94,7 +95,7 @@ function buildLeaderboardEmbed(data, type = 'all') {
         .setColor('#FFD700')
         .setTitle('🏆 لوحة المتصدرين')
         .setTimestamp()
-        .setFooter({ text: `إجمالي اللاعبين: ${totalPlayers} | يتحدث كل 30 دقيقة` });
+        .setFooter({ text: `عدد اللاعبين: ${totalPlayers} | يتحدث كل نص ساعة` });
 
     // قائمة الأغنياء
     if (type === 'all' || type === 'wealth') {
@@ -102,7 +103,7 @@ function buildLeaderboardEmbed(data, type = 'all') {
             ? topWealth.map((u, i) =>
                 `${getMedal(i)} **${u.username}** — \`${u.wealth.toLocaleString()} ${config.currency}\``
             ).join('\n')
-            : 'لا يوجد لاعبون بعد!';
+            : 'ماكو لاعبين بعد!';
 
         embed.addFields({ name: '💰 الأغنى', value: wealthText, inline: false });
     }
@@ -113,7 +114,7 @@ function buildLeaderboardEmbed(data, type = 'all') {
             ? topLevel.map((u, i) =>
                 `${getMedal(i)} **${u.username}** — المستوى \`${u.level}\` (${u.xp.toLocaleString()} XP)`
             ).join('\n')
-            : 'لا يوجد لاعبون بعد!';
+            : 'ماكو لاعبين بعد!';
 
         embed.addFields({ name: '📊 أعلى مستوى', value: levelText, inline: false });
     }
@@ -125,7 +126,7 @@ function buildLeaderboardEmbed(data, type = 'all') {
             ? filteredRep.map((u, i) =>
                 `${getMedal(i)} **${u.username}** — ⭐ \`${u.reputation.toLocaleString()}\` نقطة`
             ).join('\n')
-            : 'لا يوجد سمعة مسجلة بعد!';
+            : 'ماكو سمعة مسجلة لحد هسه!';
 
         embed.addFields({ name: '⭐ أعلى سمعة', value: repText, inline: false });
     }
@@ -133,7 +134,7 @@ function buildLeaderboardEmbed(data, type = 'all') {
     return embed;
 }
 
-// ─── أزرار التنقل ─────────────────────────────────────────
+// أزرار التنقل
 function buildLeaderboardButtons(currentType = 'all') {
     return new ActionRowBuilder().addComponents(
         new ButtonBuilder()
@@ -159,7 +160,7 @@ function buildLeaderboardButtons(currentType = 'all') {
     );
 }
 
-// ─── إرسال/تحديث لوحة الصدارة في قناة مخصصة ────────────
+// إرسال/تحديث لوحة الصدارة في قناة مخصصة
 async function sendLeaderboardToChannel(channel, client, guildId) {
     try {
         const data = await buildLeaderboardData(client, guildId);
@@ -184,12 +185,12 @@ async function sendLeaderboardToChannel(channel, client, guildId) {
         // إرسال رسالة جديدة إذا لم يوجد رسالة سابقة
         return await channel.send({ embeds: [embed], components: [buttons] });
     } catch (err) {
-        console.error('[Leaderboard] خطأ في إرسال الصدارة:', err.message);
+        appLogger.error('[Leaderboard] خطأ في إرسال الصدارة:', err.message);
         return null;
     }
 }
 
-// ─── تحديث تلقائي دوري ───────────────────────────────────
+// تحديث تلقائي دوري
 let _autoUpdateInterval = null;
 
 function startAutoUpdate(client, intervalMinutes = 30) {
@@ -222,16 +223,16 @@ function startAutoUpdate(client, intervalMinutes = 30) {
                     await sendLeaderboardToChannel(lbChannel, client, guild.id);
                 }
             } catch (err) {
-                console.error(`[Leaderboard Auto] خطأ في ${guild.name}:`, err.message);
+                appLogger.error(`[Leaderboard Auto] خطأ في ${guild.name}:`, err.message);
             }
         }
     }, intervalMinutes * 60 * 1000);
 
     _autoUpdateInterval.unref?.();
-    console.log(`✅ [Leaderboard] التحديث التلقائي كل ${intervalMinutes} دقيقة`);
+    appLogger.info(`[Leaderboard] التحديث التلقائي كل ${intervalMinutes} دقيقة`);
 }
 
-// ─── معالج أزرار الصدارة ──────────────────────────────────
+// معالج أزرار الصدارة
 async function handleLeaderboardButton(interaction) {
     try {
         const id = interaction.customId;
@@ -253,16 +254,14 @@ async function handleLeaderboardButton(interaction) {
 
         await interaction.update({ embeds: [embed], components: [buttons] });
     } catch (err) {
-        console.error('[Leaderboard Button]:', err.message);
+        appLogger.error('[Leaderboard Button]:', err.message);
         if (!interaction.replied && !interaction.deferred) {
             await interaction.reply({ content: '❌ خطأ في تحديث الصدارة.', flags: MessageFlags.Ephemeral }).catch(() => {});
         }
     }
 }
 
-// ═══════════════════════════════════════════════════════════
 // الأمر الرئيسي
-// ═══════════════════════════════════════════════════════════
 module.exports = {
     name: 'leaderboard',
     aliases: [
@@ -279,7 +278,7 @@ module.exports = {
         // تحميل البيانات
         let loadingMsg = null;
         if (!isInteraction) {
-            loadingMsg = await context.reply('⏳ جاري تحميل بيانات المتصدرين...').catch(() => null);
+            loadingMsg = await context.reply('دا أحمّل قائمة المتصدرين...').catch(() => null);
         } else {
             await context.deferReply().catch(() => {});
         }
@@ -305,8 +304,8 @@ module.exports = {
                 await context.reply({ embeds: [embed], components: [buttons] });
             }
         } catch (err) {
-            console.error('[Leaderboard Execute]:', err.message);
-            const errMsg = '❌ حدث خطأ أثناء تحميل الصدارة.';
+            appLogger.error('[Leaderboard Execute]:', err.message);
+            const errMsg = 'صار خلل وإني أحمّل قائمة المتصدرين.';
             if (isInteraction) await context.editReply({ content: errMsg }).catch(() => {});
             else await context.reply(errMsg).catch(() => {});
         }

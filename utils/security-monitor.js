@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('./app-logger');
 
 /**
  * ══════════════════════════════════════════════════════════════
@@ -12,7 +13,7 @@ const config = require('../config');
 const clanManager = require('./clan-manager');
 const db = require('./database');
 
-// ─── إحصائيات الحوادث ───────────────────────────────────────────────────────
+// إحصائيات الحوادث
 const incidentLog = []; // آخر 50 حادثة
 const MAX_LOG = 50;
 
@@ -25,7 +26,7 @@ function getRecentIncidents(guildId, limit = 5) {
     return incidentLog.filter(i => i.guildId === guildId).slice(0, limit);
 }
 
-// ─── حالة أنظمة الحماية ─────────────────────────────────────────────────────
+// حالة أنظمة الحماية
 const systemStatus = {
     antiNuke: true,
     antiPhishing: true,
@@ -36,7 +37,7 @@ const systemStatus = {
     lockdownMode: false,   // وضع الإغلاق الكامل
 };
 
-// ─── Whitelist (أصحاب السيرفر والثقات) ──────────────────────────────────────
+// Whitelist (أصحاب السيرفر والثقات)
 const trustedUsers = new Set();
 let _botId = null;
 
@@ -50,9 +51,7 @@ function isTrusted(userId, guildOwnerId) {
         trustedUsers.has(userId);
 }
 
-// ════════════════════════════════════════════════════════════════
-//  🚨 ANTI-NUKE — كشف ووقف محاولات تدمير السيرفر
-// ════════════════════════════════════════════════════════════════
+// ANTI-NUKE — كشف ووقف محاولات تدمير السيرفر
 const nukeTracker = new Map(); // executorId → { actions: [], sanctioned: bool }
 const NUKE_THRESHOLD = 3;      // 3 حذوفات/إنشاءات
 const NUKE_WINDOW = 10_000;    // في 10 ثوانٍ
@@ -86,7 +85,7 @@ async function trackNukeAction(guild, executor, type) {
 
 async function _executeNukeResponse(guild, executor, actions) {
     const summary = actions.map(a => a.type).join(', ');
-    console.warn(`[🚨 ANTI-NUKE] تهديد: ${executor.tag} في ${guild.name} | ${summary}`);
+    appLogger.warn(`[ ANTI-NUKE] تهديد: ${executor.tag} في ${guild.name} | ${summary}`);
 
     try {
         const member = await guild.members.fetch(executor.id).catch(() => null);
@@ -128,13 +127,11 @@ async function _executeNukeResponse(guild, executor, actions) {
         });
 
     } catch (err) {
-        console.error('[Anti-Nuke] خطأ في التعامل مع التهديد:', err.message);
+        appLogger.error('[Anti-Nuke] خطأ في التعامل مع التهديد:', err.message);
     }
 }
 
-// ════════════════════════════════════════════════════════════════
-//  🎣 ANTI-PHISHING — كشف روابط الاحتيال
-// ════════════════════════════════════════════════════════════════
+// ANTI-PHISHING — كشف روابط الاحتيال
 const PHISHING_PATTERNS = [
     // Discord nitro scams
     /discord\s*[-_.]?\s*gift\s*[-_.]?\s*(com|net|gg|io|site|online)\b/gi,
@@ -199,15 +196,13 @@ async function checkPhishing(message) {
             recordIncident('Phishing', message.guild.id, message.author.id, content.substring(0, 100));
             return true;
         } catch (err) {
-            console.error('[Anti-Phishing] خطأ:', err.message);
+            appLogger.error('[Anti-Phishing] خطأ:', err.message);
         }
     }
     return false;
 }
 
-// ════════════════════════════════════════════════════════════════
-//  🔑 ANTI-TOKEN SNIFFING — منع نشر التوكنات
-// ════════════════════════════════════════════════════════════════
+// ANTI-TOKEN SNIFFING — منع نشر التوكنات
 // نمط توكن Discord الحقيقي: Base64(ID).Base64(Timestamp).HMAC
 const TOKEN_REGEX = /[MN][A-Za-z\d_-]{23,25}\.[A-Za-z\d_-]{6}\.[A-Za-z\d_-]{27,38}/g;
 // نمط توكن بوت (المعتاد)
@@ -252,15 +247,13 @@ async function checkTokenSniffing(message) {
             recordIncident('TokenSniff', message.guild.id, message.author.id, 'Token pattern detected');
             return true;
         } catch (err) {
-            console.error('[Anti-TokenSniff] خطأ:', err.message);
+            appLogger.error('[Anti-TokenSniff] خطأ:', err.message);
         }
     }
     return false;
 }
 
-// ════════════════════════════════════════════════════════════════
-//  👑 ADMIN ABUSE DETECTOR — كشف إساءة استخدام الصلاحيات
-// ════════════════════════════════════════════════════════════════
+// ADMIN ABUSE DETECTOR — كشف إساءة استخدام الصلاحيات
 const adminActionTracker = new Map(); // executorId → timestamps[]
 const ADMIN_ABUSE_THRESHOLD = 5; // 5 إجراءات خطيرة
 const ADMIN_ABUSE_WINDOW = 30_000; // في 30 ثانية
@@ -293,7 +286,7 @@ async function checkAdminAbuse(guild, executor, actionType) {
     if (recent.length >= ADMIN_ABUSE_THRESHOLD) {
         adminActionTracker.delete(key); // reset لتجنب تكرار الإجراء
 
-        console.warn(`[👑 ADMIN-ABUSE] ${executor.tag} | ${actionType} | ${recent.length} actions in 30s`);
+        appLogger.warn(`[ ADMIN-ABUSE] ${executor.tag} | ${actionType} | ${recent.length} actions in 30s`);
 
         try {
             const member = await guild.members.fetch(executor.id).catch(() => null);
@@ -312,7 +305,7 @@ async function checkAdminAbuse(guild, executor, actionType) {
 
             recordIncident('AdminAbuse', guild.id, executor.id, `${actionType} x${recent.length}`);
         } catch (err) {
-            console.error('[Admin-Abuse] خطأ:', err.message);
+            appLogger.error('[Admin-Abuse] خطأ:', err.message);
         }
     }
 }
@@ -341,9 +334,7 @@ async function checkPermissionEscalation(guild, addedRole, executor) {
     recordIncident('PermEscalation', guild.id, executor.id, addedRole.name);
 }
 
-// ════════════════════════════════════════════════════════════════
-//  📨 ANTI-MASS-DM — منع الرسائل الجماعية المشبوهة
-// ════════════════════════════════════════════════════════════════
+// ANTI-MASS-DM — منع الرسائل الجماعية المشبوهة
 const massDmTracker = new Map(); // userId → dm_count
 const MASS_DM_THRESHOLD = 5;
 const MASS_DM_WINDOW = 60_000;
@@ -381,14 +372,12 @@ async function trackDMAttempt(guild, user) {
 
             recordIncident('MassDM', guild.id, user.id, `${recent.length} DMs in 60s`);
         } catch (err) {
-            console.error('[Mass-DM] خطأ:', err.message);
+            appLogger.error('[Mass-DM] خطأ:', err.message);
         }
     }
 }
 
-// ════════════════════════════════════════════════════════════════
-//  🤖 BOT VERIFICATION — التحقق من البوتات الجديدة
-// ════════════════════════════════════════════════════════════════
+// BOT VERIFICATION — التحقق من البوتات الجديدة
 async function checkSuspiciousBot(member) {
     if (!systemStatus.antiBotAbuse) return;
     if (!member.user.bot) return;
@@ -425,14 +414,12 @@ async function checkSuspiciousBot(member) {
     }
 }
 
-// ════════════════════════════════════════════════════════════════
-//  🔒 LOCKDOWN MODE — وضع الإغلاق الكامل
-// ════════════════════════════════════════════════════════════════
+// LOCKDOWN MODE — وضع الإغلاق الكامل
 async function enableLockdown(guild, reason = 'هجوم شامل على السيرفر') {
     if (systemStatus.lockdownMode) return; // تجنب التكرار
     systemStatus.lockdownMode = true;
 
-    console.warn(`[🔒 LOCKDOWN] تفعيل في ${guild.name} | ${reason}`);
+    appLogger.warn(`[ LOCKDOWN] تفعيل في ${guild.name} | ${reason}`);
 
     const lockedChannels = [];
     const everyoneRole = guild.roles.everyone;
@@ -512,9 +499,7 @@ async function disableLockdown(guild, executor) {
     });
 }
 
-// ════════════════════════════════════════════════════════════════
-//  📡 HELPERS — دوال مساعدة
-// ════════════════════════════════════════════════════════════════
+// HELPERS — دوال مساعدة
 
 /**
  * إرسال تنبيه أمني لقناة الحماية
@@ -545,7 +530,7 @@ async function _sendSecurityLog(guild, { type, color, user, action, reason, crit
         const content = critical ? `@here ⚠️ **تنبيه أمني طارئ!**` : '';
         await logChannel.send({ content: content || undefined, embeds: [embed] });
     } catch (err) {
-        console.error('[SecurityLog] خطأ في إرسال السجل:', err.message);
+        appLogger.error('[SecurityLog] خطأ في إرسال السجل:', err.message);
     }
 }
 
@@ -573,11 +558,11 @@ async function _alertOwner(guild, { title, color, fields }) {
             if (ownerChannel) ownerChannel.send({ content: `<@${owner.id}>`, embeds: [embed] }).catch(() => { });
         });
     } catch (err) {
-        console.error('[Alert-Owner] خطأ:', err.message);
+        appLogger.error('[Alert-Owner] خطأ:', err.message);
     }
 }
 
-// ─── تنظيف دوري لمنع Memory Leak ─────────────────────────────────────────────
+// تنظيف دوري لمنع Memory Leak
 const _cleanup = setInterval(() => {
     const now = Date.now();
     for (const [k, data] of nukeTracker) {
@@ -597,9 +582,7 @@ const _cleanup = setInterval(() => {
 }, 60_000);
 _cleanup.unref?.();
 
-// ════════════════════════════════════════════════════════════════
-//  📊 STATUS — حالة الأنظمة والإحصائيات
-// ════════════════════════════════════════════════════════════════
+// STATUS — حالة الأنظمة والإحصائيات
 function getSystemStatus() {
     return { ...systemStatus };
 }
@@ -616,9 +599,7 @@ function toggleSystem(systemName, enabled) {
     return false;
 }
 
-// ════════════════════════════════════════════════════════════════
-//  📤 EXPORTS
-// ════════════════════════════════════════════════════════════════
+// EXPORTS
 module.exports = {
     // Anti-Nuke
     trackNukeAction,

@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('./app-logger');
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -48,17 +49,17 @@ function cleanupLegacyFiles() {
         try {
             if (fs.existsSync(fullPath)) {
                 fs.unlinkSync(fullPath);
-                console.log(`[Cleanup] ✅ حذف ملف قديم: ${relPath}`);
+                appLogger.info(`[Cleanup] حذف ملف قديم: ${relPath}`);
                 cleaned++;
             }
         } catch (err) {
-            console.warn(`[Cleanup] ⚠️ لم يتم حذف ${relPath}:`, err.message);
+            appLogger.warn(`[Cleanup] لم يتم حذف ${relPath}:`, err.message);
             skipped++;
         }
     }
 
     if (cleaned > 0 || skipped > 0) {
-        console.log(`[Cleanup] 🗑️ تنظيف: حُذف ${cleaned} ملف | تخطّى ${skipped}`);
+        appLogger.info(`[Cleanup] تنظيف: حُذف ${cleaned} ملف | تخطّى ${skipped}`);
     }
 }
 
@@ -79,7 +80,7 @@ function auditLegacyUsage() {
         if (fs.existsSync(fullPath)) {
             const stat = fs.statSync(fullPath);
             const sizeMB = (stat.size / 1024 / 1024).toFixed(2);
-            console.log(`[StorageAudit] 📁 ${check.file} (${sizeMB} MB) — مستخدم في: ${check.usedIn}`);
+            appLogger.info(`[StorageAudit] ${check.file} (${sizeMB} MB) — مستخدم في: ${check.usedIn}`);
         }
     }
 }

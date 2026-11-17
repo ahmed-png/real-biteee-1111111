@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('./app-logger');
 
 /**
  * ╔══════════════════════════════════════════════════════════════════════════╗
@@ -10,7 +11,7 @@
 
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 
-// ─── نقاط الثقة لكل مستخدم (0-100) ─────────────────────────────────────────
+// نقاط الثقة لكل مستخدم (0-100)
 const trustScores = new Map(); // userId -> { score, violations, lastUpdate }
 const TRUST_DECAY_RATE = 5; // زيادة الثقة كل ساعة بدون مخالفات
 const TRUST_VIOLATION_PENALTY = {
@@ -24,7 +25,7 @@ const TRUST_VIOLATION_PENALTY = {
     raid: 40
 };
 
-// ─── تحليل سلوك المستخدم على مدى الوقت ──────────────────────────────────────
+// تحليل سلوك المستخدم على مدى الوقت
 const behaviorProfiles = new Map(); // userId -> BehaviorProfile
 
 class BehaviorProfile {
@@ -94,7 +95,7 @@ function getProfile(userId) {
     return behaviorProfiles.get(userId);
 }
 
-// ─── نظام الـ Rate Limiting المتقدم ──────────────────────────────────────────
+// نظام الـ Rate Limiting المتقدم
 class RateLimiter {
     constructor() {
         this._buckets = new Map();
@@ -129,7 +130,7 @@ class RateLimiter {
 
 const rateLimiter = new RateLimiter();
 
-// ─── نظام Reputation المتطور ─────────────────────────────────────────────────
+// نظام Reputation المتطور
 function getTrustScore(userId) {
     const profile = getProfile(userId);
     return Math.max(0, 100 - profile.riskScore);
@@ -143,7 +144,7 @@ function getTrustBadge(score) {
     return '🔴 خطر';
 }
 
-// ─── كشف سلوك البوت (Anti-Bot Detection) ─────────────────────────────────────
+// كشف سلوك البوت (Anti-Bot Detection)
 function detectBotBehavior(userId, messages) {
     const profile = getProfile(userId);
     const indicators = [];
@@ -183,7 +184,7 @@ function detectBotBehavior(userId, messages) {
     };
 }
 
-// ─── حماية من Token Harvesting ───────────────────────────────────────────────
+// حماية من Token Harvesting
 const TOKEN_PATTERNS = [
     /[A-Za-z0-9_-]{24}\.[A-Za-z0-9_-]{6}\.[A-Za-z0-9_-]{27}/g, // Discord token format
     /MTk[A-Za-z0-9._-]{70,}/g, // New token format
@@ -200,7 +201,7 @@ function checkTokenHarvest(text) {
     return false;
 }
 
-// ─── كشف التصيد الاحتيالي المتطور ───────────────────────────────────────────
+// كشف التصيد الاحتيالي المتطور
 const PHISHING_PATTERNS = [
     /discord\s*-\s*gift/i,
     /free\s*nitro/i,
@@ -221,7 +222,7 @@ function checkPhishingContent(text) {
     return PHISHING_PATTERNS.some(p => p.test(text));
 }
 
-// ─── نظام الحجب التلقائي الذكي ───────────────────────────────────────────────
+// نظام الحجب التلقائي الذكي
 const autoBlockList = new Set(); // Set<userId>
 
 async function smartAutoAction(message, riskLevel, reason) {
@@ -271,11 +272,11 @@ async function smartAutoAction(message, riskLevel, reason) {
                 break;
         }
     } catch (e) {
-        console.error('[AdvancedSecurity] خطأ في الإجراء التلقائي:', e.message);
+        appLogger.error('[AdvancedSecurity] خطأ في الإجراء التلقائي:', e.message);
     }
 }
 
-// ─── تنظيف دوري ──────────────────────────────────────────────────────────────
+// تنظيف دوري
 setInterval(() => {
     const cutoff = Date.now() - 2 * 60 * 60 * 1000; // ساعتان
     for (const [uid, profile] of behaviorProfiles) {

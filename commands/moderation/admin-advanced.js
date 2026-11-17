@@ -25,7 +25,7 @@ const C = {
     orange: '#FF8C00',
 };
 
-// ─── بناء لوحة التحكم الرئيسية ──────────────────────────────────────────────
+// بناء لوحة التحكم الرئيسية
 function buildMainPanel(guild, client) {
     const guildData  = db.getGuildData(guild?.id || '0');
     const allUsers   = db.getAllUsers();
@@ -39,23 +39,23 @@ function buildMainPanel(guild, client) {
         .setDescription([
             '```ansi',
             '\u001b[1;35m═══════════════════════════════════════\u001b[0m',
-            '\u001b[1;33m  نظام الإدارة المتقدم — الجيل القادم  \u001b[0m',
+            '\u001b[1;33m  إدارة متطورة... لأن البساطة مو خيار  \u001b[0m',
             '\u001b[1;35m═══════════════════════════════════════\u001b[0m',
             '```',
         ].join('\n'))
         .addFields(
             {
-                name: '🤖 إحصائيات البوت',
+                name: '🤖 أرقام البوت',
                 value: [
                     `> 📊 **الأوامر:** ${cmdCount}`,
                     `> 🌐 **السيرفرات:** ${client?.guilds?.cache?.size ?? '?'}`,
-                    `> 👥 **المستخدمون:** ${userCount}`,
+                    `> 👥 **الأعضاء:** ${userCount}`,
                     `> 🏓 **Ping:** ${client?.ws?.ping ?? '?'}ms`,
                 ].join('\n'),
                 inline: true,
             },
             {
-                name: '⚙️ الإعدادات النشطة',
+                name: '⚙️ الإعدادات الشغّالة',
                 value: [
                     `> 🤖 AI: ${settings.aiRandomReplyEnabled ? '✅' : '❌'}`,
                     `> 📢 رسائل تلقائية: ${settings.autoMessagesEnabled ? '✅' : '❌'}`,
@@ -65,40 +65,40 @@ function buildMainPanel(guild, client) {
                 inline: true,
             },
             {
-                name: '💾 حالة التخزين',
+                name: '💾 وضع التخزين',
                 value: [
                     `> 🗄️ **MongoDB:** ✅ متصل`,
-                    `> 🧠 **Cache:** ✅ نشط`,
-                    `> 📁 **JSON قديم:** محذوف`,
+                    `> 🧠 **الكاش:** ✅ شغّال`,
+                    `> 📁 **ملفات JSON القديمة:** محذوفة`,
                 ].join('\n'),
                 inline: true,
             },
         )
         .setTimestamp()
-        .setFooter({ text: '🔧 لوحة الإدارة المتقدمة | للمالك فقط' });
+        .setFooter({ text: '🔧 لوحة الإدارة المتقدمة | للمالك بس' });
 
     const row1 = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('adv_bot_info').setLabel('📊 معلومات البوت').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('adv_clear_cache').setLabel('🔄 تحديث Cache').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('adv_storage_audit').setLabel('💾 مراجعة التخزين').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('adv_reset_cooldowns').setLabel('⏰ إعادة Cooldowns').setStyle(ButtonStyle.Danger),
+        new ButtonBuilder().setCustomId('adv_bot_info').setLabel('📊 تفاصيل البوت').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId('adv_clear_cache').setLabel('🔄 تحديث الكاش').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId('adv_storage_audit').setLabel('💾 فحص التخزين').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId('adv_reset_cooldowns').setLabel('⏰ تصفير التهدئة').setStyle(ButtonStyle.Danger),
     );
 
     const row2 = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('adv_toggle_ai').setLabel('🤖 تبديل AI').setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId('adv_toggle_msgs').setLabel('📢 تبديل الرسائل').setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId('adv_toggle_ghostping').setLabel('👻 Ghost Ping').setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId('adv_toggle_ghostping').setLabel('👻 كشف المنشن الوهمي').setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId('adv_maintenance').setLabel('🔒 وضع الصيانة').setStyle(ButtonStyle.Danger),
     );
 
     return { embeds: [embed], components: [row1, row2] };
 }
 
-// ─── معالج التفاعلات ──────────────────────────────────────────────────────────
+// معالج التفاعلات
 async function handleInteraction(interaction) {
     if (interaction.user.id !== config.ownerId &&
         !interaction.member?.permissions.has(PermissionFlagsBits.Administrator)) {
-        return interaction.reply({ content: '❌ هذه اللوحة للمالك والإدارة فقط!', ephemeral: true });
+        return interaction.reply({ content: '❌ هاللوحة للمالك والإدارة بس.', ephemeral: true });
     }
 
     await interaction.deferUpdate().catch(() => {});
@@ -113,9 +113,9 @@ async function handleInteraction(interaction) {
 
         const embed = new EmbedBuilder()
             .setColor(C.blue)
-            .setTitle('📊 معلومات البوت التفصيلية')
+            .setTitle('📊 تفاصيل البوت')
             .addFields(
-                { name: '⏱️ وقت التشغيل', value: `> ${hours}س ${minutes}د ${seconds}ث`, inline: true },
+                { name: '⏱️ شكد صار شغّال', value: `> ${hours}س ${minutes}د ${seconds}ث`, inline: true },
                 { name: '🧠 RAM', value: `> ${Math.round(memUsage.heapUsed / 1024 / 1024)} MB`, inline: true },
                 { name: '📦 Node.js', value: `> ${process.version}`, inline: true },
                 { name: '🏓 Ping', value: `> ${interaction.client.ws.ping}ms`, inline: true },
@@ -134,12 +134,12 @@ async function handleInteraction(interaction) {
             const botSettingsDb = require('../../src/database/bot-settings-db');
             await botSettingsDb.loadBotSettings();
             return interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(C.green).setTitle('✅ تم تحديث Cache').setDescription('> تم إعادة تحميل جميع البيانات من MongoDB')],
+                embeds: [new EmbedBuilder().setColor(C.green).setTitle('✅ تحدّث الكاش').setDescription('> رجّعت تحميل كل البيانات من MongoDB.')],
                 components: []
             }).catch(() => {});
         } catch (err) {
             return interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(C.red).setTitle('❌ فشل تحديث Cache').setDescription(`> ${err.message}`)],
+                embeds: [new EmbedBuilder().setColor(C.red).setTitle('❌ ما تحدّث الكاش').setDescription(`> ${err.message}`)],
                 components: []
             }).catch(() => {});
         }
@@ -158,15 +158,15 @@ async function handleInteraction(interaction) {
                 return `> 📁 \`${f}\` — ${(stat.size / 1024).toFixed(1)} KB`;
             });
         } catch {
-            files = ['> ❌ لا يمكن قراءة مجلد data/'];
+            files = ['> ❌ ما كدرت أقرا مجلد data/.'];
         }
 
         return interaction.editReply({
             embeds: [new EmbedBuilder()
                 .setColor(C.dark)
-                .setTitle('💾 مراجعة ملفات التخزين')
+                .setTitle('💾 فحص ملفات التخزين')
                 .setDescription([
-                    '**ملفات data/ الحالية:**',
+                    '**الملفات الموجودة بـ data/:**',
                     ...files.slice(0, 15),
                     '',
                     '**التخزين الرئيسي:** 🗄️ MongoDB Atlas',
@@ -181,8 +181,8 @@ async function handleInteraction(interaction) {
         botSettings.set('aiRandomReplyEnabled', !current);
         return interaction.editReply({
             embeds: [new EmbedBuilder().setColor(current ? C.red : C.green)
-                .setTitle(`🤖 AI ${current ? 'معطّل' : 'مفعّل'}`)
-                .setDescription(`> الذكاء الاصطناعي الآن: **${current ? '❌ معطّل' : '✅ مفعّل'}**`)
+                .setTitle(`🤖 AI ${current ? 'مطفّي' : 'شغّال'}`)
+                .setDescription(`> الذكاء الاصطناعي هسه: **${current ? '❌ مطفّي' : '✅ شغّال'}**`)
             ],
             components: []
         }).catch(() => {});
@@ -193,8 +193,8 @@ async function handleInteraction(interaction) {
         botSettings.set('autoMessagesEnabled', !current);
         return interaction.editReply({
             embeds: [new EmbedBuilder().setColor(current ? C.red : C.green)
-                .setTitle(`📢 الرسائل التلقائية ${current ? 'معطّلة' : 'مفعّلة'}`)
-                .setDescription(`> الرسائل التلقائية الآن: **${current ? '❌ معطّلة' : '✅ مفعّلة'}**`)
+                .setTitle(`📢 الرسائل التلقائية ${current ? 'مطفّية' : 'شغّالة'}`)
+                .setDescription(`> الرسائل التلقائية هسه: **${current ? '❌ مطفّية' : '✅ شغّالة'}**`)
             ],
             components: []
         }).catch(() => {});
@@ -205,8 +205,8 @@ async function handleInteraction(interaction) {
         botSettings.set('ghostPingEnabled', !current);
         return interaction.editReply({
             embeds: [new EmbedBuilder().setColor(current ? C.red : C.green)
-                .setTitle(`👻 Ghost Ping ${current ? 'معطّل' : 'مفعّل'}`)
-                .setDescription(`> Ghost Ping الآن: **${current ? '❌ معطّل' : '✅ مفعّل'}**`)
+                .setTitle(`👻 المنشن الوهمي ${current ? 'مطفّي' : 'شغّال'}`)
+                .setDescription(`> كشف المنشن الوهمي هسه: **${current ? '❌ مطفّي' : '✅ شغّال'}**`)
             ],
             components: []
         }).catch(() => {});
@@ -217,8 +217,8 @@ async function handleInteraction(interaction) {
         botSettings.set('maintenanceMode', !current);
         return interaction.editReply({
             embeds: [new EmbedBuilder().setColor(current ? C.green : C.red)
-                .setTitle(`🔒 وضع الصيانة ${current ? 'معطّل' : 'مفعّل'}`)
-                .setDescription(`> وضع الصيانة الآن: **${current ? '❌ معطّل' : '⚠️ مفعّل — البوت لن يستجيب للأوامر العادية'}**`)
+                .setTitle(`🔒 وضع الصيانة ${current ? 'مطفّي' : 'شغّال'}`)
+                .setDescription(`> وضع الصيانة هسه: **${current ? '❌ مطفّي' : '⚠️ شغّال — البوت ما راح يرد على الأوامر العادية'}**`)
             ],
             components: []
         }).catch(() => {});
@@ -227,8 +227,8 @@ async function handleInteraction(interaction) {
     if (id === 'adv_reset_cooldowns') {
         return interaction.editReply({
             embeds: [new EmbedBuilder().setColor(C.orange)
-                .setTitle('⏰ إعادة تعيين Cooldowns')
-                .setDescription('> لا يمكن إعادة تعيين Cooldowns الفردية من هنا.\n> استخدم: `!admin reset-cooldown @شخص`')
+                .setTitle('⏰ تصفير التهدئة')
+                .setDescription('> ما تگدر تصفّر تهدئة عضو معيّن من هنا.\n> استخدم: `!admin reset-cooldown @شخص`')
             ],
             components: []
         }).catch(() => {});
@@ -244,7 +244,7 @@ module.exports = {
     async execute(message, args) {
         if (message.author.id !== config.ownerId &&
             !message.member?.permissions.has(PermissionFlagsBits.Administrator)) {
-            return message.reply('❌ هذا الأمر للمالك والإدارة فقط!');
+            return message.reply('❌ هالأمر للمالك والإدارة بس.');
         }
         const panel = buildMainPanel(message.guild, message.client);
         await message.reply(panel);

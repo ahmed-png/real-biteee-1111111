@@ -1,7 +1,7 @@
 'use strict';
 const mongoose = require('mongoose');
 
-// ─── Users Schema ────────────────────────────────────────────────────────
+// Users Schema
 const userSchema = new mongoose.Schema({
     userId: { type: String, required: true, unique: true },
     balance: { type: Number, default: 1000 },
@@ -66,7 +66,7 @@ const userSchema = new mongoose.Schema({
     }]
 }, { timestamps: true, strict: false });
 
-// ─── Guilds Schema ───────────────────────────────────────────────────────
+// Guilds Schema
 const guildSchema = new mongoose.Schema({
     guildId: { type: String, required: true, unique: true },
     bankChannel: String,
@@ -76,11 +76,11 @@ const guildSchema = new mongoose.Schema({
     punishmentsChannel: String,
     gamesChannel: String,
 
-    // ── نظام الترحيب (per-guild) ──────────────────────────────────────────
+    // نظام الترحيب (per-guild)
     welcomeEnabled: { type: Boolean, default: false },   // هل نظام الترحيب مفعّل؟
     welcomeChannel: { type: String, default: null },      // ID قناة الترحيب
 
-    // ── إعدادات صورة الترحيب (per-guild) ─────────────────────────────────
+    // إعدادات صورة الترحيب (per-guild)
     welcomeImage: { type: String, default: null },
     welcomeAvatarX: { type: Number, default: 960 },
     welcomeAvatarY: { type: Number, default: 540 },
@@ -129,13 +129,13 @@ const guildSchema = new mongoose.Schema({
     antiRaidEnabled: { type: Boolean, default: true }
 }, { timestamps: true, strict: false });
 
-// ─── Bot Settings Schema ─────────────────────────────────────────────────
+// Bot Settings Schema
 const botSettingsSchema = new mongoose.Schema({
     key: { type: String, required: true, unique: true },
     value: { type: mongoose.Schema.Types.Mixed }
 });
 
-// ─── Web Sessions Schema ─────────────────────────────────────────────────
+// Web Sessions Schema
 const webSessionSchema = new mongoose.Schema({
     token: { type: String, required: true, unique: true },
     userId: { type: String, required: true },
@@ -147,7 +147,7 @@ const webSessionSchema = new mongoose.Schema({
     createdAt: { type: Number, default: () => Date.now() }
 });
 
-// ─── Clans Schema ────────────────────────────────────────────────────────
+// Clans Schema
 const clanSchema = new mongoose.Schema({
     clanId: { type: String, required: true, unique: true },
     guildId: { type: String, required: true },
@@ -169,7 +169,7 @@ const clanSchema = new mongoose.Schema({
     }]
 }, { timestamps: true });
 
-// ─── WelcomeImage Schema (لتخزين صور الترحيب) ────────────────────────────────
+// WelcomeImage Schema (لتخزين صور الترحيب)
 const welcomeImageSchema = new mongoose.Schema({
     guildId: { type: String, required: true, unique: true },
     imageBase64: { type: String, required: true }

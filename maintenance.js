@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const appLogger = require('./utils/app-logger');
 /**
  * ╔══════════════════════════════════════════════════════════╗
  * ║          🔧 أداة الصيانة والتحديث التلقائي              ║
@@ -15,7 +16,7 @@
 const fs = require('fs');
 const path = require('path');
 
-// ── ألوان الطرفية ──────────────────────────────────────────
+// ألوان الطرفية
 const C = {
     reset: '\x1b[0m',
     bold: '\x1b[1m',
@@ -37,19 +38,17 @@ let totalErrors = 0;
 let totalWarnings = 0;
 const report = [];
 
-// ── أدوات الطباعة ──────────────────────────────────────────
+// أدوات الطباعة
 function log(icon, color, label, msg) {
-    console.log(`${color}${C.bold}${icon} [${label}]${C.reset} ${msg}`);
+    appLogger.info(`${color}${C.bold}${icon} [${label}]${C.reset} ${msg}`);
 }
 const OK = (m) => { log('✅', C.green, 'تم', m); totalFixed++; };
 const WARN = (m) => { log('⚠️ ', C.yellow, 'تحذير', m); totalWarnings++; report.push(`⚠️ ${m}`); };
 const ERR = (m) => { log('❌', C.red, 'خطأ', m); totalErrors++; report.push(`❌ ${m}`); };
 const INFO = (m) => log('ℹ️ ', C.cyan, 'معلومة', m);
-const HEAD = (m) => console.log(`\n${C.bold}${C.blue}═══ ${m} ═══${C.reset}`);
+const HEAD = (m) => appLogger.info(`\n${C.bold}${C.blue}═══ ${m} ═══${C.reset}`);
 
-// ════════════════════════════════════════════════════════════
 // 1. فحص الملفات الأساسية
-// ════════════════════════════════════════════════════════════
 function checkCoreFiles() {
     HEAD('فحص الملفات الأساسية');
 
@@ -83,9 +82,7 @@ function checkCoreFiles() {
     }
 }
 
-// ════════════════════════════════════════════════════════════
 // 2. فحص package.json والمكتبات
-// ════════════════════════════════════════════════════════════
 function checkDependencies() {
     HEAD('فحص المكتبات');
 
@@ -119,9 +116,7 @@ function checkDependencies() {
     } catch (e) { /* ignore */ }
 }
 
-// ════════════════════════════════════════════════════════════
 // 3. فحص قاعدة البيانات وإصلاحها
-// ════════════════════════════════════════════════════════════
 function checkAndFixDatabase() {
     HEAD('فحص قاعدة البيانات');
 
@@ -261,9 +256,7 @@ function checkAndFixDatabase() {
     if (deletedOld > 0) OK(`تم حذف ${deletedOld} نسخة احتياطية قديمة`);
 }
 
-// ════════════════════════════════════════════════════════════
 // 4. فحص ملفات الأوامر (Syntax Check)
-// ════════════════════════════════════════════════════════════
 function checkCommands() {
     HEAD('فحص ملفات الأوامر');
 
@@ -315,9 +308,7 @@ function checkCommands() {
     }
 }
 
-// ════════════════════════════════════════════════════════════
 // 5. فحص ملفات الأحداث (Events)
-// ════════════════════════════════════════════════════════════
 function checkEvents() {
     HEAD('فحص ملفات الأحداث');
 
@@ -341,9 +332,7 @@ function checkEvents() {
     }
 }
 
-// ════════════════════════════════════════════════════════════
 // 6. فحص ملفات الـ Utils
-// ════════════════════════════════════════════════════════════
 function checkUtils() {
     HEAD('فحص ملفات المساعدة (Utils)');
 
@@ -365,9 +354,7 @@ function checkUtils() {
     }
 }
 
-// ════════════════════════════════════════════════════════════
 // 7. فحص الإعدادات (config.js)
-// ════════════════════════════════════════════════════════════
 function checkConfig() {
     HEAD('فحص الإعدادات (config.js)');
 
@@ -394,9 +381,7 @@ function checkConfig() {
     }
 }
 
-// ════════════════════════════════════════════════════════════
 // 8. إصلاح مجلد data
-// ════════════════════════════════════════════════════════════
 function fixDataFolder() {
     HEAD('فحص مجلد البيانات');
 
@@ -421,9 +406,7 @@ function fixDataFolder() {
     }
 }
 
-// ════════════════════════════════════════════════════════════
 // 9. إعادة تعيين cooldowns المستخدم (اختياري)
-// ════════════════════════════════════════════════════════════
 function resetAllCooldowns() {
     HEAD('إعادة تعيين الـ Cooldowns');
 
@@ -454,55 +437,51 @@ function resetAllCooldowns() {
     }
 }
 
-// ════════════════════════════════════════════════════════════
 // التقرير النهائي
-// ════════════════════════════════════════════════════════════
 function printSummary() {
-    console.log(`\n${C.bold}${'═'.repeat(55)}${C.reset}`);
-    console.log(`${C.bold}${C.white}                 📋 تقرير الصيانة النهائي${C.reset}`);
-    console.log(`${C.bold}${'═'.repeat(55)}${C.reset}\n`);
+    appLogger.info(`\n${C.bold}${'═'.repeat(55)}${C.reset}`);
+    appLogger.info(`${C.bold}${C.white}                  تقرير الصيانة النهائي${C.reset}`);
+    appLogger.info(`${C.bold}${'═'.repeat(55)}${C.reset}\n`);
 
-    console.log(`  ${C.green}${C.bold}✅ إجمالي الإصلاحات:${C.reset}  ${totalFixed}`);
-    console.log(`  ${C.yellow}${C.bold}⚠️  إجمالي التحذيرات:${C.reset} ${totalWarnings}`);
-    console.log(`  ${C.red}${C.bold}❌ إجمالي الأخطاء:${C.reset}   ${totalErrors}`);
+    appLogger.info(`${C.green}${C.bold} إجمالي الإصلاحات:${C.reset}  ${totalFixed}`);
+    appLogger.info(`${C.yellow}${C.bold}  إجمالي التحذيرات:${C.reset} ${totalWarnings}`);
+    appLogger.info(`${C.red}${C.bold} إجمالي الأخطاء:${C.reset}   ${totalErrors}`);
 
     if (report.length > 0) {
-        console.log(`\n${C.bold}${C.yellow}📌 تفاصيل تحتاج انتباهك:${C.reset}`);
+        appLogger.info(`\n${C.bold}${C.yellow} تفاصيل تحتاج انتباهك:${C.reset}`);
         for (const r of report) {
-            console.log(`  ${r}`);
+            appLogger.info(`  ${r}`);
         }
     }
 
-    console.log('');
+    appLogger.info('');
     if (totalErrors === 0 && totalWarnings === 0) {
-        console.log(`${C.green}${C.bold}🎉 البوت في حالة ممتازة! لا توجد مشاكل.${C.reset}`);
+        appLogger.info(`${C.green}${C.bold} البوت في حالة ممتازة! لا توجد مشاكل.${C.reset}`);
     } else if (totalErrors === 0) {
-        console.log(`${C.yellow}${C.bold}⚠️  البوت يعمل بشكل جيد مع بعض التحذيرات.${C.reset}`);
+        appLogger.info(`${C.yellow}${C.bold}  البوت يعمل بشكل جيد مع بعض التحذيرات.${C.reset}`);
     } else {
-        console.log(`${C.red}${C.bold}❌ يوجد أخطاء تحتاج إصلاح قبل تشغيل البوت.${C.reset}`);
+        appLogger.info(`${C.red}${C.bold} يوجد أخطاء تحتاج إصلاح قبل تشغيل البوت.${C.reset}`);
     }
 
-    console.log(`\n${C.gray}  شغّل البوت: node index.js${C.reset}`);
-    console.log(`${C.gray}  أعد الصيانة: node maintenance.js${C.reset}\n`);
+    appLogger.info(`\n${C.gray}  شغّل البوت: node index.js${C.reset}`);
+    appLogger.info(`${C.gray}  أعد الصيانة: node maintenance.js${C.reset}\n`);
 }
 
-// ════════════════════════════════════════════════════════════
 // نقطة البداية الرئيسية
-// ════════════════════════════════════════════════════════════
 async function main() {
     console.clear();
-    console.log(`\n${C.bold}${C.cyan}`);
-    console.log('  ╔══════════════════════════════════════════════════╗');
-    console.log('  ║     🔧 أداة الصيانة والتحديث التلقائي للبوت     ║');
-    console.log('  ║              Bot Maintenance Tool v2.0           ║');
-    console.log(`  ║         ${new Date().toLocaleDateString('ar-SA')} — ${new Date().toLocaleTimeString('ar-SA')}              ║`);
-    console.log('  ╚══════════════════════════════════════════════════╝');
-    console.log(`${C.reset}\n`);
+    appLogger.info(`\n${C.bold}${C.cyan}`);
+    appLogger.info('  ╔══════════════════════════════════════════════════╗');
+    appLogger.info('║      أداة الصيانة والتحديث التلقائي للبوت     ║');
+    appLogger.info('  ║              Bot Maintenance Tool v2.0           ║');
+    appLogger.info(`  ║         ${new Date().toLocaleDateString('ar-SA')} — ${new Date().toLocaleTimeString('ar-SA')}              ║`);
+    appLogger.info('  ╚══════════════════════════════════════════════════╝');
+    appLogger.info(`${C.reset}\n`);
 
     // تحقق من التشغيل من المجلد الصحيح
     if (!fs.existsSync(path.join(ROOT, 'index.js'))) {
-        console.log(`${C.red}${C.bold}❌ يرجى تشغيل الأداة من مجلد البوت!${C.reset}`);
-        console.log(`${C.gray}   cd "مجلد البوت" && node maintenance.js${C.reset}\n`);
+        appLogger.info(`${C.red}${C.bold} يرجى تشغيل الأداة من مجلد البوت!${C.reset}`);
+        appLogger.info(`${C.gray}   cd "مجلد البوت" && node maintenance.js${C.reset}\n`);
         process.exit(1);
     }
 
@@ -527,7 +506,7 @@ async function main() {
 
 // تشغيل
 main().catch(err => {
-    console.error(`\n${C.red}${C.bold}💥 خطأ حرج في الأداة: ${err.message}${C.reset}`);
-    console.error(err.stack);
+    appLogger.error(`\n${C.red}${C.bold} خطأ حرج في الأداة: ${err.message}${C.reset}`);
+    appLogger.error(err.stack);
     process.exit(1);
 });

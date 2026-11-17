@@ -66,16 +66,16 @@ function buildMemoryEmbed(game) {
 
     const embed = new EmbedBuilder()
         .setColor(color)
-        .setTitle('🧠 لعبة الذاكرة — طابق الأزواج!')
+        .setTitle('🧠 لعبة الذاكرة — طابق الصور!')
         .setDescription(game.ended
-            ? `> 🎉 **أحسنت! أكملت اللوحة!**\n\n> 🏆 جائزة: **+${game.prize} ${config.currency}**\n> 📊 المحاولات: **${game.attempts}**`
-            : `> انقر على البطاقات لكشفها وطابق الأزواج!\n> **لديك 3 دقائق**`)
+            ? `> 🎉 **عاشت إيدك! كمّلت اللوحة!**\n\n> 🏆 الجائزة: **+${game.prize} ${config.currency}**\n> 📊 المحاولات: **${game.attempts}**`
+            : `> اكبس البطاقات حتى تكشفها وتطابق الصور!\n> **عندك 3 دقايق**`)
         .addFields(
-            { name: '📊 التقدم', value: `\`${bar}\` ${matched}/${total} زوج`, inline: false },
+            { name: '📊 التقدم', value: `\`${bar}\` ${matched}/${total} أزواج`, inline: false },
             { name: '🔄 المحاولات', value: `**${game.attempts}**`, inline: true },
             { name: '🏆 الجائزة', value: `**${game.prize} ${config.currency}**`, inline: true },
         )
-        .setFooter({ text: game.ended ? '✅ اللعبة انتهت!' : '❓ انقر على البطاقة لكشفها' });
+        .setFooter({ text: game.ended ? '✅ اللعبة خلصت!' : '❓ اكبس بطاقة حتى تكشفها' });
 
     return embed;
 }
@@ -83,14 +83,14 @@ function buildMemoryEmbed(game) {
 module.exports = {
     name: 'memory',
     aliases: ['ذاكرة', 'اختبار_الذاكرة', 'تذكر'],
-    description: 'لعبة تطابق بطاقات الذاكرة بالأزرار',
+    description: 'لعبة ذاكرة، طابق البطاقات بالأزرار',
     usage: 'ذاكرة',
 
     async execute(message) {
         const userId = message.author.id;
 
         if (memoryGames.has(userId)) {
-            return message.reply('⚠️ لديك لعبة ذاكرة نشطة! اكملها أولاً أو انتظر انتهاءها.');
+            return message.reply('⚠️ عندك لعبة ذاكرة شغّالة! كمّلها أو انتظرها تخلص.');
         }
 
         const game = {
@@ -120,7 +120,7 @@ module.exports = {
                 game.ended = true;
                 memoryGames.delete(userId);
                 msg.edit({
-                    content: `⏰ ${message.author} — انتهى الوقت! طابقت **${game.matched.size/2}/8** أزواج.`,
+                    content: `⏰ ${message.author} — خلص الوقت! طابقت **${game.matched.size/2}/8** أزواج.`,
                     components: []
                 }).catch(() => {});
             }
@@ -135,7 +135,7 @@ module.exports = {
         const idx = parseInt(parts[3]);
 
         if (interaction.user.id !== userId) {
-            return interaction.reply({ content: '❌ هذه اللعبة ليست لك!', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: '❌ هاللعبة مو إلك!', flags: MessageFlags.Ephemeral });
         }
 
         const game = memoryGames.get(userId);

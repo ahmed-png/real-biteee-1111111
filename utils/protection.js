@@ -1,3 +1,4 @@
+const appLogger = require('./app-logger');
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const config = require('../config');
 const db = require('./database');
@@ -74,7 +75,7 @@ async function checkSpam(message) {
             spamMap.delete(userId);
             return true;
         } catch (error) {
-            console.error('خطأ في Anti-Spam:', error);
+            appLogger.error('خطأ في Anti-Spam:', error);
         }
     }
 
@@ -155,7 +156,7 @@ async function checkBadWords(message) {
 
             return true;
         } catch (error) {
-            console.error('خطأ في Auto-Mod:', error);
+            appLogger.error('خطأ في Auto-Mod:', error);
         }
     }
 
@@ -201,7 +202,7 @@ async function checkRaid(member) {
 
             return true;
         } catch (error) {
-            console.error('خطأ في Anti-Raid:', error);
+            appLogger.error('خطأ في Anti-Raid:', error);
         }
     }
 
@@ -239,7 +240,7 @@ async function checkLinks(message) {
 
             return true;
         } catch (error) {
-            console.error('خطأ في Anti-Link:', error);
+            appLogger.error('خطأ في Anti-Link:', error);
         }
     }
 
@@ -278,7 +279,7 @@ async function checkCaps(message) {
 
                 return true;
             } catch (error) {
-                console.error('خطأ في Anti-Caps:', error);
+                appLogger.error('خطأ في Anti-Caps:', error);
             }
         }
     }
@@ -316,7 +317,7 @@ async function checkMentionSpam(message) {
 
             return true;
         } catch (error) {
-            console.error('خطأ في Anti-Mention Spam:', error);
+            appLogger.error('خطأ في Anti-Mention Spam:', error);
         }
     }
 
@@ -350,17 +351,17 @@ async function checkEmojiSpam(message) {
 
             return true;
         } catch (error) {
-            console.error('خطأ في Anti-Emoji Spam:', error);
+            appLogger.error('خطأ في Anti-Emoji Spam:', error);
         }
     }
 
     return false;
 }
 
-// ─── لوق أحداث الحماية — يستخدم channel-resolver للبحث الذكي ─────────────
+// لوق أحداث الحماية — يستخدم channel-resolver للبحث الذكي
 async function logProtection(guild, data) {
     try {
-        // ✅ تجاهل أي فعل يُنفّذه البوت نفسه — لا نريده يظهر في لوق الحماية كمخالف
+        // تجاهل أي فعل يُنفّذه البوت نفسه — لا نريده يظهر في لوق الحماية كمخالف
         if (data.user && (data.user.bot === true || data.user.id === guild.client?.user?.id)) return;
 
         // نرسل أولاً لقناة الحماية، ثم لقناة السجلات كـ fallback
@@ -411,14 +412,12 @@ async function logProtection(guild, data) {
     }
 }
 
-// ============================
 // Advanced Protection Features
-// ============================
 
 // 1. Duplicate Message Detection - كشف الرسائل المكررة
 const userMessageHistory = new Map();
 
-// ─── تنظيف دوري لجميع المaps لمنع Memory Leak (كل 60 ثانية) ──────────────
+// تنظيف دوري لجميع المaps لمنع Memory Leak (كل 60 ثانية)
 const _cleanup = setInterval(() => {
     const now = Date.now();
     for (const [userId, msgs] of spamMap) {
@@ -481,7 +480,7 @@ async function checkDuplicateMessages(message) {
 
             return true;
         } catch (error) {
-            console.error('Error in Duplicate Messages:', error);
+            appLogger.error('Error in Duplicate Messages:', error);
         }
     }
 
@@ -515,7 +514,7 @@ async function checkAccountAge(member) {
 
             return true;
         } catch (error) {
-            console.error('Error in Account Age:', error);
+            appLogger.error('Error in Account Age:', error);
         }
     }
 
@@ -547,7 +546,7 @@ async function checkCustomRules(message) {
             try {
                 matched = new RegExp(rule.pattern, 'i').test(message.content);
             } catch (e) {
-                console.error('Invalid Regex Rule:', rule);
+                appLogger.error('Invalid Regex Rule:', rule);
             }
         } else if (rule.type === 'keyword') {
             matched = message.content.toLowerCase().includes(rule.keyword.toLowerCase());
@@ -577,7 +576,7 @@ async function checkCustomRules(message) {
 
                 return true;
             } catch (error) {
-                console.error('Error in Custom Rules:', error);
+                appLogger.error('Error in Custom Rules:', error);
             }
         }
     }

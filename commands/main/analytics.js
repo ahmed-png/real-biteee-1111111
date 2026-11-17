@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../../utils/app-logger');
 
 /**
  * ╔══════════════════════════════════════════════════════════════════════════╗
@@ -36,7 +37,7 @@ module.exports = {
                 return await sendDailyReport(message);
             }
         } catch (e) {
-            console.error('[Analytics]', e);
+            appLogger.error('[Analytics]', e);
             return message.reply('❌ خطأ في التحليلات').catch(() => {});
         }
     }
@@ -108,7 +109,7 @@ async function sendDailyReport(message) {
     const collector = reply.createMessageComponentCollector({ time: 60000 });
     collector.on('collect', async (i) => {
         if (i.user.id !== message.author.id) {
-            return i.reply({ content: '❌ فقط من طلب الأمر يمكنه استخدام هذه الأزرار', flags: MessageFlags.Ephemeral });
+            return i.reply({ content: 'هالأزرار مو إلك؛ شغّل أمر التحليلات من جديد.', flags: MessageFlags.Ephemeral });
         }
         if (i.customId === 'analytics_refresh') {
             const newReport = analytics.getDailyReport();

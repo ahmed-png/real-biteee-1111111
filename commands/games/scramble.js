@@ -5,7 +5,7 @@ const config = require('../../config');
 module.exports = {
     name: 'scramble',
     aliases: ['تفكيك', 'بعثرة', 'slam'],
-    description: 'لعبة تفكيك الكلمات - أعد ترتيب الأحرف',
+    description: 'رتّب الحروف حتى تطلع الكلمة',
     usage: 'تفكيك',
 
     async execute(message) {
@@ -18,8 +18,8 @@ module.exports = {
         const reward = 150;
 
         const embed = PremiumEmbedBuilder.game(
-            '🧩 لعبة التفكيك (Slam)',
-            `أعد ترتيب الأحرف لتكوين كلمة صحيحة:\n\n**${scrambled}**`,
+            '🧩 لعبة ترتيب الحروف',
+            `رتّب الحروف حتى تطلع كلمة صحيحة:\n\n**${scrambled}**`,
             [
                 { name: '💰 الجائزة', value: `${reward} ${config.currency}`, inline: true },
                 { name: '⏰ الوقت', value: '20 ثانية', inline: true }
@@ -37,8 +37,8 @@ module.exports = {
             levels.addXP(m.author.id, 10, m);
 
             const successEmbed = PremiumEmbedBuilder.success(
-                'إجابة صحيحة! 🎉',
-                `مبروك ${m.author}! لقد عرفت الكلمة: **${word}**\nحصلت على ${reward} ${config.currency}`
+                'جوابك صح! 🎉',
+                `عاشت إيدك ${m.author}! عرفت الكلمة: **${word}**\nأخذت ${reward} ${config.currency}`
             );
             m.reply({ embeds: [successEmbed] });
         });
@@ -46,8 +46,8 @@ module.exports = {
         collector.on('end', (collected, reason) => {
             if (reason === 'time') {
                 const failEmbed = PremiumEmbedBuilder.error(
-                    'انتهى الوقت! ⏰',
-                    `لم يعرف أحد الكلمة.\nالكلمة كانت: **${word}**`
+                    'خلص الوقت! ⏰',
+                    `محد عرف الكلمة.\nالكلمة كانت: **${word}**`
                 );
                 message.channel.send({ embeds: [failEmbed] });
             }

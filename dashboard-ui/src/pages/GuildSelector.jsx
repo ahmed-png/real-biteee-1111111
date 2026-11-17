@@ -41,9 +41,9 @@ export default function GuildSelector() {
                 : <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--card2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>👤</div>
               }
               <div>
-                <div style={{ fontSize: 18, fontWeight: 900 }}>مرحباً، {user?.username || 'مستخدم'}</div>
+                <div style={{ fontSize: 18, fontWeight: 900 }}>هلا، {user?.username || 'مستخدم'}</div>
                 <div className={`badge ${isBotOwner ? 'badge-gold' : 'badge-blue'}`} style={{ marginTop: 4 }}>
-                  {isBotOwner ? '👑 Bot Owner · وضع إدارة السيرفر' : '🔑 Server Owner'}
+                  {isBotOwner ? '👑 مالك البوت · إدارة السيرفرات' : '🔑 مالك السيرفر'}
                 </div>
               </div>
             </div>
@@ -51,7 +51,7 @@ export default function GuildSelector() {
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             {isBotOwner && (
               <button className="btn btn-outline btn-sm" onClick={() => navigate('/bot-owner')} type="button">
-                👑 العودة لإدارة البوت
+                👑 الرجوع للوحة البوت
               </button>
             )}
             <button className="btn btn-outline btn-sm" onClick={logout} type="button">🚪 خروج</button>
@@ -67,19 +67,19 @@ export default function GuildSelector() {
           </div>
         )}
 
-        <h2 style={{ fontSize: 20, fontWeight: 900, marginBottom: 6 }}>🌐 اختر سيرفرك للإدارة</h2>
+        <h2 style={{ fontSize: 20, fontWeight: 900, marginBottom: 6 }}>🌐 اختار السيرفر اللي تريد تديره</h2>
         <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 20 }}>
           {isBotOwner
-            ? 'تظهر هنا السيرفرات التي تملكها والبوت موجود فيها؛ صلاحياتك كمالك بوت لا تتغير.'
-            : 'السيرفرات التي تملكها والبوت موجود فيها'}
+            ? 'هنا تبين السيرفرات اللي تملكها والبوت موجود بيها. صلاحيات مالك البوت تبقى نفسها.'
+            : 'هنا تبين السيرفرات اللي تملكها والبوت موجود بيها.'}
         </p>
 
         {availableGuilds.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 40, background: 'var(--card)', borderRadius: 16, border: '1px solid var(--border)' }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>😕</div>
-            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>لا توجد سيرفرات متاحة</div>
+            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>ماكو سيرفرات متاحة</div>
             <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 20 }}>
-              لا يوجد سيرفر تملكه والبوت موجود فيه حالياً.
+              ماكو سيرفر تملكه والبوت موجود بيه هسه.
             </div>
             {inviteUrl
               ? (
@@ -93,11 +93,11 @@ export default function GuildSelector() {
                     ➕ دعوة البوت لسيرفرك
                   </a>
                   <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 12 }}>
-                    يمنح رابط الدعوة أقل صلاحية ممكنة؛ امنح البوت الصلاحيات التي تحتاجها ميزاتك بعد إضافته.
+                    رابط الدعوة يطلب أقل صلاحيات ممكنة؛ زيد صلاحيات البوت حسب الميزات اللي تحتاجها.
                   </p>
                 </>
               )
-              : <p className="guild-empty" role="status">رابط الدعوة غير متاح الآن؛ تعذر تحميل معرّف البوت.</p>
+              : <p className="guild-empty" role="status">رابط الدعوة مو متاح هسه؛ ما گدرت أجيب معرّف البوت.</p>
             }
           </div>
         ) : (
@@ -110,14 +110,14 @@ export default function GuildSelector() {
                   type="search"
                   value={search}
                   onChange={event => setSearch(event.target.value)}
-                  placeholder="ابحث باسم السيرفر..."
-                  aria-label="ابحث باسم السيرفر"
+                  placeholder="دوّر باسم السيرفر..."
+                  aria-label="دوّر باسم السيرفر"
                 />
               </label>
               <span className="badge">{filteredGuilds.length} سيرفر</span>
             </div>
             {filteredGuilds.length === 0 ? (
-              <div className="guild-empty" role="status">لا توجد نتائج تطابق البحث.</div>
+              <div className="guild-empty" role="status">ماكو نتائج تطابق بحثك.</div>
             ) : (
               <div className="guild-grid">
                 {filteredGuilds.map(g => (
@@ -126,7 +126,7 @@ export default function GuildSelector() {
                     className="guild-card"
                     role="button"
                     tabIndex={0}
-                    aria-label={`إدارة سيرفر ${g.name}`}
+                    aria-label={`إدارة السيرفر ${g.name}`}
                     onClick={() => navigate(`/server/${g.id}`)}
                     onKeyDown={event => {
                       if (event.key === 'Enter' || event.key === ' ') {

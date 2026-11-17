@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../utils/app-logger');
 
 const fs = require('fs');
 const path = require('path');
@@ -24,7 +25,7 @@ module.exports = (client) => {
             const event = require(filePath);
 
             if (typeof event.name !== 'string' || typeof event.execute !== 'function') {
-                console.warn(`[EventHandler] ⚠️ تم تجاهل ${file} — يجب أن يُصدّر { name, execute }`);
+                appLogger.warn(`[EventHandler] تم تجاهل ${file} — يجب أن يُصدّر { name, execute }`);
                 continue;
             }
 
@@ -33,7 +34,7 @@ module.exports = (client) => {
                 try {
                     await event.execute(...args);
                 } catch (err) {
-                    console.error(`[Event:${event.name}] ❌ خطأ غير معالج:`, err);
+                    appLogger.error(`[Event:${event.name}] خطأ غير معالج:`, err);
                 }
             };
 
@@ -43,9 +44,9 @@ module.exports = (client) => {
 
             loaded++;
         } catch (err) {
-            console.error(`[EventHandler] ❌ فشل تحميل ${file}:`, err.message);
+            appLogger.error(`[EventHandler] فشل تحميل ${file}:`, err.message);
         }
     }
 
-    console.log(`[EventHandler] ✅ تم تسجيل ${loaded} حدث`);
+    appLogger.info(`[EventHandler] تم تسجيل ${loaded} حدث`);
 };

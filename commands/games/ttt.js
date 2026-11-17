@@ -81,25 +81,25 @@ function buildGameEmbed(game, status = null) {
     const isDraw = !winResult && !game.board.includes(null);
 
     let color = '#5865F2';
-    let title = '❌⭕ اكس او';
-    let desc = status || `🎮 **الدور على:** ${current}\n\n❌ ${p1Name}  vs  ⭕ ${p2Name}`;
+    let title = '❌⭕ إكس أو';
+    let desc = status || `🎮 **الدور على:** ${current}\n\n❌ ${p1Name}  ضد  ⭕ ${p2Name}`;
 
     if (winResult) {
         const winnerName = winResult.winner === 'X' ? p1Name : p2Name;
         color = '#57F287';
-        title = '🏆 انتهت اللعبة!';
-        desc = `🎉 **الفائز: ${winnerName}!**\n\n❌ ${p1Name}  vs  ⭕ ${p2Name}`;
+        title = '🏆 خلصت اللعبة!';
+        desc = `🎉 **الفايز: ${winnerName}!**\n\n❌ ${p1Name}  ضد  ⭕ ${p2Name}`;
     } else if (isDraw) {
         color = '#FEE75C';
         title = '🤝 تعادل!';
-        desc = `**انتهت اللعبة بالتعادل!**\n\n❌ ${p1Name}  vs  ⭕ ${p2Name}`;
+        desc = `**اللعبة خلصت تعادل!**\n\n❌ ${p1Name}  ضد  ⭕ ${p2Name}`;
     }
 
     return new EmbedBuilder()
         .setColor(color)
         .setTitle(title)
         .setDescription(desc)
-        .setFooter({ text: `${config.prefix}اكس_او لبدء لعبة جديدة` })
+        .setFooter({ text: `${config.prefix}اكس_او حتى تبدي لعبة جديدة` })
         .setTimestamp();
 }
 
@@ -246,13 +246,13 @@ async function endGame(game, interaction = null) {
 module.exports = {
     name: 'ttt',
     aliases: ['اكس_او', 'اكساو', 'او_اكس', 'tictactoe', 'xo'],
-    description: 'لعبة اكس او الشهيرة بالأزرار',
+    description: 'العب إكس أو بالأزرار',
     usage: 'اكس_او [@مستخدم | بوت]',
 
     async execute(message, args) {
         // منع تعدد الألعاب في نفس القناة
         if (tttGames.has(message.channel.id)) {
-            return message.reply({ content: '⚠️ هناك لعبة **اكس او** نشطة في هذه القناة! أنهها أولاً.' });
+            return message.reply({ content: '⚠️ أكو لعبة **إكس أو** شغّالة بهالقناة! خلّصها أول.' });
         }
 
         const vsBot = args[0]?.toLowerCase() === 'بوت' || args[0]?.toLowerCase() === 'bot';
@@ -262,14 +262,14 @@ module.exports = {
             // عرض خيار البدء
             const embed = new EmbedBuilder()
                 .setColor('#5865F2')
-                .setTitle('❌⭕ اكس او')
+                .setTitle('❌⭕ إكس أو')
                 .setDescription([
-                    '> اختر طريقة اللعب:',
+                    '> اختار شلون تلعب:',
                     '',
-                    '**🤖 ضد البوت** — العب وحدك ضد الذكاء الاصطناعي',
-                    '**👥 ضد لاعب** — تحدّ لاعباً آخر في القناة',
+                    '**🤖 ضد البوت** — العب ضد البوت',
+                    '**👥 ضد لاعب** — تحدى لاعب ثاني بالقناة',
                 ].join('\n'))
-                .setFooter({ text: 'ستنتهي هذه الرسالة خلال 30 ثانية' });
+                .setFooter({ text: 'هالرسالة تختفي بعد 30 ثانية' });
 
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId(`ttt_start_bot_${message.author.id}`).setLabel('🤖 ضد البوت').setStyle(ButtonStyle.Primary),
@@ -297,7 +297,7 @@ module.exports = {
             const ownerId = parts[3];
 
             if (interaction.user.id !== ownerId) {
-                return interaction.reply({ content: '❌ هذه الأزرار لصاحب الأمر فقط!', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: '❌ هالأزرار لصاحب الأمر بس!', flags: MessageFlags.Ephemeral });
             }
 
             await interaction.deferUpdate();
@@ -308,14 +308,14 @@ module.exports = {
                 // وضع PvP — إرسال دعوة
                 const embed = new EmbedBuilder()
                     .setColor('#5865F2')
-                    .setTitle('❌⭕ دعوة لعبة اكس او')
-                    .setDescription(`> 🎮 ${interaction.user} يتحدى أي شخص!\n> اضغط **قبول** للعب معه!\n\n⏰ تنتهي الدعوة بعد دقيقة واحدة`)
+                    .setTitle('❌⭕ دعوة للعب إكس أو')
+                    .setDescription(`> 🎮 ${interaction.user} يتحدى أي واحد!\n> اضغط **قبول** والعب وياه!\n\n⏰ الدعوة تنتهي بعد دقيقة`)
                     .setFooter({ text: `المتحدي: ${interaction.user.username}` });
 
                 const row = new ActionRowBuilder().addComponents(
                     new ButtonBuilder()
                         .setCustomId(`ttt_accept_${interaction.user.id}`)
-                        .setLabel('✅ قبول التحدي!')
+                        .setLabel('✅ أقبل التحدي!')
                         .setStyle(ButtonStyle.Success),
                     new ButtonBuilder()
                         .setCustomId(`ttt_decline_${interaction.user.id}`)
@@ -328,7 +328,7 @@ module.exports = {
                 // انتهاء الدعوة بعد دقيقة
                 setTimeout(async () => {
                     if (!tttGames.has(interaction.channelId)) {
-                        embed.setDescription(`> ❌ انتهت الدعوة — لم ينضم أحد.`).setColor('#ED4245');
+                        embed.setDescription(`> ❌ خلصت الدعوة — محد انضم.`).setColor('#ED4245');
                         interaction.message.edit({ embeds: [embed], components: [] }).catch(() => {});
                     }
                 }, 60000);
@@ -343,21 +343,21 @@ module.exports = {
             const targetId = parts[3];
 
             if (interaction.user.id === challengerId) {
-                return interaction.reply({ content: '❌ لا يمكنك قبول تحديك الخاص!', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: '❌ ما تگدر تقبل تحديك إنت!', flags: MessageFlags.Ephemeral });
             }
 
             if (targetId && interaction.user.id !== targetId) {
-                return interaction.reply({ content: '❌ هذه الدعوة موجهة لشخص محدد!', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: '❌ هالدعوة لشخص معيّن!', flags: MessageFlags.Ephemeral });
             }
 
             const channelId = interaction.channelId || interaction.channel?.id;
             if (tttGames.has(channelId)) {
-                return interaction.reply({ content: '⚠️ اللعبة بدأت بالفعل أو توجد لعبة نشطة في هذه القناة!', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: '⚠️ اللعبة بلشت أو أكو لعبة شغّالة بهالقناة!', flags: MessageFlags.Ephemeral });
             }
 
             const guild = interaction.guild;
             const challenger = await guild?.members.fetch(challengerId).catch(() => null);
-            if (!challenger) return interaction.reply({ content: '❌ لم يتم إيجاد المتحدي!', flags: MessageFlags.Ephemeral });
+            if (!challenger) return interaction.reply({ content: '❌ ما لكينا المتحدي!', flags: MessageFlags.Ephemeral });
 
             await interaction.deferUpdate();
             await startPvPGame(interaction, challenger.user, interaction.user);
@@ -371,7 +371,7 @@ module.exports = {
             const targetId = parts[3];
 
             if (interaction.user.id !== challengerId && (!targetId || interaction.user.id !== targetId)) {
-                return interaction.reply({ content: '❌ فقط أصحاب الدعوة يستطيعون إلغاءها أو رفضها!', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: '❌ بس أصحاب الدعوة يگدرون يلغوها أو يرفضوها!', flags: MessageFlags.Ephemeral });
             }
 
             const isChallenger = interaction.user.id === challengerId;
@@ -379,8 +379,8 @@ module.exports = {
                 embeds: [
                     new EmbedBuilder()
                         .setColor('#ED4245')
-                        .setTitle('❌ تم إلغاء الدعوة')
-                        .setDescription(isChallenger ? '> ألغى صاحب الدعوة اللعبة.' : `> رفض ${interaction.user} التحدي.`)
+                        .setTitle('❌ انلغت الدعوة')
+                        .setDescription(isChallenger ? '> صاحب الدعوة لغى اللعبة.' : `> ${interaction.user} رفض التحدي.`)
                 ],
                 components: []
             });
@@ -396,7 +396,7 @@ module.exports = {
             const channelId = interaction.channelId || interaction.channel?.id;
             const game = tttGames.get(channelId);
             if (!game || game.id !== gameId || game.ended) {
-                return interaction.reply({ content: '❌ هذه اللعبة انتهت أو غير موجودة.', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: '❌ اللعبة خلصت أو مو موجودة.', flags: MessageFlags.Ephemeral });
             }
 
             if (interaction.message) {
@@ -406,12 +406,12 @@ module.exports = {
             // تحقق من الدور
             const expectedPlayer = game.currentTurn === 'X' ? game.player1 : game.player2;
             if (!expectedPlayer || interaction.user.id !== expectedPlayer.id) {
-                return interaction.reply({ content: `❌ ليس دورك! دور **${expectedPlayer?.username || 'اللاعب الآخر'}**`, flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: `❌ مو دورك! الدور على **${expectedPlayer?.username || 'اللاعب الثاني'}**`, flags: MessageFlags.Ephemeral });
             }
 
             // تحقق من الخلية
             if (game.board[cellIdx]) {
-                return interaction.reply({ content: '❌ هذه الخلية محجوزة!', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: '❌ هالمربع محجوز!', flags: MessageFlags.Ephemeral });
             }
 
             // تنفيذ الحركة
@@ -477,7 +477,7 @@ async function startBotGame(msgOrInteraction, player) {
         if (tttGames.get(channelId)?.id === gameId) {
             game.ended = true;
             tttGames.delete(channelId);
-            msg?.edit({ content: '⏰ انتهت اللعبة بسبب عدم النشاط.', embeds: [], components: [] }).catch(() => {});
+            msg?.edit({ content: '⏰ خلصت اللعبة لأن محد تحرك.', embeds: [], components: [] }).catch(() => {});
         }
     }, 5 * 60 * 1000);
 }
@@ -522,20 +522,20 @@ async function startPvPGame(interaction, player1, player2) {
         if (tttGames.get(channelId)?.id === gameId) {
             game.ended = true;
             tttGames.delete(channelId);
-            msg?.edit({ content: '⏰ انتهت اللعبة بسبب عدم النشاط.', embeds: [], components: [] }).catch(() => {});
+            msg?.edit({ content: '⏰ خلصت اللعبة لأن محد تحرك.', embeds: [], components: [] }).catch(() => {});
         }
     }, 10 * 60 * 1000);
 }
 
 // ─── إرسال دعوة PvP ──────────────────────────────────────────────────────────
 async function sendInvitation(message, challenger, target) {
-    if (target.bot) return message.reply('❌ لا يمكنك تحدي بوت!');
-    if (target.id === challenger.id) return message.reply('❌ لا يمكنك تحدي نفسك!');
+    if (target.bot) return message.reply('❌ ما تگدر تتحدى بوت!');
+    if (target.id === challenger.id) return message.reply('❌ ما تگدر تتحدى نفسك!');
 
     const embed = new EmbedBuilder()
         .setColor('#5865F2')
         .setTitle('❌⭕ دعوة لعبة اكس او')
-        .setDescription(`> 🎮 ${challenger} يتحدى ${target}!\n> اضغط **قبول** للموافقة\n\n⏰ تنتهي الدعوة بعد دقيقة`)
+        .setDescription(`> 🎮 ${challenger} يتحدى ${target}!\n> اضغط **قبول** حتى توافق\n\n⏰ الدعوة تخلص بعد دقيقة`)
         .setFooter({ text: `المتحدي: ${challenger.username}` });
 
     const row = new ActionRowBuilder().addComponents(
@@ -553,7 +553,7 @@ async function sendInvitation(message, challenger, target) {
 
     setTimeout(async () => {
         if (!tttGames.has(message.channel.id)) {
-            embed.setDescription(`> ❌ ${target.username} لم يرد على الدعوة.`).setColor('#ED4245');
+            embed.setDescription(`> ❌ ${target.username} ما رد على الدعوة.`).setColor('#ED4245');
             msg.edit({ embeds: [embed], components: [] }).catch(() => {});
         }
     }, 60000);

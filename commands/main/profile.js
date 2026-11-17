@@ -1,12 +1,5 @@
 'use strict';
-
-/**
- * ╔══════════════════════════════════════════════════════════════════════════╗
- * ║  🌟 ADVANCED PROFILE v3.0 — بطاقة الهوية المتطورة من المستقبل          ║
- * ║  بطاقة غنية بالمعلومات | شارات ديناميكية | إحصائيات مفصلة             ║
- * ║  نظام العناوين | سجل الإنجازات | تاريخ النشاط                          ║
- * ╚══════════════════════════════════════════════════════════════════════════╝
- */
+const appLogger = require('../../utils/app-logger');
 
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
 const db = require('../../utils/database');
@@ -14,7 +7,7 @@ const config = require('../../config');
 const analytics = require('../../utils/analytics');
 const { getTrustScore, getTrustBadge } = require('../../utils/advanced-security');
 
-// ─── نظام الشارات ─────────────────────────────────────────────────────────────
+// نظام الشارات
 const BADGES = {
     // شارات المستوى
     level10:    { emoji: '🥉', name: 'مستوى 10',       condition: u => u.level >= 10 },
@@ -50,7 +43,7 @@ function getUserBadges(userData) {
         .map(([, badge]) => `${badge.emoji} ${badge.name}`);
 }
 
-// ─── مستويات الألقاب ─────────────────────────────────────────────────────────
+// مستويات الألقاب
 function getUserTitle(userData) {
     const totalWealth = (userData.balance || 0) + (userData.bank || 0);
     const level = userData.level || 1;
@@ -65,7 +58,7 @@ function getUserTitle(userData) {
     return { title: '🌱 مبتدئ', color: '#95A5A6' };
 }
 
-// ─── حساب التقدم للمستوى القادم ──────────────────────────────────────────────
+// حساب التقدم للمستوى القادم
 function getLevelProgress(xp, level) {
     const xpForCurrent = Math.max(0, level * level * 100);
     const xpForNext = (level + 1) * (level + 1) * 100;
@@ -78,7 +71,7 @@ function getLevelProgress(xp, level) {
     return { progress, bar, xpNeeded };
 }
 
-// ─── رسم شريط التقدم ─────────────────────────────────────────────────────────
+// رسم شريط التقدم
 function drawBar(value, max, length = 10) {
     const filled = Math.round((value / Math.max(max, 1)) * length);
     return '█'.repeat(filled) + '░'.repeat(length - filled);
@@ -107,7 +100,7 @@ module.exports = {
         const inventoryCount = Object.keys(userData.inventory || {}).length;
         const achievementCount = (userData.achievements || []).length;
 
-        // ─── Embed الرئيسي
+        // Embed الرئيسي
         const embed = new EmbedBuilder()
             .setColor(titleInfo.color)
             .setAuthor({
@@ -204,7 +197,7 @@ module.exports = {
         const collector = reply.createMessageComponentCollector({ time: 120000 });
         collector.on('collect', async (btnInteraction) => {
             if (btnInteraction.user.id !== message.author.id) {
-                return btnInteraction.reply({ content: '❌ هذه الأزرار لصاحب الأمر فقط', flags: MessageFlags.Ephemeral });
+                return btnInteraction.reply({ content: 'هالأزرار مو إلك؛ افتح ملفك حتى تستخدمها.', flags: MessageFlags.Ephemeral });
             }
 
             try {
@@ -335,9 +328,9 @@ module.exports = {
                     await btnInteraction.update({ embeds: [refreshedEmbed], components: [row] });
                 }
             } catch (err) {
-                console.error('[Profile Button Error]:', err);
+                appLogger.error('[Profile Button Error]:', err);
                 if (!btnInteraction.replied && !btnInteraction.deferred) {
-                    btnInteraction.reply({ content: '❌ حدث خطأ في معالجة الزر.', flags: MessageFlags.Ephemeral }).catch(() => {});
+                    btnInteraction.reply({ content: 'صار خلل وإني أعالج الزر.', flags: MessageFlags.Ephemeral }).catch(() => {});
                 }
             }
         });

@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../../utils/app-logger');
 
 /**
  * ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -19,7 +20,7 @@ const channelResolver = require('../../utils/channel-resolver');
 const fs   = require('fs');
 const path = require('path');
 
-// ─── ثيم ملكي ─────────────────────────────────────────────────────────────────
+// ثيم ملكي
 const COLORS = {
     main:    '#FFD700',   // ذهبي ملكي
     danger:  '#FF1744',
@@ -30,9 +31,7 @@ const COLORS = {
     dark:    '#1a1a2e',
 };
 
-// ══════════════════════════════════════════════════════════════════════════════
-// ── بناء Embed اللوحة الرئيسية ──────────────────────────────────────────────
-// ══════════════════════════════════════════════════════════════════════════════
+// بناء Embed اللوحة الرئيسية
 async function buildMainDashboard(client) {
     const guilds        = client.guilds.cache;
     const totalMembers  = guilds.reduce((s, g) => s + g.memberCount, 0);
@@ -57,15 +56,8 @@ async function buildMainDashboard(client) {
 
     return new EmbedBuilder()
         .setColor(COLORS.main)
-        .setTitle('👑 لوحة تحكم المالك الملكية')
-        .setDescription([
-            '```ansi',
-            '\u001b[1;33m╔══════════════════════════════════════════╗\u001b[0m',
-            '\u001b[1;33m║   🤖  مرحباً بك في مركز التحكم الكامل   ║\u001b[0m',
-            '\u001b[1;33m╚══════════════════════════════════════════╝\u001b[0m',
-            '```',
-            '> كل زر هنا يطبّق تغييراً **حقيقياً فورياً** 👑',
-        ].join('\n'))
+        .setTitle('لوحة تحكم مالك البوت')
+        .setDescription('> كل زر يغيّر إعداد فعلياً.')
         .addFields(
             {
                 name: '📊 إحصائيات البوت',
@@ -103,9 +95,7 @@ async function buildMainDashboard(client) {
         .setTimestamp();
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// ── بناء الأزرار — صفّين × 4 أزرار ─────────────────────────────────────────
-// ══════════════════════════════════════════════════════════════════════════════
+// بناء الأزرار — صفّين × 4 أزرار
 function buildDashboardButtons() {
     const row1 = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('owner_bot_control').setLabel('🤖 البوت').setStyle(ButtonStyle.Primary),
@@ -122,9 +112,7 @@ function buildDashboardButtons() {
     return [row1, row2];
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// ── إرسال اللوحة ────────────────────────────────────────────────────────────
-// ══════════════════════════════════════════════════════════════════════════════
+// إرسال اللوحة
 async function sendOwnerDashboard(message) {
     try {
         const embed   = await buildMainDashboard(message.client);
@@ -134,7 +122,7 @@ async function sendOwnerDashboard(message) {
         await dmCh.send({ embeds: [embed], components: buttons });
 
         if (message.guild) {
-            const confirm = await message.reply({ content: '📬 تم إرسال لوحة التحكم للخاص يخوي!', allowedMentions: { repliedUser: false } });
+            const confirm = await message.reply({ content: 'دزّيتلك لوحة التحكم بالخاص.', allowedMentions: { repliedUser: false } });
             setTimeout(() => confirm.delete().catch(() => {}), 5000);
         }
     } catch {
@@ -144,9 +132,7 @@ async function sendOwnerDashboard(message) {
     }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// ── معالج الأزرار ────────────────────────────────────────────────────────────
-// ══════════════════════════════════════════════════════════════════════════════
+// معالج الأزرار
 async function handleOwnerInteraction(interaction) {
     if (interaction.user.id !== config.ownerId) {
         return interaction.reply({ content: '❌ هذي اللوحة حصرية للمالك!', flags: MessageFlags.Ephemeral });
@@ -154,14 +140,14 @@ async function handleOwnerInteraction(interaction) {
 
     const id = interaction.customId;
 
-    // ── 🔄 تحديث اللوحة ─────────────────────────────────────────────────────
+    // تحديث اللوحة
     if (id === 'owner_refresh') {
         const embed   = await buildMainDashboard(interaction.client);
         const buttons = buildDashboardButtons();
         return interaction.update({ embeds: [embed], components: buttons });
     }
 
-    // ── 🤖 تحكم البوت ───────────────────────────────────────────────────────
+    // تحكم البوت
     if (id === 'owner_bot_control') {
         const settings      = botSettings.getAll();
         const maintPath     = path.join(__dirname, '../../data/maintenance.json');
@@ -201,7 +187,7 @@ async function handleOwnerInteraction(interaction) {
         return interaction.update({ embeds: [embed], components: [row] });
     }
 
-    // ── 🔧 تبديل الصيانة ────────────────────────────────────────────────────
+    // تبديل الصيانة
     if (id === 'owner_toggle_maintenance') {
         const maintPath = path.join(__dirname, '../../data/maintenance.json');
         let d = { active: false };
@@ -213,26 +199,26 @@ async function handleOwnerInteraction(interaction) {
 
         return interaction.reply({
             content: d.active
-                ? '🔴 **تم تفعيل وضع الصيانة!** البوت ما راح يرد على الأوامر.'
-                : '🟢 **تم إلغاء الصيانة!** البوت يشتغل طبيعي الحين.',
+                ? '🔴 **اشتغل وضع الصيانة.** البوت هسه ما يرد على الأوامر.'
+                : '🟢 **انتهى وضع الصيانة.** البوت رجع يشتغل.',
             flags: MessageFlags.Ephemeral
         });
     }
 
-    // ── 🤖 تبديل الذكاء الاصطناعي ───────────────────────────────────────────
+    // تبديل الذكاء الاصطناعي
     if (id === 'owner_toggle_ai') {
         const current = botSettings.get('aiRandomReplyEnabled') !== false;
         botSettings.set('aiRandomReplyEnabled', !current);
 
         return interaction.reply({
             content: !current
-                ? '🟢 **تم تفعيل الذكاء الاصطناعي!** البوت يرد تلقائياً الحين.'
-                : '🔴 **تم إيقاف الذكاء الاصطناعي!** ما راح يرد تلقائياً.',
+                ? '🟢 **اشتغلت الردود التلقائية.**'
+                : '🔴 **انطفت الردود التلقائية.**',
             flags: MessageFlags.Ephemeral
         });
     }
 
-    // ── 🎮 تغيير حالة البوت ─────────────────────────────────────────────────
+    // تغيير حالة البوت
     if (id === 'owner_set_status') {
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('status_btn_playing').setLabel('🎮 يلعب').setStyle(ButtonStyle.Primary),
@@ -240,10 +226,10 @@ async function handleOwnerInteraction(interaction) {
             new ButtonBuilder().setCustomId('status_btn_listening').setLabel('🎧 يستمع').setStyle(ButtonStyle.Primary),
             new ButtonBuilder().setCustomId('status_btn_competing').setLabel('🏆 يتنافس').setStyle(ButtonStyle.Primary),
         );
-        return interaction.reply({ content: '👇 **اختر نوع نشاط البوت:**', components: [row], flags: MessageFlags.Ephemeral });
+        return interaction.reply({ content: 'اختار شنو يبين كنشاط البوت:', components: [row], flags: MessageFlags.Ephemeral });
     }
 
-    // ── 💰 تحكم الاقتصاد ─────────────────────────────────────────────────────
+    // تحكم الاقتصاد
     if (id === 'owner_economy') {
         const allUsers = db.getAllUsers() || {};
         let totalWealth = 0;
@@ -276,7 +262,7 @@ async function handleOwnerInteraction(interaction) {
         return interaction.update({ embeds: [embed], components: [row] });
     }
 
-    // ── 💸 منح أموال ─────────────────────────────────────────────────────────
+    // منح أموال
     if (id === 'owner_give_money') {
         const modal = new ModalBuilder()
             .setCustomId('owner_give_money_modal')
@@ -293,7 +279,7 @@ async function handleOwnerInteraction(interaction) {
         return interaction.showModal(modal);
     }
 
-    // ── 💀 سحب أموال ─────────────────────────────────────────────────────────
+    // سحب أموال
     if (id === 'owner_take_money') {
         const modal = new ModalBuilder()
             .setCustomId('owner_take_money_modal')
@@ -310,7 +296,7 @@ async function handleOwnerInteraction(interaction) {
         return interaction.showModal(modal);
     }
 
-    // ── 🎮 تحكم الألعاب ──────────────────────────────────────────────────────
+    // تحكم الألعاب
     if (id === 'owner_games') {
         const settings = botSettings.getAll();
         const disabled = settings.disabledCommands || [];
@@ -337,14 +323,14 @@ async function handleOwnerInteraction(interaction) {
         return interaction.update({ embeds: [embed], components: rows });
     }
 
-    // ── ✅ تفعيل جميع الألعاب ───────────────────────────────────────────────
+    // تفعيل جميع الألعاب
     if (id === 'owner_enable_all_games') {
         const games = ['trivia', 'hangman', 'ttt', 'rps', 'casino', 'blackjack', 'slots', 'wordguess'];
         for (const g of games) botSettings.enableCommand(g);
-        return interaction.reply({ content: '✅ **تم تفعيل جميع الألعاب!**', flags: MessageFlags.Ephemeral });
+        return interaction.reply({ content: 'اشتغلت كل الألعاب.', flags: MessageFlags.Ephemeral });
     }
 
-    // ── ⚙️ الإعدادات ──────────────────────────────────────────────────────────
+    // الإعدادات
     if (id === 'owner_settings') {
         const s = botSettings.getAll();
         const embed = new EmbedBuilder()
@@ -372,17 +358,17 @@ async function handleOwnerInteraction(interaction) {
         return interaction.update({ embeds: [embed], components: [row, row2] });
     }
 
-    // ── 💬 تبديل الرسائل التلقائية ──────────────────────────────────────────
+    // تبديل الرسائل التلقائية
     if (id === 'owner_toggle_auto_messages') {
         const current = botSettings.get('autoMessagesEnabled') !== false;
         botSettings.set('autoMessagesEnabled', !current);
         return interaction.reply({
-            content: !current ? '🟢 تم تفعيل الرسائل التلقائية!' : '🔴 تم إيقاف الرسائل التلقائية!',
+            content: !current ? '🟢 اشتغلت الرسائل التلقائية.' : '🔴 انطفت الرسائل التلقائية.',
             flags: MessageFlags.Ephemeral
         });
     }
 
-    // ── 🛡️ تبديل حماية الحسابات الجديدة ──────────────────────────────────────────
+    // تبديل حماية الحسابات الجديدة
     if (id === 'owner_toggle_protection') {
         const current = botSettings.get('antiRaidAccountAgeEnabled') !== false;
         botSettings.set('antiRaidAccountAgeEnabled', !current);
@@ -414,7 +400,7 @@ async function handleOwnerInteraction(interaction) {
         return interaction.update({ embeds: [embed], components: [row, row2] });
     }
 
-    // ── 📡 تغيير تكرار AI ────────────────────────────────────────────────────
+    // تغيير تكرار AI
     if (id === 'owner_set_ai_freq') {
         const modal = new ModalBuilder()
             .setCustomId('owner_ai_freq_modal')
@@ -432,7 +418,7 @@ async function handleOwnerInteraction(interaction) {
         return interaction.showModal(modal);
     }
 
-    // ── 📢 البث ────────────────────────────────────────────────────────────────
+    // البث
     if (id === 'owner_broadcast') {
         const modal = new ModalBuilder()
             .setCustomId('owner_broadcast_modal')
@@ -449,7 +435,7 @@ async function handleOwnerInteraction(interaction) {
         return interaction.showModal(modal);
     }
 
-    // ── 🌐 قائمة السيرفرات ────────────────────────────────────────────────────
+    // قائمة السيرفرات
     if (id === 'owner_servers') {
         const guilds = interaction.client.guilds.cache;
         const lines  = [...guilds.values()].map(g =>
@@ -459,7 +445,7 @@ async function handleOwnerInteraction(interaction) {
         const embed = new EmbedBuilder()
             .setColor(COLORS.info)
             .setTitle(`🌐 السيرفرات (${guilds.size})`)
-            .setDescription(lines.slice(0, 3800) || 'لا يوجد سيرفرات')
+            .setDescription(lines.slice(0, 3800) || 'البوت مو داخل أي سيرفر.')
             .setTimestamp();
 
         return interaction.update({ embeds: [embed], components: [
@@ -469,7 +455,7 @@ async function handleOwnerInteraction(interaction) {
         ] });
     }
 
-    // ── 📊 إحصائيات مفصّلة ───────────────────────────────────────────────────
+    // إحصائيات مفصّلة
     if (id === 'owner_stats_full') {
         const allUsers = db.getAllUsers() || {};
         let totalW = 0, maxW = 0, richUser = 'لا أحد';
@@ -503,14 +489,14 @@ async function handleOwnerInteraction(interaction) {
         ] });
     }
 
-    // ── ↩️ رجوع للرئيسية ─────────────────────────────────────────────────────
+    // رجوع للرئيسية
     if (id === 'owner_back') {
         const embed   = await buildMainDashboard(interaction.client);
         const buttons = buildDashboardButtons();
         return interaction.update({ embeds: [embed], components: buttons });
     }
 
-    // ── 🔴 تعطيل أمر ─────────────────────────────────────────────────────────
+    // تعطيل أمر
     if (id === 'owner_disable_cmd_modal') {
         const modal = new ModalBuilder().setCustomId('owner_disable_cmd_input').setTitle('🔴 تعطيل أمر');
         modal.addComponents(new ActionRowBuilder().addComponents(
@@ -519,7 +505,7 @@ async function handleOwnerInteraction(interaction) {
         return interaction.showModal(modal);
     }
 
-    // ── 🟢 تفعيل أمر ─────────────────────────────────────────────────────────
+    // تفعيل أمر
     if (id === 'owner_enable_cmd_modal') {
         const modal = new ModalBuilder().setCustomId('owner_enable_cmd_input').setTitle('🟢 تفعيل أمر');
         modal.addComponents(new ActionRowBuilder().addComponents(
@@ -529,9 +515,7 @@ async function handleOwnerInteraction(interaction) {
     }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// ── معالج المودالز ───────────────────────────────────────────────────────────
-// ══════════════════════════════════════════════════════════════════════════════
+// معالج المودالز
 async function handleOwnerModal(interaction) {
     if (interaction.user.id !== config.ownerId) {
         return interaction.reply({ content: '❌ هذا المودال حصري للمالك!', flags: MessageFlags.Ephemeral });
@@ -539,7 +523,7 @@ async function handleOwnerModal(interaction) {
 
     const id = interaction.customId;
 
-    // ── بث رسالة ────────────────────────────────────────────────────────────
+    // بث رسالة
     if (id === 'owner_broadcast_modal') {
         const title = interaction.fields.getTextInputValue('broadcast_title');
         const msg   = interaction.fields.getTextInputValue('broadcast_message');
@@ -565,28 +549,28 @@ async function handleOwnerModal(interaction) {
             } catch { failed++; }
         }
 
-        return interaction.editReply({ content: `✅ **تم البث!**\n📤 نجح: **${sent}** سيرفر\n❌ فشل: **${failed}** سيرفر` });
+        return interaction.editReply({ content: `خلص البث.\nوصل لـ **${sent}** سيرفر\nما وصل لـ **${failed}** سيرفر` });
     }
 
-    // ── منح أموال ────────────────────────────────────────────────────────────
+    // منح أموال
     if (id === 'owner_give_money_modal') {
         const rawId  = interaction.fields.getTextInputValue('give_userId').replace(/[<@!>]/g, '');
         const amount = parseInt(interaction.fields.getTextInputValue('give_amount').replace(/,/g, ''));
 
         if (isNaN(amount) || amount <= 0) {
-            return interaction.reply({ content: '❌ مبلغ غير صحيح!', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: 'المبلغ مو صحيح.', flags: MessageFlags.Ephemeral });
         }
 
         const actual = db.addMoney(rawId, amount);
         db.addTransaction(rawId, 'owner_give', amount, `منح من المالك`);
 
         return interaction.reply({
-            content: `✅ **تم منح \`${actual.toLocaleString()} ${config.currency}\` لـ <@${rawId}>**`,
+            content: `انضاف \`${actual.toLocaleString()} ${config.currency}\` لرصيد <@${rawId}>.`,
             flags: MessageFlags.Ephemeral
         });
     }
 
-    // ── سحب أموال ────────────────────────────────────────────────────────────
+    // سحب أموال
     if (id === 'owner_take_money_modal') {
         const rawId   = interaction.fields.getTextInputValue('take_userId').replace(/[<@!>]/g, '');
         const rawAmt  = interaction.fields.getTextInputValue('take_amount');
@@ -597,51 +581,49 @@ async function handleOwnerModal(interaction) {
         if (rawAmt.includes('كل') || rawAmt.includes('all')) {
             db.updateUserData(rawId, { balance: 0, bank: 0 });
             db.addTransaction(rawId, 'owner_take', total, 'سحب كل الأموال من المالك');
-            return interaction.reply({ content: `💀 **تم سحب كل أموال <@${rawId}> (${total.toLocaleString()})**`, flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: `انسحب كل رصيد <@${rawId}> (${total.toLocaleString()}).`, flags: MessageFlags.Ephemeral });
         }
 
         const amount = parseInt(rawAmt.replace(/,/g, ''));
-        if (isNaN(amount) || amount <= 0) return interaction.reply({ content: '❌ مبلغ غير صحيح!', flags: MessageFlags.Ephemeral });
+        if (isNaN(amount) || amount <= 0) return interaction.reply({ content: 'المبلغ لازم يكون رقم أكبر من صفر.', flags: MessageFlags.Ephemeral });
 
         const done = db.removeMoney(rawId, Math.min(amount, userData.balance || 0));
         db.addTransaction(rawId, 'owner_take', amount, 'سحب من المالك');
-        return interaction.reply({ content: `💀 **تم سحب \`${amount.toLocaleString()}\` من <@${rawId}>**`, flags: MessageFlags.Ephemeral });
+        return interaction.reply({ content: `انسحب \`${amount.toLocaleString()}\` من رصيد <@${rawId}>.`, flags: MessageFlags.Ephemeral });
     }
 
-    // ── تغيير تكرار AI ───────────────────────────────────────────────────────
+    // تغيير تكرار AI
     if (id === 'owner_ai_freq_modal') {
         const freq = parseInt(interaction.fields.getTextInputValue('freq_value'));
         if (isNaN(freq) || freq < 1 || freq > 100) {
-            return interaction.reply({ content: '❌ الرقم يجب يكون بين 1 و 100!', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: 'اختار رقم من 1 إلى 100.', flags: MessageFlags.Ephemeral });
         }
         botSettings.set('aiRandomReplyFrequency', freq);
-        return interaction.reply({ content: `✅ **تم تغيير التكرار: كل \`${freq}\` رسالة**`, flags: MessageFlags.Ephemeral });
+        return interaction.reply({ content: `صار الرد التلقائي كل \`${freq}\` رسالة.`, flags: MessageFlags.Ephemeral });
     }
 
-    // ── تعطيل أمر ────────────────────────────────────────────────────────────
+    // تعطيل أمر
     if (id === 'owner_disable_cmd_input') {
         const cmd = interaction.fields.getTextInputValue('cmd_name').toLowerCase().trim();
         const done = botSettings.disableCommand(cmd);
         return interaction.reply({
-            content: done ? `🔴 **تم تعطيل الأمر \`${cmd}\`!**` : `⚠️ الأمر \`${cmd}\` كان معطّل مسبقاً.`,
+            content: done ? `🔴 انطفى الأمر \`${cmd}\`.` : `⚠️ الأمر \`${cmd}\` مطفي من قبل.`,
             flags: MessageFlags.Ephemeral
         });
     }
 
-    // ── تفعيل أمر ────────────────────────────────────────────────────────────
+    // تفعيل أمر
     if (id === 'owner_enable_cmd_input') {
         const cmd = interaction.fields.getTextInputValue('cmd_name').toLowerCase().trim();
         const done = botSettings.enableCommand(cmd);
         return interaction.reply({
-            content: done ? `🟢 **تم تفعيل الأمر \`${cmd}\`!**` : `⚠️ الأمر \`${cmd}\` كان مفعّل مسبقاً.`,
+            content: done ? `🟢 اشتغل الأمر \`${cmd}\`.` : `⚠️ الأمر \`${cmd}\` شغال من قبل.`,
             flags: MessageFlags.Ephemeral
         });
     }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// ── إشعار بدء التشغيل ───────────────────────────────────────────────────────
-// ══════════════════════════════════════════════════════════════════════════════
+// إشعار بدء التشغيل
 async function notifyOwnerOnStartup(client) {
     try {
         const owner = await client.users.fetch(config.ownerId);
@@ -670,13 +652,11 @@ async function notifyOwnerOnStartup(client) {
         const dmCh = await owner.createDM();
         await dmCh.send({ embeds: [embed], components: buildDashboardButtons() });
     } catch (err) {
-        console.warn('[OwnerDashboard] ما أقدرت أرسل إشعار البدء:', err.message);
+        appLogger.warn('[OwnerDashboard] ما أقدرت أرسل إشعار البدء:', err.message);
     }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// ── تصدير ────────────────────────────────────────────────────────────────────
-// ══════════════════════════════════════════════════════════════════════════════
+// تصدير
 module.exports = {
     name: 'owner-dashboard',
     aliases: ['ownerhelp'],

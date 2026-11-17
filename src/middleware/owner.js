@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../../utils/app-logger');
 
 const config = require('../../config');
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
@@ -8,7 +9,7 @@ module.exports = async function ownerMiddleware(message) {
 
     const lowMsg = message.content.toLowerCase().trim();
 
-    // ── 🔑 أوامر المالك الخاصة — #1 أو داشبورد → يرسل رابط لوحة التحكم عبر DM
+    // أوامر المالك الخاصة — #1 أو داشبورد يرسل رابط لوحة التحكم عبر DM
     const ownerTriggers = ['#1', '!#1', 'داشبورد', 'dashboard', '!داشبورد', '!dashboard', 'لوحة', 'panel'];
     if (ownerTriggers.includes(lowMsg)) {
         try {
@@ -59,7 +60,7 @@ module.exports = async function ownerMiddleware(message) {
             // تأكيد مرئي في القناة
             await message.react('✅').catch(() => {});
         } catch (e) {
-            console.error('[DashboardDM] خطأ:', e.message);
+            appLogger.error('[DashboardDM] خطأ:', e.message);
         }
         return false; // Stop pipeline
     }
@@ -71,7 +72,7 @@ module.exports = async function ownerMiddleware(message) {
             const ownerDashboard = require('../../commands/main/owner-dashboard');
             await ownerDashboard.sendOwnerDashboard(message);
         } catch (e) {
-            console.error('[OwnerDashboard] خطأ:', e.message);
+            appLogger.error('[OwnerDashboard] خطأ:', e.message);
         }
         return false; // Stop pipeline
     }

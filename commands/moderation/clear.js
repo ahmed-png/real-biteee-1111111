@@ -5,7 +5,7 @@ const { hasPermOrOwner, getAuthor } = require('../../utils/permissions');
 module.exports = {
     name: 'clear',
     aliases: ['مسح', 'تنظيف', 'حذف_رسائل', 'purge', 'clean'],
-    description: 'حذف عدد معين من الرسائل',
+    description: 'يمسح عدد تحدده من الرسائل',
     usage: 'clear <number>',
     permissions: [PermissionFlagsBits.ManageMessages],
 
@@ -15,14 +15,14 @@ module.exports = {
 
         // صاحب البوت يتخطى فحص الصلاحيات
         if (!hasPermOrOwner(context.member, PermissionFlagsBits.ManageMessages)) {
-            const msg = '❌ ليس لديك صلاحية لحذف الرسائل!';
+            const msg = '❌ ما عندك صلاحية تمسح الرسائل.';
             return isInteraction ? context.reply({ content: msg, ephemeral: true }) : context.reply(msg);
         }
 
         const amount = parseInt(args[0]);
 
         if (isNaN(amount) || amount <= 0 || amount > 100) {
-            const msg = '❌ يرجى تحديد عدد رسائل بين 1 و 100!';
+            const msg = '❌ حدّد عدد الرسائل من 1 إلى 100.';
             return isInteraction ? context.reply({ content: msg, ephemeral: true }) : context.reply(msg);
         }
 
@@ -30,7 +30,7 @@ module.exports = {
         if (isInteraction) {
             await context.deferReply({ ephemeral: true });
             await context.channel.bulkDelete(amount, true);
-            const embed = PremiumEmbedBuilder.info('🧹 تنظيف الرسائل', `تم حذف **${amount}** رسالة بنجاح.`);
+            const embed = PremiumEmbedBuilder.info('🧹 مسح الرسائل', `انمسحت **${amount}** رسالة.`);
             return context.editReply({ embeds: [embed] });
         }
 
@@ -38,8 +38,8 @@ module.exports = {
         await context.channel.bulkDelete(amount, true);
 
         const embed = PremiumEmbedBuilder.info(
-            '🧹 تنظيف الرسائل',
-            `تم حذف **${amount}** رسالة بنجاح.`
+            '🧹 مسح الرسائل',
+            `انمسحت **${amount}** رسالة.`
         );
 
         const msg = await context.channel.send({ embeds: [embed] });

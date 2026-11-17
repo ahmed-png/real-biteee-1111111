@@ -7,17 +7,17 @@ const { hasPermOrOwner } = require('../../utils/permissions');
 module.exports = {
     name: 'warnings',
     aliases: ['تحذيرات', 'انذارات'],
-    description: 'عرض تحذيرات عضو معين وإمكانية إزالتها',
+    description: 'يعرض تحذيرات عضو وتگدر تشيلها',
     usage: 'تحذيرات @user',
     
     async execute(message, args) {
         if (!hasPermOrOwner(message.member, PermissionFlagsBits.ModerateMembers)) {
-            return message.reply('❌ ليس لديك صلاحية عرض/إدارة التحذيرات!');
+            return message.reply('❌ ما عندك صلاحية تعرض التحذيرات أو تديرها.');
         }
 
         const target = message.mentions.users.first();
         if (!target) {
-            return message.reply('❌ الرجاء منشن العضو لعرض تحذيراته.\nمثال: `تحذيرات @شخص`');
+            return message.reply('❌ منشن العضو حتى أعرض تحذيراته.\nمثال: `تحذيرات @شخص`');
         }
 
         const userData = db.getUserData(target.id);
@@ -29,8 +29,8 @@ module.exports = {
                 embeds: [
                     new EmbedBuilder()
                         .setColor('#57F287')
-                        .setTitle('✅ سجل نظيف')
-                        .setDescription(`> العضو ${target} ليس لديه أي تحذيرات.`)
+                        .setTitle('✅ سجله نظيف')
+                        .setDescription(`> العضو ${target} ما عليه أي تحذير.`)
                         .setTimestamp()
                 ]
             });
@@ -38,15 +38,15 @@ module.exports = {
 
         const embed = new EmbedBuilder()
             .setColor('#FFA500')
-            .setTitle(`⚠️ سجل تحذيرات: ${target.username}`)
-            .setDescription(`> الإجمالي: **${warnings}** تحذيرات\n\n**تفاصيل التحذيرات:**`)
+            .setTitle(`⚠️ تحذيرات ${target.username}`)
+            .setDescription(`> مجموع التحذيرات: **${warnings}**\n\n**تفاصيل التحذيرات:**`)
             .setThumbnail(target.displayAvatarURL())
             .setTimestamp();
 
         warnLogs.forEach((log, index) => {
-            const dateStr = log.date ? `<t:${Math.floor(log.date / 1000)}:R>` : 'تاريخ غير معروف';
+            const dateStr = log.date ? `<t:${Math.floor(log.date / 1000)}:R>` : 'التاريخ مو معروف';
             embed.addFields({
-                name: `التحذير #${index + 1}`,
+                name: `التحذير رقم ${index + 1}`,
                 value: `> 📝 **السبب:** ${log.reason}\n> 👮 **المسؤول:** <@${log.author}>\n> 📅 **التاريخ:** ${dateStr}`,
                 inline: false
             });
@@ -55,7 +55,7 @@ module.exports = {
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId(`clear_warns_${target.id}_${message.author.id}`)
-                .setLabel('🗑️ إزالة جميع التحذيرات')
+                .setLabel('🗑️ شيل كل التحذيرات')
                 .setStyle(ButtonStyle.Danger)
         );
 

@@ -11,9 +11,9 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags
 const db = require('../../utils/database');
 const config = require('../../config');
 
-// ─── قائمة الإنجازات الشاملة ──────────────────────────────────────────────────
+// قائمة الإنجازات الشاملة
 const ACHIEVEMENTS = {
-    // ── الاقتصاد ──────────────────────────────────────────────────────────────
+    // الاقتصاد
     first_daily: {
         name: '🌅 أول يوم',
         desc: 'احصل على مكافأتك اليومية لأول مرة',
@@ -99,7 +99,7 @@ const ACHIEVEMENTS = {
         secret: false
     },
     
-    // ── الألعاب ────────────────────────────────────────────────────────────────
+    // الألعاب
     first_game: {
         name: '🎮 أول لعبة',
         desc: 'العب لعبة لأول مرة',
@@ -157,7 +157,7 @@ const ACHIEVEMENTS = {
         secret: true
     },
 
-    // ── المستويات ─────────────────────────────────────────────────────────────
+    // المستويات
     level_5: {
         name: '🌱 ناشئ',
         desc: 'ارفع مستواك إلى 5',
@@ -194,7 +194,7 @@ const ACHIEVEMENTS = {
         secret: true
     },
 
-    // ── الاجتماعي ─────────────────────────────────────────────────────────────
+    // الاجتماعي
     first_marry: {
         name: '💍 قلب يحب',
         desc: 'تزوج لأول مرة',
@@ -217,7 +217,7 @@ const ACHIEVEMENTS = {
         secret: false
     },
 
-    // ── السرية ───────────────────────────────────────────────────────────────
+    // السرية
     night_owl: {
         name: '🦉 بومة الليل',
         desc: 'كن نشطاً بعد منتصف الليل',
@@ -241,7 +241,7 @@ const ACHIEVEMENTS = {
     },
 };
 
-// ─── دالة منح الإنجاز ─────────────────────────────────────────────────────────
+// دالة منح الإنجاز
 async function grantAchievement(userId, achievementId, message = null) {
     const userData = db.getUserData(userId);
     const achievements = userData.achievements || [];
@@ -289,7 +289,7 @@ async function grantAchievement(userId, achievementId, message = null) {
     return true;
 }
 
-// ─── فحص الإنجازات تلقائياً ──────────────────────────────────────────────────
+// فحص الإنجازات تلقائياً
 async function checkAchievements(userId, action, data = {}, message = null) {
     const userData = db.getUserData(userId);
     const granted = [];
@@ -375,7 +375,7 @@ async function checkAchievements(userId, action, data = {}, message = null) {
     return granted;
 }
 
-// ─── أمر عرض الإنجازات ───────────────────────────────────────────────────────
+// أمر عرض الإنجازات
 module.exports = {
     name: 'achievements', aliases: ['انجازات', 'إنجازات', 'medals', 'ميداليات'],
     description: 'عرض إنجازاتك وتقدمك',
@@ -427,7 +427,7 @@ module.exports = {
                 `> **التقدم:** \`${progress}\` إنجاز`,
                 `> **المكافآت المحققة:** \`${totalReward.toLocaleString()} ${config.currency}\``,
                 '',
-                '> اختر فئة لرؤية الإنجازات المفصلة'
+                '> اختار الفئة حتى تشوف إنجازاتها'
             ].join('\n'));
 
         for (const [key, cat] of Object.entries(categories)) {

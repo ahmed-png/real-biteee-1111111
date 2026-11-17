@@ -1,3 +1,4 @@
+const appLogger = require('../../utils/app-logger');
 const db = require('../../utils/database');
 const config = require('../../config');
 const { PremiumEmbedBuilder, ICONS } = require('../../utils/embed-builder');
@@ -5,7 +6,7 @@ const { PremiumEmbedBuilder, ICONS } = require('../../utils/embed-builder');
 module.exports = {
     name: 'deposit',
     aliases: ['ايداع', 'ادخر', 'dep'],
-    description: 'تحويل الأموال من المحفظة إلى البنك',
+    description: 'حوّل فلوسك من المحفظة للبنك',
     usage: 'deposit <amount | all>',
 
     async execute(message, args) {
@@ -29,19 +30,19 @@ module.exports = {
 
             // حماية صارمة من الثغرات
             if (isNaN(amount) || !Number.isFinite(amount) || amount <= 0 || amount % 1 !== 0) {
-                return message.reply('❌ يرجى إدخال مبلغ صحيح وصالح! (لا يمكن استخدام الكسور أو الأرقام السالبة).');
+                return message.reply('❌ دخّل مبلغ صحيح! ما يصير كسور أو أرقام سالبة.');
             }
-            if (bal < amount) return message.reply(`❌ رصيدك لا يكفي! محفظتك: **${bal.toLocaleString()}** ${config.currency}`);
+            if (bal < amount) return message.reply(`❌ رصيدك ما يكفي! بمحفظتك: **${bal.toLocaleString()}** ${config.currency}`);
 
             const newBalance = (userData.balance || 0) - amount;
             const newBank = (userData.bank || 0) + amount;
 
             db.updateFields(message.author.id, { balance: newBalance, bank: newBank });
-            db.addTransaction(message.author.id, 'deposit', amount, 'Deposited to bank');
+            db.addTransaction(message.author.id, 'deposit', amount, 'إيداع بالبنك');
 
             const embed = PremiumEmbedBuilder.economy(
-                '🏦 إيداع بنكي',
-                `تم إيداع **${amount.toLocaleString()} ${config.currency}** في حسابك البنكي.`,
+                '🏦 إيداع بالبنك',
+                `حطّيت **${amount.toLocaleString()} ${config.currency}** بحسابك بالبنك.`,
                 [
                     { name: '💰 المحفظة', value: `${newBalance.toLocaleString()} ${config.currency}`, inline: true },
                     { name: '🏦 البنك', value: `${newBank.toLocaleString()} ${config.currency}`, inline: true }
@@ -50,8 +51,8 @@ module.exports = {
 
             message.reply({ embeds: [embed] });
         } catch (error) {
-            console.error('[deposit error]:', error);
-            message.reply('❌ حدث خطأ في أمر الإيداع.').catch(() => { });
+            appLogger.error('[deposit error]:', error);
+            message.reply('❌ صار خطأ بأمر الإيداع.').catch(() => { });
         }
     }
 };

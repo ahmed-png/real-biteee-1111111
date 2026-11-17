@@ -8,14 +8,14 @@ const levels = require('../../utils/levels');
 module.exports = {
     name: 'collect',
     aliases: ['جمع', 'coll'],
-    description: 'جمع أرباح الاستثمار اليومية (2% يومياً، أقصى 30 يوم)',
+    description: 'اجمع أرباح استثمارك اليومية (2% باليوم، لحد 30 يوم)',
     usage: '!جمع',
 
     async execute(message) {
         const userData = db.getUserData(message.author.id);
 
         if (!userData.investment || userData.investment === 0) {
-            return message.reply('❌ ليس لديك أي استثمارات!\nاكتب `!استثمار <مبلغ>` للبدء.');
+            return message.reply('❌ ما عندك استثمارات!\nاكتب `!استثمار <مبلغ>` حتى تبدي.');
         }
 
         const now = Date.now();
@@ -34,7 +34,7 @@ module.exports = {
             const timeLeft = msPerDay - (now - lastCollect);
             const hours = Math.floor(timeLeft / 3600000);
             const minutes = Math.floor((timeLeft % 3600000) / 60000);
-            return message.reply(`⏰ يمكنك جمع أرباحك بعد **${hours} ساعة و ${minutes} دقيقة**!`);
+            return message.reply(`⏰ تگدر تجمع أرباحك بعد **${hours} ساعة و ${minutes} دقيقة**!`);
         }
 
         const rate = config.investmentRate || 0.02;
@@ -45,24 +45,24 @@ module.exports = {
 
         const actualAdded = db.addMoney(message.author.id, safeProfit);
         db.updateFields(message.author.id, { lastCollect: now });
-        db.addTransaction(message.author.id, 'invest_profit', actualAdded, `Investment Profit: ${daysPassed} days`);
+        db.addTransaction(message.author.id, 'invest_profit', actualAdded, `ربح الاستثمار: ${daysPassed} يوم`);
 
         // XP مناسب
         levels.addXP(message.author.id, Math.min(Math.floor(safeProfit / 100), 50), message);
 
         const embed = new EmbedBuilder()
             .setColor('#00FF7F')
-            .setTitle('💰 جمع أرباح الاستثمار!')
+            .setTitle('💰 جمعت أرباح الاستثمار!')
             .setDescription(
-                `✅ تم جمع **${actualAdded.toLocaleString()} ${config.currency}** من أرباح **${daysPassed}** يوم!` +
-                (rawDays > maxDays ? `\n⚠️ *تم تحديد الجمع بـ${maxDays} يوم كحد أقصى*` : '')
+                `✅ جمعت **${actualAdded.toLocaleString()} ${config.currency}** أرباح عن **${daysPassed}** يوم!` +
+                (rawDays > maxDays ? `\n⚠️ *الجمع محدود بـ${maxDays} يوم كحد أقصى*` : '')
             )
             .addFields(
                 { name: '💰 محفظتك', value: `${((userData.balance || 0) + safeProfit).toLocaleString()} ${config.currency}`, inline: true },
                 { name: '💼 استثمارك', value: `${userData.investment.toLocaleString()} ${config.currency}`, inline: true },
-                { name: '📈 الربح اليومي', value: `${Math.floor(userData.investment * rate).toLocaleString()} ${config.currency}`, inline: true }
+                { name: '📈 ربحك اليومي', value: `${Math.floor(userData.investment * rate).toLocaleString()} ${config.currency}`, inline: true }
             )
-            .setFooter({ text: 'عُد يومياً لجمع أرباحك!' })
+            .setFooter({ text: 'ارجع كل يوم واجمع أرباحك!' })
             .setTimestamp();
 
         message.reply({ embeds: [embed] });

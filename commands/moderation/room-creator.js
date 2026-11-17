@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../../utils/app-logger');
 
 /**
  * ╔══════════════════════════════════════════════════════════════════╗
@@ -17,7 +18,7 @@ const db = require('../../utils/database');
 const fs = require('fs');
 const path = require('path');
 
-// ─── ملف الغرف ─────────────────────────────────────────────────────────────
+// ملف الغرف
 const ROOMS_FILE = path.join(__dirname, '../../data/custom-rooms.json');
 let _rooms = null;
 let _dirty = false;
@@ -47,13 +48,13 @@ setInterval(_saveRooms, 60_000).unref?.();
 process.on('SIGINT', _saveRooms);
 process.on('SIGTERM', _saveRooms);
 
-// ─── الثوابت ───────────────────────────────────────────────────────────────
+// الثوابت
 const ROOM_COST = 2500;
 const ROOM_RENEW_COST = 1000;
 const ROOM_DURATION = 7 * 24 * 60 * 60 * 1000;
 const ROOM_INACTIVE_LIMIT = 48 * 60 * 60 * 1000;
 
-// ─── الألعاب المدعومة (8 ألعاب) ────────────────────────────────────────────
+// الألعاب المدعومة (8 ألعاب)
 const SUPPORTED_GAMES = {
     // Among Us
     'امونق اص':       { emoji: '👾', color: '#FF0000', icon: '🔴', displayName: 'Among Us' },
@@ -76,7 +77,7 @@ const SUPPORTED_GAMES = {
     'ماين كرافت':     { emoji: '⛏️', color: '#2ECC71', icon: '🟩', displayName: 'Minecraft' },
     'ماينكرافت':      { emoji: '⛏️', color: '#2ECC71', icon: '🟩', displayName: 'Minecraft' },
     'minecraft':      { emoji: '⛏️', color: '#2ECC71', icon: '🟩', displayName: 'Minecraft' },
-    // 🌟 Mobile Legends
+    // Mobile Legends
     'موبايل ليجند':   { emoji: '🌟', color: '#FF6B35', icon: '🌟', displayName: 'Mobile Legends' },
     'موبايل ليجندز':  { emoji: '🌟', color: '#FF6B35', icon: '🌟', displayName: 'Mobile Legends' },
     'mobile legends': { emoji: '🌟', color: '#FF6B35', icon: '🌟', displayName: 'Mobile Legends' },
@@ -105,7 +106,7 @@ function detectGame(text) {
     return { key: 'custom', emoji: '🏠', color: '#9B59B6', icon: '🏠', displayName: 'غرفة خاصة' };
 }
 
-// ─── إنشاء غرفة جديدة ─────────────────────────────────────────────────────
+// إنشاء غرفة جديدة
 async function createRoom(message, roomName, gameName, interactionReply = null) {
     const guild = message?.guild || interactionReply?.guild;
     const userId = message?.author?.id || interactionReply?.user?.id;
@@ -121,13 +122,13 @@ async function createRoom(message, roomName, gameName, interactionReply = null) 
     if ((userData.balance || 0) < ROOM_COST) {
         const embed = new EmbedBuilder()
             .setColor('#E74C3C')
-            .setTitle('❌ رصيد غير كافٍ')
+            .setTitle('❌ رصيدك ما يكفي')
             .setDescription([
-                `> 💰 **رصيدك الحالي:** \`${(userData.balance || 0).toLocaleString()}\` 💰`,
-                `> 💸 **تكلفة الغرفة:** \`${ROOM_COST.toLocaleString()}\` 💰`,
-                `> 💔 **الناقص:** \`${(ROOM_COST - (userData.balance || 0)).toLocaleString()}\` 💰`,
+                `> 💰 **رصيدك هسه:** \`${(userData.balance || 0).toLocaleString()}\` 💰`,
+                `> 💸 **سعر الغرفة:** \`${ROOM_COST.toLocaleString()}\` 💰`,
+                `> 💔 **اللي ناقصك:** \`${(ROOM_COST - (userData.balance || 0)).toLocaleString()}\` 💰`,
                 '',
-                '> اكتب `عمل` أو `يومي` لكسب عملات!',
+                '> اكتب `عمل` أو `يومي` حتى تجمع عملات.',
             ].join('\n'))
             .setTimestamp();
         return replyFn({ embeds: [embed] });
@@ -140,11 +141,11 @@ async function createRoom(message, roomName, gameName, interactionReply = null) 
         const ch = guild.channels.cache.get(existingRoom.channelId);
         const embed = new EmbedBuilder()
             .setColor('#FF8C00')
-            .setTitle('⚠️ لديك غرفة بالفعل!')
+            .setTitle('⚠️ عندك غرفة من قبل!')
             .setDescription([
-                `> 🏠 **غرفتك الحالية:** ${ch ? ch.toString() : '(لم تُوجد)'} — **${existingRoom.name}**`,
-                '> اكتب `غرفتي` لإدارة غرفتك',
-                '> أو اكتب `حذف غرفة` لحذف الغرفة الحالية أولاً',
+                `> 🏠 **غرفتك الحالية:** ${ch ? ch.toString() : '(مو موجودة)'} — **${existingRoom.name}**`,
+                '> اكتب `غرفتي` حتى تدير غرفتك.',
+                '> أو اكتب `حذف غرفة` حتى تحذفها بالبداية.',
             ].join('\n'))
             .setTimestamp();
         return replyFn({ embeds: [embed] });
@@ -164,7 +165,7 @@ async function createRoom(message, roomName, gameName, interactionReply = null) 
         roomsCategory = await guild.channels.create({
             name: '🏠 الغرف المخصصة',
             type: ChannelType.GuildCategory,
-            reason: 'إنشاء فئة الغرف المخصصة',
+            reason: 'إنشاء فئة الغرف الخاصة',
         }).catch(() => null);
     }
 
@@ -220,8 +221,8 @@ async function createRoom(message, roomName, gameName, interactionReply = null) 
         });
 
     } catch (err) {
-        console.error('[RoomCreator] خطأ في إنشاء القناة:', err.message);
-        return replyFn({ content: '❌ فشل إنشاء الغرفة! تأكد من صلاحيات البوت.' });
+        appLogger.error('[RoomCreator] خطأ في إنشاء القناة:', err.message);
+        return replyFn({ content: '❌ ما كدرت أنشئ الغرفة. تأكد إن البوت عنده الصلاحيات المطلوبة.' });
     }
 
     // خصم الرصيد
@@ -256,22 +257,22 @@ async function createRoom(message, roomName, gameName, interactionReply = null) 
         .setDescription([
             `> 🎮 **اللعبة:** ${game.displayName}`,
             `> 👑 **المالك:** <@${userId}>`,
-            `> ⏰ **تنتهي في:** <t:${Math.floor((Date.now() + ROOM_DURATION) / 1000)}:R>`,
+            `> ⏰ **تنتهي:** <t:${Math.floor((Date.now() + ROOM_DURATION) / 1000)}:R>`,
             '',
-            '**🔑 صلاحياتك كمالك الغرفة:**',
-            '✅ حذف رسائل الأعضاء',
-            '✅ كتم أعضاء في الصوتي',
-            '✅ طرد أعضاء من الصوتي',
-            '✅ قفل/فتح الغرفة',
-            '✅ تغيير اسم وموضوع الغرفة',
+            '**🔑 شتگدر تسوي بصفتك مالك الغرفة:**',
+            '✅ تمسح رسائل الأعضاء',
+            '✅ تكتم أعضاء بالروم الصوتي',
+            '✅ تنقل أعضاء من الروم الصوتي',
+            '✅ تقفل الغرفة أو تفتحها',
+            '✅ تغيّر اسم الغرفة ووصفها',
         ].join('\n'))
-        .setFooter({ text: `تكلفت ${ROOM_COST.toLocaleString()} 💰 • صالحة 7 أيام` })
+        .setFooter({ text: `سعرها ${ROOM_COST.toLocaleString()} 💰 • صالحة لمدة 7 أيام` })
         .setTimestamp();
 
     const roomRow = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId(`room_renew_${roomId}`)
-            .setLabel('🔄 تجديد (+7 أيام)')
+            .setLabel('🔄 جدّدها (+7 أيام)')
             .setStyle(ButtonStyle.Success),
         new ButtonBuilder()
             .setCustomId(`room_lock_${roomId}`)
@@ -292,16 +293,16 @@ async function createRoom(message, roomName, gameName, interactionReply = null) 
     // رسالة التأكيد للمستخدم
     const confirmEmbed = new EmbedBuilder()
         .setColor(game.color)
-        .setTitle('🎉 تم إنشاء غرفتك بنجاح!')
+        .setTitle('🎉 انعملت غرفتك!')
         .setDescription([
             `> 🏠 **الغرفة النصية:** ${textChannel}`,
             `> 🎤 **الغرفة الصوتية:** ${voiceChannel}`,
             `> 🎮 **اللعبة:** ${game.emoji} ${game.displayName}`,
-            `> 💰 **المدفوع:** \`${ROOM_COST.toLocaleString()}\` 💰`,
-            `> 💰 **الرصيد المتبقي:** \`${((userData.balance || 0) - ROOM_COST).toLocaleString()}\` 💰`,
+            `> 💰 **اللي اندفع:** \`${ROOM_COST.toLocaleString()}\` 💰`,
+            `> 💰 **الباقي برصيدك:** \`${((userData.balance || 0) - ROOM_COST).toLocaleString()}\` 💰`,
             `> ⏰ **تنتهي:** <t:${Math.floor((Date.now() + ROOM_DURATION) / 1000)}:R>`,
         ].join('\n'))
-        .setFooter({ text: 'انتقل إلى غرفتك الآن! 🚀' })
+        .setFooter({ text: 'روح لغرفتك هسه! 🚀' })
         .setTimestamp();
 
     if (interactionReply) {
@@ -311,7 +312,7 @@ async function createRoom(message, roomName, gameName, interactionReply = null) 
     }
 }
 
-// ─── عرض قائمة الغرف ──────────────────────────────────────────────────────
+// عرض قائمة الغرف
 async function listRooms(message) {
     const rooms = _loadRooms();
     const guildRooms = Object.values(rooms).filter(r =>
@@ -323,10 +324,10 @@ async function listRooms(message) {
             .setColor('#9B59B6')
             .setTitle('🏠 الغرف المخصصة')
             .setDescription([
-                '> **لا توجد غرف نشطة حالياً**',
+                '> ماكو غرف شغّالة حالياً.',
                 '',
-                '> اكتب `غرفة جديدة [اسم] [لعبة]` لإنشاء غرفتك!',
-                `> 💰 **التكلفة:** \`${ROOM_COST.toLocaleString()}\` 💰`,
+                '> اكتب `غرفة جديدة [اسم] [لعبة]` حتى تسوي غرفتك!',
+                `> 💰 **السعر:** \`${ROOM_COST.toLocaleString()}\` 💰`,
             ].join('\n'))
             .setTimestamp();
 
@@ -356,7 +357,7 @@ async function listRooms(message) {
                 `> 📣 ${ch ? ch.toString() : '(محذوفة)'}`,
                 `> 👑 <@${room.ownerId}>`,
                 `> 🎮 ${room.gameDisplay || room.game}`,
-                `> ⏰ ${days}ي ${hours}س متبقية`,
+                `> ⏰ باقي ${days} يوم و${hours} ساعة`,
             ].join('\n'),
             inline: true,
         });
@@ -365,7 +366,7 @@ async function listRooms(message) {
     await message.reply({ embeds: [embed] });
 }
 
-// ─── إدارة الغرفة ──────────────────────────────────────────────────────────
+// إدارة الغرفة
 async function manageRoom(message) {
     const rooms = _loadRooms();
     const myRoom = Object.values(rooms).find(r =>
@@ -375,12 +376,12 @@ async function manageRoom(message) {
     if (!myRoom) {
         const embed = new EmbedBuilder()
             .setColor('#E74C3C')
-            .setTitle('❌ ليس لديك غرفة')
+            .setTitle('❌ ما عندك غرفة')
             .setDescription([
-                '> لا تملك غرفة نشطة حالياً!',
+                '> ما عندك غرفة شغّالة حالياً.',
                 '',
-                '> اكتب `غرفة جديدة [اسم] [لعبة]` لإنشاء واحدة',
-                `> 💰 **التكلفة:** \`${ROOM_COST.toLocaleString()}\` 💰`,
+                '> اكتب `غرفة جديدة [اسم] [لعبة]` حتى تسوي وحدة.',
+                `> 💰 **السعر:** \`${ROOM_COST.toLocaleString()}\` 💰`,
             ].join('\n'))
             .setTimestamp();
         return message.reply({ embeds: [embed] });
@@ -397,21 +398,21 @@ async function manageRoom(message) {
         .setColor(myRoom.gameColor || '#9B59B6')
         .setTitle(`${myRoom.gameEmoji || '🏠'} إدارة غرفتك — ${myRoom.name}`)
         .addFields(
-            { name: '📣 القناة النصية',  value: ch ? ch.toString() : '(غير موجودة)', inline: true },
-            { name: '🎤 القناة الصوتية', value: vc ? vc.toString() : '(غير موجودة)', inline: true },
+            { name: '📣 القناة النصية',  value: ch ? ch.toString() : '(مو موجودة)', inline: true },
+            { name: '🎤 القناة الصوتية', value: vc ? vc.toString() : '(مو موجودة)', inline: true },
             { name: '🎮 اللعبة',          value: myRoom.gameDisplay || myRoom.game, inline: true },
-            { name: '⏰ المتبقي',          value: `${days} يوم و ${hours} ساعة`, inline: true },
+            { name: '⏰ باقي',          value: `${days} يوم و ${hours} ساعة`, inline: true },
             { name: '💰 رصيدك',           value: `\`${(userData.balance || 0).toLocaleString()}\` 💰`, inline: true },
-            { name: '🔄 تجديد',           value: `\`${ROOM_RENEW_COST.toLocaleString()}\` 💰 (+7 أيام)`, inline: true },
+            { name: '🔄 التجديد',           value: `\`${ROOM_RENEW_COST.toLocaleString()}\` 💰 (+7 أيام)`, inline: true },
             { name: '🔒 الحالة',           value: myRoom.isLocked ? '🔒 مقفلة' : '🔓 مفتوحة', inline: true },
-            { name: '📅 أُنشئت',          value: `<t:${Math.floor(myRoom.createdAt / 1000)}:R>`, inline: true },
+            { name: '📅 انعملت',          value: `<t:${Math.floor(myRoom.createdAt / 1000)}:R>`, inline: true },
         )
         .setTimestamp();
 
     const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId(`room_renew_${myRoom.id}`)
-            .setLabel('🔄 تجديد 7 أيام')
+            .setLabel('🔄 جدّدها 7 أيام')
             .setStyle(ButtonStyle.Success),
         new ButtonBuilder()
             .setCustomId(`room_lock_${myRoom.id}`)
@@ -430,19 +431,19 @@ async function manageRoom(message) {
     await message.reply({ embeds: [embed], components: [row] });
 }
 
-// ─── تجديد الغرفة ─────────────────────────────────────────────────────────
+// تجديد الغرفة
 async function renewRoom(interaction, roomId) {
     const rooms = _loadRooms();
     const room = rooms[roomId];
 
     if (!room || room.ownerId !== interaction.user.id) {
-        return interaction.reply({ content: '❌ هذه ليست غرفتك!', flags: MessageFlags.Ephemeral });
+        return interaction.reply({ content: '❌ هذي مو غرفتك.', flags: MessageFlags.Ephemeral });
     }
 
     const userData = db.getUserData(interaction.user.id);
     if ((userData.balance || 0) < ROOM_RENEW_COST) {
         return interaction.reply({
-            content: `❌ رصيدك غير كافٍ! تحتاج \`${ROOM_RENEW_COST.toLocaleString()}\` 💰 للتجديد.\n> رصيدك: \`${(userData.balance || 0).toLocaleString()}\` 💰`,
+            content: `❌ رصيدك ما يكفي. تحتاج \`${ROOM_RENEW_COST.toLocaleString()}\` 💰 حتى تجدّد.\n> رصيدك: \`${(userData.balance || 0).toLocaleString()}\` 💰`,
             flags: MessageFlags.Ephemeral,
         });
     }
@@ -456,11 +457,11 @@ async function renewRoom(interaction, roomId) {
     await interaction.reply({
         embeds: [new EmbedBuilder()
             .setColor('#2ECC71')
-            .setTitle('✅ تم تجديد الغرفة!')
+            .setTitle('✅ تجددت الغرفة!')
             .setDescription([
                 `> 🏠 **الغرفة:** ${room.name}`,
-                `> ⏰ **تنتهي الآن في:** <t:${Math.floor(room.expiresAt / 1000)}:R>`,
-                `> 💰 **تم خصم:** \`${ROOM_RENEW_COST.toLocaleString()}\` 💰`,
+                `> ⏰ **تنتهي:** <t:${Math.floor(room.expiresAt / 1000)}:R>`,
+                `> 💰 **انخصم:** \`${ROOM_RENEW_COST.toLocaleString()}\` 💰`,
             ].join('\n'))
             .setTimestamp()
         ],
@@ -468,7 +469,7 @@ async function renewRoom(interaction, roomId) {
     });
 }
 
-// ─── حذف الغرفة ────────────────────────────────────────────────────────────
+// حذف الغرفة
 async function deleteRoom(message) {
     const rooms = _loadRooms();
     const myRoom = Object.values(rooms).find(r =>
@@ -476,7 +477,7 @@ async function deleteRoom(message) {
     );
 
     if (!myRoom) {
-        return message.reply('❌ ليس لديك غرفة لحذفها!');
+        return message.reply('❌ ما عندك غرفة حتى تحذفها.');
     }
 
     const ch = message.guild.channels.cache.get(myRoom.channelId);
@@ -491,14 +492,14 @@ async function deleteRoom(message) {
     await message.reply({
         embeds: [new EmbedBuilder()
             .setColor('#E74C3C')
-            .setTitle('🗑️ تم حذف الغرفة')
-            .setDescription(`> **تم حذف غرفة \"${myRoom.name}\" بنجاح.**`)
+            .setTitle('🗑️ انحذفت الغرفة')
+            .setDescription(`> **انحذفت غرفة \"${myRoom.name}\".**`)
             .setTimestamp()
         ]
     });
 }
 
-// ─── تنظيف الغرف المنتهية ──────────────────────────────────────────────────
+// تنظيف الغرف المنتهية
 async function cleanupExpiredRooms(client) {
     const rooms = _loadRooms();
     const now = Date.now();
@@ -522,8 +523,8 @@ async function cleanupExpiredRooms(client) {
                                 .setColor('#E74C3C')
                                 .setTitle('⏰ انتهت مدة غرفتك')
                                 .setDescription([
-                                    `> 🏠 **غرفتك:** ${room.name} في **${guild.name}** قد انتهت مدتها وتم حذفها.`,
-                                    '> اكتب `غرفة جديدة` لإنشاء غرفة جديدة.',
+                                    `> 🏠 **غرفتك:** ${room.name} بـ **${guild.name}** انتهت مدتها وانحذفت.`,
+                                    '> اكتب `غرفة جديدة` حتى تسوي غرفة ثانية.',
                                 ].join('\n'))
                                 .setTimestamp()
                             ]
@@ -537,16 +538,16 @@ async function cleanupExpiredRooms(client) {
         }
     }
 
-    if (deleted > 0) console.log(`[RoomCreator] 🗑️ تم حذف ${deleted} غرفة منتهية`);
+    if (deleted > 0) appLogger.info(`[RoomCreator] تم حذف ${deleted} غرفة منتهية`);
     return deleted;
 }
 
-// ─── معالج الغرف السريعة (من أزرار شرح الغرف) ────────────────────────────
+// معالج الغرف السريعة (من أزرار شرح الغرف)
 async function handleQuickRoomButton(interaction) {
     const gameKey = interaction.customId.replace('quickroom_', '');
     const gameData = QUICK_GAME_MAP[gameKey];
 
-    if (!gameData) return interaction.reply({ content: '❌ لعبة غير معروفة!', flags: MessageFlags.Ephemeral });
+    if (!gameData) return interaction.reply({ content: '❌ ما أعرف هاللعبة.', flags: MessageFlags.Ephemeral });
 
     // نافذة Modal لكتابة اسم الغرفة
     const modal = new ModalBuilder()
@@ -566,7 +567,7 @@ async function handleQuickRoomButton(interaction) {
     await interaction.showModal(modal);
 }
 
-// ─── معالج Modal إنشاء الغرفة ────────────────────────────────────────────
+// معالج Modal إنشاء الغرفة
 async function handleQuickRoomModal(interaction) {
     const gameKey = interaction.customId.replace('quickroom_modal_', '');
     const gameData = QUICK_GAME_MAP[gameKey];
@@ -577,7 +578,7 @@ async function handleQuickRoomModal(interaction) {
     await createRoom(null, roomName, gameData?.key || gameKey, interaction);
 }
 
-// ─── معالج التفاعلات الرئيسي ────────────────────────────────────────────────
+// معالج التفاعلات الرئيسي
 async function handleRoomInteraction(interaction) {
     const id = interaction.customId;
 
@@ -596,20 +597,20 @@ async function handleRoomInteraction(interaction) {
         const rooms = _loadRooms();
         const room = rooms[roomId];
 
-        if (!room) return interaction.reply({ content: '❌ الغرفة غير موجودة!', flags: MessageFlags.Ephemeral });
+        if (!room) return interaction.reply({ content: '❌ الغرفة مو موجودة.', flags: MessageFlags.Ephemeral });
 
         // التحقق من الملكية أو الإدارة
         const isOwner = room.ownerId === interaction.user.id;
         const isAdmin = interaction.member?.permissions.has(PermissionFlagsBits.Administrator);
         if (!isOwner && !isAdmin) {
-            return interaction.reply({ content: '❌ هذه ليست غرفتك!', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: '❌ هذي مو غرفتك.', flags: MessageFlags.Ephemeral });
         }
 
         // رسالة تأكيد الحذف
         const confirmRow = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId(`room_confirm_delete_${roomId}`)
-                .setLabel('✅ نعم، احذف')
+                .setLabel('✅ إي، احذفها')
                 .setStyle(ButtonStyle.Danger),
             new ButtonBuilder()
                 .setCustomId('room_cancel_delete')
@@ -621,7 +622,7 @@ async function handleRoomInteraction(interaction) {
             embeds: [new EmbedBuilder()
                 .setColor('#E74C3C')
                 .setTitle('⚠️ تأكيد الحذف')
-                .setDescription(`> هل أنت متأكد من حذف غرفة **${room.name}**؟`)
+                .setDescription(`> متأكد تريد تحذف غرفة **${room.name}**؟`)
             ],
             components: [confirmRow],
             flags: MessageFlags.Ephemeral,
@@ -633,7 +634,7 @@ async function handleRoomInteraction(interaction) {
         const rooms = _loadRooms();
         const room = rooms[roomId];
 
-        if (!room) return interaction.update({ content: '❌ الغرفة غير موجودة!', components: [] });
+        if (!room) return interaction.update({ content: '❌ الغرفة مو موجودة.', components: [] });
 
         const guild = interaction.guild;
         const ch = guild.channels.cache.get(room.channelId);
@@ -646,13 +647,13 @@ async function handleRoomInteraction(interaction) {
         _dirty = true;
 
         return interaction.update({
-            embeds: [new EmbedBuilder().setColor('#E74C3C').setTitle('🗑️ تم حذف الغرفة').setDescription(`> تم حذف **${room.name}** بنجاح.`)],
+            embeds: [new EmbedBuilder().setColor('#E74C3C').setTitle('🗑️ انحذفت الغرفة').setDescription(`> انحذفت **${room.name}**.`)],
             components: [],
         });
     }
 
     if (id === 'room_cancel_delete') {
-        return interaction.update({ content: '❌ تم إلغاء الحذف.', components: [], embeds: [] });
+        return interaction.update({ content: '❌ انلغى الحذف.', components: [], embeds: [] });
     }
 
     if (id.startsWith('room_lock_')) {
@@ -661,11 +662,11 @@ async function handleRoomInteraction(interaction) {
         const room = rooms[roomId];
 
         if (!room || room.ownerId !== interaction.user.id) {
-            return interaction.reply({ content: '❌ هذه ليست غرفتك!', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: '❌ هذي مو غرفتك.', flags: MessageFlags.Ephemeral });
         }
 
         const ch = interaction.guild.channels.cache.get(room.channelId);
-        if (!ch) return interaction.reply({ content: '❌ القناة غير موجودة!', flags: MessageFlags.Ephemeral });
+        if (!ch) return interaction.reply({ content: '❌ القناة مو موجودة.', flags: MessageFlags.Ephemeral });
 
         const isLocked = room.isLocked || false;
 
@@ -679,10 +680,10 @@ async function handleRoomInteraction(interaction) {
         return interaction.reply({
             embeds: [new EmbedBuilder()
                 .setColor(room.isLocked ? '#E74C3C' : '#2ECC71')
-                .setTitle(room.isLocked ? '🔒 تم قفل الغرفة!' : '🔓 تم فتح الغرفة!')
+                .setTitle(room.isLocked ? '🔒 انقفلت الغرفة!' : '🔓 انفتحت الغرفة!')
                 .setDescription(room.isLocked
-                    ? '> لا أحد يستطيع الكتابة إلا أنت الآن.'
-                    : '> يستطيع الجميع الكتابة الآن.'
+                    ? '> هسه بس إنت تگدر تكتب بيها.'
+                    : '> هسه الكل يگدر يكتب بيها.'
                 )
                 .setTimestamp()
             ],
@@ -695,7 +696,7 @@ async function handleRoomInteraction(interaction) {
         const rooms = _loadRooms();
         const room = rooms[roomId];
 
-        if (!room) return interaction.reply({ content: '❌ الغرفة غير موجودة!', flags: MessageFlags.Ephemeral });
+        if (!room) return interaction.reply({ content: '❌ الغرفة مو موجودة.', flags: MessageFlags.Ephemeral });
 
         const remaining = Math.max(0, room.expiresAt - Date.now());
         const days = Math.floor(remaining / 86400000);
@@ -708,9 +709,9 @@ async function handleRoomInteraction(interaction) {
                 { name: '🏠 الاسم',    value: room.name, inline: true },
                 { name: '🎮 اللعبة',  value: room.gameDisplay || room.game, inline: true },
                 { name: '👑 المالك',   value: `<@${room.ownerId}>`, inline: true },
-                { name: '⏰ المتبقي',  value: `${days} يوم و ${hours} ساعة`, inline: true },
+                { name: '⏰ باقي',  value: `${days} يوم و ${hours} ساعة`, inline: true },
                 { name: '🔒 الحالة',  value: room.isLocked ? '🔒 مقفلة' : '🔓 مفتوحة', inline: true },
-                { name: '📅 أُنشئت',  value: `<t:${Math.floor(room.createdAt / 1000)}:R>`, inline: true },
+                { name: '📅 انعملت',  value: `<t:${Math.floor(room.createdAt / 1000)}:R>`, inline: true },
             )
             .setTimestamp();
 
@@ -718,11 +719,11 @@ async function handleRoomInteraction(interaction) {
     }
 }
 
-// ─── تصدير الوحدة ──────────────────────────────────────────────────────────
+// تصدير الوحدة
 module.exports = {
     name: 'room-creator',
     aliases: ['غرفة جديدة', 'غرفة-جديدة', 'new-room', 'create-room'],
-    description: 'إنشاء غرفة مخصصة',
+    description: 'يسوي غرفة خاصة',
     category: 'غرف',
 
     async execute(message, args) {
@@ -739,11 +740,11 @@ module.exports = {
             const myRoom = Object.values(rooms).find(r =>
                 r.ownerId === message.author.id && r.guildId === message.guild.id
             );
-            if (!myRoom) return message.reply('❌ ليس لديك غرفة للتجديد!');
+            if (!myRoom) return message.reply('❌ ما عندك غرفة حتى تجدّدها.');
 
             const userData = db.getUserData(message.author.id);
             if ((userData.balance || 0) < ROOM_RENEW_COST) {
-                return message.reply(`❌ تحتاج \`${ROOM_RENEW_COST.toLocaleString()}\` 💰 للتجديد! رصيدك: \`${(userData.balance || 0).toLocaleString()}\` 💰`);
+                return message.reply(`❌ تحتاج \`${ROOM_RENEW_COST.toLocaleString()}\` 💰 حتى تجدّدها. رصيدك: \`${(userData.balance || 0).toLocaleString()}\` 💰`);
             }
 
             db.removeMoney(message.author.id, ROOM_RENEW_COST);
@@ -754,10 +755,10 @@ module.exports = {
             return message.reply({
                 embeds: [new EmbedBuilder()
                     .setColor('#2ECC71')
-                    .setTitle('✅ تم تجديد الغرفة!')
+                    .setTitle('✅ تجددت الغرفة!')
                     .setDescription([
                         `> 🏠 **الغرفة:** ${myRoom.name}`,
-                        `> ⏰ **تنتهي الآن في:** <t:${Math.floor(myRoom.expiresAt / 1000)}:R>`,
+                        `> ⏰ **تنتهي:** <t:${Math.floor(myRoom.expiresAt / 1000)}:R>`,
                     ].join('\n'))
                     .setTimestamp()
                 ]

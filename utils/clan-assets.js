@@ -1,3 +1,4 @@
+const appLogger = require('./app-logger');
 const { ChannelType, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const clanManager = require('./clan-manager');
 
@@ -44,7 +45,7 @@ async function createClanAssets(guild, clan, leaderMember) {
         currentStep = 'Assigning Roles to Leader';
         // إعطاء رتبة القائد (والعضو أيضاً لتوحيد الوصول) للعضو المؤسس
         await leaderMember.roles.add([createdRoles.leader, createdRoles.member]).catch((e) => {
-            console.warn(`Failed to assign roles to leader: ${e.message}`);
+            appLogger.warn(`Failed to assign roles to leader: ${e.message}`);
             // لا نوقف العملية هنا، فقط تحذير
         });
 
@@ -80,7 +81,7 @@ async function createClanAssets(guild, clan, leaderMember) {
             });
             await textChannel.lockPermissions().catch(() => { });
             createdChannels.text = textChannel;
-        } catch (e) { console.error('Error creating text channel:', e); }
+        } catch (e) { appLogger.error('Error creating text channel:', e); }
 
         // 4. إنشاء روم التحكم (سري للإدارة فقط)
         currentStep = 'Creating Admin Channel';
@@ -99,7 +100,7 @@ async function createClanAssets(guild, clan, leaderMember) {
                 ]
             });
             createdChannels.admin = adminChannel;
-        } catch (e) { console.error('Error creating admin channel:', e); }
+        } catch (e) { appLogger.error('Error creating admin channel:', e); }
 
         // 5. إنشاء الروم الصوتي
         currentStep = 'Creating Voice Channel';
@@ -115,7 +116,7 @@ async function createClanAssets(guild, clan, leaderMember) {
                 ]
             });
             createdChannels.voice = voiceChannel;
-        } catch (e) { console.error('Error creating voice channel:', e); }
+        } catch (e) { appLogger.error('Error creating voice channel:', e); }
 
         // 6. حفظ المعرفات
         currentStep = 'Saving Assets to DB';
@@ -141,10 +142,10 @@ async function createClanAssets(guild, clan, leaderMember) {
         return { success: true, textChannel: createdChannels.text || createdChannels.admin };
 
     } catch (error) {
-        console.error(`Create Clan Assets Error at step [${currentStep}]:`, error);
+        appLogger.error(`Create Clan Assets Error at step [${currentStep}]:`, error);
 
         if (error.code === 50013) {
-            return { success: false, error: `البوت لا يملك صلاحيات كافية (Missing Permissions)! فشل أثناء: **${currentStep}**.` };
+            return { success: false, error: `البوت ما عنده الصلاحيات المطلوبة حتى يكمل: **${currentStep}**.` };
         }
         return { success: false, error: `خطأ غير متوقع (${error.message}) أثناء: **${currentStep}**` };
     }
@@ -157,8 +158,8 @@ async function sendClanDashboard(channel, clan) {
         .setColor('#2B2D31')
         .setTitle(`🏰 لوحة إدارة كلان ${clan.name}`)
         .setDescription(`
-**أهلاً بك في غرفة القيادة!** 🛡️
-هنا يمكنك التحكم في إعدادات الكلان وإدارة الأعضاء.
+**هلا بيك بلوحة الكلان.** 🛡️
+من هنا تدير إعدادات الكلان وأعضاءه.
 
 👑 **الصلاحيات:** للقائد والنواب فقط (حسب الأزرار).
 🔇 **الشات:** للقراءة فقط، استخدم الأزرار للتفاعل.
@@ -207,7 +208,7 @@ async function deleteClanAssets(guild, clan) {
 
         return true;
     } catch (error) {
-        console.error('Delete Clan Assets Error:', error);
+        appLogger.error('Delete Clan Assets Error:', error);
         return false;
     }
 }
@@ -276,7 +277,7 @@ async function renameClanAssets(guild, clan, newName) {
             }
         }
     } catch (e) {
-        console.error('Error renaming clan assets:', e);
+        appLogger.error('Error renaming clan assets:', e);
     }
 }
 

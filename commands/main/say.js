@@ -12,8 +12,8 @@ module.exports = {
 
         const text = args.join(' ');
         if (!text) {
-            if (isInteraction) return context.reply({ content: '❌ يرجى كتابة النص الذي تريدني أن أقوله!', ephemeral: true });
-            return context.reply('❌ يرجى كتابة النص الذي تريدني أن أقوله!');
+            if (isInteraction) return context.reply({ content: 'اكتبلي النص اللي تريدني أكوله.', ephemeral: true });
+            return context.reply('اكتبلي النص اللي تريدني أكوله.');
         }
 
         // حذف رسالة المستخدم إذا كانت رسالة عادية

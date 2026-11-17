@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../../../utils/app-logger');
 
 /**
  * ════════════════════════════════════════════════════════
@@ -17,8 +18,8 @@ const { resolveRuntimeSecret } = require('../../../utils/runtime-secrets');
 const JWT_SECRET = resolveRuntimeSecret('JWT_SECRET', process.env.JWT_SECRET, 32);
 const DASHBOARD_KEY = resolveRuntimeSecret('DASHBOARD_KEY', process.env.DASHBOARD_KEY, 16);
 if (process.env.NODE_ENV !== 'production') {
-    if (JWT_SECRET !== process.env.JWT_SECRET) console.warn('[Auth] Generated a temporary development JWT_SECRET.');
-    if (DASHBOARD_KEY !== process.env.DASHBOARD_KEY) console.warn('[Auth] Generated a temporary development DASHBOARD_KEY.');
+    if (JWT_SECRET !== process.env.JWT_SECRET) appLogger.warn('[Auth] Generated a temporary development JWT_SECRET.');
+    if (DASHBOARD_KEY !== process.env.DASHBOARD_KEY) appLogger.warn('[Auth] Generated a temporary development DASHBOARD_KEY.');
 }
 const BOT_OWNER_ID = process.env.OWNER_ID;
 const loginAttempts = new Map();
@@ -98,12 +99,12 @@ function loginWithKey(req, res, includeAdmin = false) {
     return res.json({ success: true, token: signToken(payload), role: 'bot_owner' });
 }
 
-// ─── Sign JWT ─────────────────────────────────────────────────────────────────
+// Sign JWT
 function signToken(payload) {
     return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
 }
 
-// ─── Verify Middleware ─────────────────────────────────────────────────────────
+// Verify Middleware
 const verifyToken = (req, res, next) => {
     const auth = req.headers['authorization'];
     const token = auth?.startsWith('Bearer ') ? auth.slice(7) : null;
@@ -117,7 +118,7 @@ const verifyToken = (req, res, next) => {
     }
 };
 
-// ─── Bot Owner Middleware ──────────────────────────────────────────────────────
+// Bot Owner Middleware
 const requireBotOwner = (req, res, next) => {
     verifyToken(req, res, () => {
         if (req.user?.role !== 'bot_owner') {
@@ -127,7 +128,7 @@ const requireBotOwner = (req, res, next) => {
     });
 };
 
-// ─── Server Owner Middleware ───────────────────────────────────────────────────
+// Server Owner Middleware
 const requireServerOwner = (req, res, next) => {
     verifyToken(req, res, async () => {
         const guildId = req.params.guildId;
@@ -161,9 +162,7 @@ const requireServerOwner = (req, res, next) => {
     });
 };
 
-// ──────────────────────────────────────────────────────────────────────────────
 // 1. Bot Owner Login (مفتاح سري)
-// ──────────────────────────────────────────────────────────────────────────────
 router.post('/bot-owner/login', (req, res) => {
     return loginWithKey(req, res);
 });
@@ -173,9 +172,7 @@ router.post('/login', (req, res) => {
     return loginWithKey(req, res, true);
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // 2. Discord OAuth2 — Server Owner Login
-// ──────────────────────────────────────────────────────────────────────────────
 router.get('/discord', (req, res) => {
     if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET) {
         return res.status(500).json({ success: false, error: 'Discord OAuth is not fully configured. Set DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET.' });
@@ -255,14 +252,12 @@ router.get('/discord/callback', async (req, res) => {
         // Redirect to frontend with token
         res.redirect(`/#token=${encodeURIComponent(jwtToken)}&role=${encodeURIComponent(role)}`);
     } catch (err) {
-        console.error('[Auth] Discord OAuth sign-in failed:', err.message);
+        appLogger.error('[Auth] Discord OAuth sign-in failed:', err.message);
         res.redirect('/?error=discord_login_failed');
     }
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // 3. Verify Token endpoint
-// ──────────────────────────────────────────────────────────────────────────────
 router.get('/me', verifyToken, async (req, res) => {
     const user = req.user;
     const client = req.app.get('client');
@@ -304,9 +299,7 @@ router.get('/me', verifyToken, async (req, res) => {
     });
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // 4. Logout
-// ──────────────────────────────────────────────────────────────────────────────
 router.post('/logout', (req, res) => {
     res.json({ success: true });
 });

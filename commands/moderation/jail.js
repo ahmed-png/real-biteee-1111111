@@ -5,7 +5,7 @@ const { hasPermOrOwner, getAuthor } = require('../../utils/permissions');
 module.exports = {
     name: 'jail',
     aliases: ['سجن', 'حبس'],
-    description: 'سجن عضو ومنعه من رؤية الرومات',
+    description: 'يسجن عضو ويمنعه من يشوف القنوات',
     usage: 'jail @user [reason]',
     permissions: [PermissionFlagsBits.ModerateMembers],
 
@@ -15,7 +15,7 @@ module.exports = {
 
         // صاحب البوت يتخطى فحص الصلاحيات
         if (!hasPermOrOwner(context.member, PermissionFlagsBits.ModerateMembers)) {
-            const msg = '❌ ليس لديك صلاحية لاستخدام هذا الأمر!';
+            const msg = '❌ ما عندك صلاحية تستخدم هالأمر.';
             return isInteraction ? context.reply({ content: msg, ephemeral: true }) : context.reply(msg);
         }
 
@@ -26,8 +26,8 @@ module.exports = {
         let jailRole = guildData.jailRole ? context.guild.roles.cache.get(guildData.jailRole) : null;
         if (!jailRole) jailRole = context.guild.roles.cache.find(r => r.name === '🔒┃سجين' || r.name === 'Jailed' || r.name === 'مسجون');
 
-        if (!target) return context.reply('❌ منشن الشخص!');
-        if (!jailRole) return context.reply('❌ رتبة السجن غير موجودة! استخدم `!setup` أولاً.');
+        if (!target) return context.reply('❌ منشن العضو اللي تريد تسجنه.');
+        if (!jailRole) return context.reply('❌ رتبة السجن مو موجودة. استخدم `!setup` بالبداية.');
 
         await target.roles.add(jailRole, reason);
 
@@ -38,7 +38,7 @@ module.exports = {
 
         const embed = PremiumEmbedBuilder.moderation(
             '⚖️ سجن عضو',
-            `تم إرسال العضو **${target.user.username}** إلى السجن.`,
+            `انسجن العضو **${target.user.username}**.`,
             [{ name: '📝 السبب', value: reason }],
             author
         );

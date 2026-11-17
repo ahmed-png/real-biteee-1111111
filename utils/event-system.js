@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('./app-logger');
 
 /**
  * ╔══════════════════════════════════════════════════════════════════════════╗
@@ -41,7 +42,7 @@ class BotEventSystem extends EventEmitter {
                 const result = await mw(enriched);
                 if (result === false) return; // إلغاء الحدث
             } catch (e) {
-                console.error(`[EventSystem] Middleware error:`, e.message);
+                appLogger.error(`[EventSystem] Middleware error:`, e.message);
             }
         }
 
@@ -125,7 +126,7 @@ botEvents.use(async (event) => {
     return true;
 });
 
-// ─── أحداث البوت الرئيسية ───────────────────────────────────────────────────
+// أحداث البوت الرئيسية
 const EVENTS = {
     // اقتصاد
     ECONOMY_TRANSACTION: 'economy:transaction',

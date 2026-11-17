@@ -1,12 +1,5 @@
 'use strict';
 
-/**
- * ─────────────────────────────────────────────────────────────────────────────
- * status.js — تغيير حالة البوت (للمالك فقط)
- * ✅ التخزين: MongoDB عبر bot-settings (بدلاً من data/status.json)
- * ─────────────────────────────────────────────────────────────────────────────
- */
-
 const {
     ActivityType, ActionRowBuilder, ButtonBuilder, ButtonStyle,
     ModalBuilder, TextInputBuilder, TextInputStyle, EmbedBuilder
@@ -29,13 +22,13 @@ const ACTIVITY_TYPES = {
     'يتنافس':     { type: ActivityType.Competing, str: 'COMPETING', label: 'يتنافس في',  emoji: '🏆' },
 };
 
-// ─── تحديث الحالة وحفظها في MongoDB ──────────────────────────────────────────
+// تحديث الحالة وحفظها في MongoDB
 async function updateStatus(client, activityType, typeString, text, statusType = 'online') {
     client.user.setPresence({
         activities: [{ name: text, type: activityType }],
         status: statusType,
     });
-    // ✅ حفظ في MongoDB عبر bot-settings
+    // حفظ في MongoDB عبر bot-settings
     botSettings.set('botStatus', { type: typeString, text, status: statusType });
 }
 
@@ -47,7 +40,7 @@ module.exports = {
 
     async execute(message, args) {
         if (message.author.id !== config.ownerId) {
-            return message.reply('❌ هذا الأمر مخصص لصاحب البوت فقط!');
+            return message.reply('هالأمر خاص بمالك البوت.');
         }
 
         if (args.length === 0) {
@@ -55,14 +48,14 @@ module.exports = {
             const current = botSettings.get('botStatus');
             const embed = new EmbedBuilder()
                 .setColor('#5865F2')
-                .setTitle('🎭 إدارة حالة البوت')
+                .setTitle('تغيير حالة البوت')
                 .setDescription([
                     '**الحالة الحالية:**',
                     current?.text
                         ? `> ${current.type}: **${current.text}**`
-                        : '> لا توجد حالة محفوظة',
+                        : '> ماكو حالة محفوظة.',
                     '',
-                    '**اختر نوع النشاط الجديد:**',
+                    '**اختار شنو يسوي البوت:**',
                 ].join('\n'));
 
             const row = new ActionRowBuilder().addComponents(
@@ -95,32 +88,32 @@ module.exports = {
             text         = args.join(' ');
         }
 
-        if (!text) return message.reply('❌ يجب كتابة نص الحالة!');
+        if (!text) return message.reply('اكتب الحالة اللي تريدها.');
 
         await updateStatus(message.client, activityType, typeString, text);
         await message.reply({
             embeds: [new EmbedBuilder()
                 .setColor('#2ECC71')
-                .setTitle('✅ تم تحديث الحالة')
+                .setTitle('تبدلت الحالة')
                 .setDescription(`> **${typeString}:** ${text}`)
-                .setFooter({ text: '🗄️ محفوظة في MongoDB' })
+                .setFooter({ text: 'انحفظت حتى تبقى بعد إعادة التشغيل.' })
             ]
         });
     },
 
     async handleStatusInteraction(interaction) {
         if (interaction.user.id !== config.ownerId) {
-            return interaction.reply({ content: '❌ هذا الأمر مخصص لصاحب البوت فقط!', ephemeral: true });
+            return interaction.reply({ content: 'هالأمر خاص بمالك البوت.', ephemeral: true });
         }
 
         if (interaction.customId.startsWith('status_btn_')) {
             const typeKey = interaction.customId.replace('status_btn_', '');
             const modal = new ModalBuilder()
                 .setCustomId(`status_modal_${typeKey}`)
-                .setTitle('تغيير نص الحالة');
+                .setTitle('اكتب الحالة الجديدة');
             const textInput = new TextInputBuilder()
                 .setCustomId('status_text')
-                .setLabel('النص الذي سيظهر في حالة البوت')
+                .setLabel('النص اللي يبين بحالة البوت')
                 .setStyle(TextInputStyle.Short)
                 .setRequired(true)
                 .setMaxLength(128);
@@ -135,9 +128,9 @@ module.exports = {
             await interaction.reply({
                 embeds: [new EmbedBuilder()
                     .setColor('#2ECC71')
-                    .setTitle('✅ تم تحديث الحالة')
+                    .setTitle('تبدلت الحالة')
                     .setDescription(`> ${typeConfig.emoji} **${typeConfig.label}:** ${text}`)
-                    .setFooter({ text: '🗄️ محفوظة في MongoDB — تستمر بعد الريستارت' })
+                    .setFooter({ text: 'انحفظت وتبقى بعد إعادة التشغيل.' })
                 ],
                 ephemeral: true
             });

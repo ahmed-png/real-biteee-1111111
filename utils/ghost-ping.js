@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('./app-logger');
 
 /**
  * Ghost Ping — مرتبط بـ bot-settings (معطّل افتراضياً)
@@ -18,11 +19,11 @@ class GhostPing {
 
         // معطّل افتراضياً — يتحقق من bot-settings
         if (!botSettings.get('ghostPingEnabled')) {
-            console.log('👻 [GhostPing] معطّل (يمكن تفعيله من Dashboard)');
+            appLogger.info('[GhostPing] معطّل (يمكن تفعيله من Dashboard)');
             return;
         }
 
-        console.log('👻 [GhostPing] مفعّل');
+        appLogger.info('[GhostPing] مفعّل');
         this._start();
     }
 

@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../utils/app-logger');
 
 /**
  * scripts/deploy-commands.js
@@ -19,7 +20,7 @@ const clientId = process.env.CLIENT_ID || config.clientId;
 const testGuildId = process.env.TEST_GUILD_ID || config.testGuildId;
 
 if (!token || !clientId) {
-    console.error('[Deploy] Missing TOKEN or CLIENT_ID in config/env');
+    appLogger.error('[Deploy] Missing TOKEN or CLIENT_ID in config/env');
     process.exit(1);
 }
 
@@ -45,7 +46,7 @@ function loadAllCommands() {
                     });
                 }
             } catch (e) {
-                console.warn('[Deploy] Skipped', entry.name, '-', e.message);
+                appLogger.warn('[Deploy] Skipped', entry.name, '-', e.message);
             }
         }
     }
@@ -59,29 +60,29 @@ async function deploy() {
     const commands = loadAllCommands();
 
     if (!commands.length) {
-        console.log('[Deploy] No slash commands found. Add a "slash" property to any command file.');
+        appLogger.info('[Deploy] No slash commands found. Add a "slash" property to any command file.');
         return;
     }
 
-    console.log(`[Deploy] Found ${commands.length} slash commands:`);
-    commands.forEach(c => console.log(' -', '/' + c.name));
+    appLogger.info(`[Deploy] Found ${commands.length} slash commands:`);
+    commands.forEach(c => appLogger.info(' -', '/' + c.name));
 
     const rest = new REST({ version: '10' }).setToken(token);
 
     try {
         if (deployToGuild) {
             if (!testGuildId) {
-                console.error('[Deploy] TEST_GUILD_ID not set - cannot deploy to guild');
+                appLogger.error('[Deploy] TEST_GUILD_ID not set - cannot deploy to guild');
                 process.exit(1);
             }
             await rest.put(Routes.applicationGuildCommands(clientId, testGuildId), { body: commands });
-            console.log(`[Deploy] Deployed ${commands.length} commands to guild ${testGuildId} (instant)`);
+            appLogger.info(`[Deploy] Deployed ${commands.length} commands to guild ${testGuildId} (instant)`);
         } else {
             await rest.put(Routes.applicationCommands(clientId), { body: commands });
-            console.log(`[Deploy] Deployed ${commands.length} global commands (may take up to 1hr)`);
+            appLogger.info(`[Deploy] Deployed ${commands.length} global commands (may take up to 1hr)`);
         }
     } catch (err) {
-        console.error('[Deploy] Error:', err.message);
+        appLogger.error('[Deploy] Error:', err.message);
         process.exit(1);
     }
 }

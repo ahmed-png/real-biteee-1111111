@@ -13,7 +13,7 @@ const properties = {
 module.exports = {
     name: 'property',
     aliases: ['عقار', 'عقارات', 'بيت'],
-    description: 'نظام الاستثمار العقاري',
+    description: 'استثمر بالعقارات واجمع دخلها',
     usage: 'عقار [قائمة/شراء/جمع/ممتلكاتي]',
 
     async execute(message, args) {
@@ -29,8 +29,8 @@ module.exports = {
 
             const embed = PremiumEmbedBuilder.custom({
                 color: '#27AE60',
-                title: '🏘️ سوق العقارات الاستثماري',
-                description: 'استخدم الأزرار بالأسفل لإدارة عقاراتك!',
+                title: '🏘️ سوق العقارات',
+                description: 'اضغط الأزرار جوّه حتى تدير عقاراتك!',
                 fields
             });
 
@@ -53,7 +53,7 @@ module.exports = {
             const type = args[1]?.toLowerCase();
             const property = properties[type];
 
-            if (!property) return message.reply('❌ نوع عقار غير صحيح! اختر من القائمة.');
+            if (!property) return message.reply('❌ نوع العقار مو صحيح! اختار من القائمة.');
             return buyProperty(message, type, userData, message.author.id);
         }
 
@@ -84,14 +84,14 @@ module.exports = {
 
 async function buyProperty(context, type, userData, userId, isInteraction = false) {
     const property = properties[type];
-    if (!property) return context.reply({ content: '❌ نوع عقار غير صحيح!', ephemeral: isInteraction });
+    if (!property) return context.reply({ content: '❌ نوع العقار مو صحيح!', ephemeral: isInteraction });
 
     if (userData.balance < property.price) {
-        return context.reply({ content: `❌ رصيدك لا يكفي! تحتاج **${property.price.toLocaleString()}** ${config.currency}`, ephemeral: isInteraction });
+        return context.reply({ content: `❌ رصيدك ما يكفي! تحتاج **${property.price.toLocaleString()}** ${config.currency}`, ephemeral: isInteraction });
     }
 
     if (!userData.properties) userData.properties = {};
-    if (userData.properties[type]) return context.reply({ content: '❌ أنت تملك هذا العقار بالفعل!', ephemeral: isInteraction });
+    if (userData.properties[type]) return context.reply({ content: '❌ عندك هالعقار من قبل!', ephemeral: isInteraction });
 
     userData.balance -= property.price;
     userData.properties[type] = {
@@ -102,11 +102,11 @@ async function buyProperty(context, type, userData, userId, isInteraction = fals
     db.updateUserData(userId, userData);
 
     const embed = PremiumEmbedBuilder.success(
-        'مبروك المنزل الجديد! 🏠',
-        `تم شراء **${property.name}** بنجاح.`,
+        'مبروك البيت الجديد! 🏠',
+        `اشتريت **${property.name}** بنجاح.`,
         [
-            { name: 'الدخل اليومي', value: `${property.income.toLocaleString()} ${config.currency}`, inline: true },
-            { name: 'رصيدك المتبقي', value: `${userData.balance.toLocaleString()} ${config.currency}`, inline: true }
+            { name: 'دخلك اليومي', value: `${property.income.toLocaleString()} ${config.currency}`, inline: true },
+            { name: 'الباقي برصيدك', value: `${userData.balance.toLocaleString()} ${config.currency}`, inline: true }
         ]
     );
 
@@ -119,7 +119,7 @@ async function buyProperty(context, type, userData, userId, isInteraction = fals
 
 async function collectIncome(context, userData, userId, isInteraction = false) {
     if (!userData.properties || Object.keys(userData.properties).length === 0) {
-        return context.reply({ content: '❌ لا تملك أي عقارات لجمع دخلها!', ephemeral: isInteraction });
+        return context.reply({ content: '❌ ما عندك عقارات تجمع دخلها!', ephemeral: isInteraction });
     }
 
     let totalIncome = 0;
@@ -135,12 +135,12 @@ async function collectIncome(context, userData, userId, isInteraction = false) {
         }
     }
 
-    if (totalIncome <= 0) return context.reply({ content: '⏰ لم يمر 24 ساعة منذ آخر عملية جمع لجميع عقاراتك!', ephemeral: isInteraction });
+    if (totalIncome <= 0) return context.reply({ content: '⏰ بعد ما مرّت 24 ساعة على آخر جمع لعقاراتك!', ephemeral: isInteraction });
 
     userData.balance += totalIncome;
     db.updateUserData(userId, userData);
 
-    const msg = `✅ تم جمع أرباح عقاراتك بقيمة **${totalIncome.toLocaleString()}** ${config.currency}!`;
+    const msg = `✅ جمعت أرباح عقاراتك، وقيمتها **${totalIncome.toLocaleString()}** ${config.currency}!`;
     if (isInteraction) {
         await context.reply({ content: msg, ephemeral: true });
     } else {
@@ -150,7 +150,7 @@ async function collectIncome(context, userData, userId, isInteraction = false) {
 
 async function showMyProperties(context, userData, isInteraction = false) {
     if (!userData.properties || Object.keys(userData.properties).length === 0) {
-        return context.reply({ content: '❌ خالي من الأملاك! استثمر في عقار الآن.', ephemeral: isInteraction });
+        return context.reply({ content: '❌ ما عندك أملاك! استثمر بعقار هسه.', ephemeral: isInteraction });
     }
 
     const fields = Object.entries(userData.properties).map(([type, data]) => {
@@ -158,14 +158,14 @@ async function showMyProperties(context, userData, isInteraction = false) {
         const days = Math.floor((Date.now() - data.lastCollected) / (24 * 60 * 60 * 1000));
         return {
             name: `${prop.emoji} ${prop.name}`,
-            value: `الدخل المتاح: **${(prop.income * days).toLocaleString()}**`,
+            value: `الدخل المتوفر: **${(prop.income * days).toLocaleString()}**`,
             inline: true
         };
     });
 
     const embed = PremiumEmbedBuilder.economy(
-        '🏡 سجل ممتلكاتك الاستثمارية',
-        'استخدم زر "جمع الأرباح" لاستلام الأموال',
+        '🏡 عقاراتك للاستثمار',
+        'اضغط زر "جمع الأرباح" حتى تستلم فلوسك',
         fields
     );
 

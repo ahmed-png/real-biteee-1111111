@@ -4,29 +4,29 @@ const { PremiumEmbedBuilder } = require('../../utils/embed-builder');
 module.exports = {
     name: 'set-birthday',
     aliases: ['birthday', 'عيد_ميلاد', 'ميلاد'],
-    description: 'تعيين تاريخ ميلادك للحصول على مفاجآت!',
+    description: 'سجّل تاريخ ميلادك حتى توصلك مفاجأة!',
     usage: 'MM-DD', // Month-Day
     async execute(message, args) {
         if (!args[0]) {
-            return message.reply(`❌ الاستخدام الصحيح: \`!عيد_ميلاد MM-DD\`\nمثال: \`!عيد_ميلاد 12-25\` (لشهر 12 يوم 25)`);
+            return message.reply(`❌ اكتبها هيچ: \`!عيد_ميلاد MM-DD\`\nمثال: \`!عيد_ميلاد 12-25\` (يعني الشهر 12 واليوم 25)`);
         }
 
         const dateParts = args[0].split(/[/-]/);
         if (dateParts.length !== 2) {
-            return message.reply('❌ تنسيق التاريخ غير صحيح! استخدم `MM-DD` (شهر-يوم)');
+            return message.reply('❌ تنسيق التاريخ مو صحيح! استخدم `MM-DD` (شهر-يوم)');
         }
 
         const month = parseInt(dateParts[0]);
         const day = parseInt(dateParts[1]);
 
         if (isNaN(month) || isNaN(day) || month < 1 || month > 12 || day < 1 || day > 31) {
-            return message.reply('❌ تاريخ غير صالح! تأكد من الشهر واليوم.');
+            return message.reply('❌ التاريخ مو صالح! تأكد من الشهر واليوم.');
         }
 
         // Check for edge cases (e.g. Feb 30) - simple check
         const daysInMonth = new Date(2024, month, 0).getDate(); // 2024 is leap year, safe bet
         if (day > daysInMonth) {
-            return message.reply(`❌ هذا الشهر يحتوي فقط على ${daysInMonth} يوم!`);
+            return message.reply(`❌ هالشهر بيه بس ${daysInMonth} يوم!`);
         }
 
         const userData = db.getUserData(message.author.id);
@@ -39,8 +39,8 @@ module.exports = {
         db.updateUserData(message.author.id, userData);
 
         const embed = PremiumEmbedBuilder.success(
-            '🎉 تم حفظ تاريخ ميلادك!',
-            `سنحتفل بك في **${day}-${month}** من كل عام! 🎂`,
+            '🎉 انحفظ تاريخ ميلادك!',
+            `راح نحتفل بيك يوم **${day}-${month}** من كل سنة! 🎂`,
             [
                 { name: 'التاريخ المسجل', value: `${month}-${day}`, inline: true },
                 { name: 'الهدية المتوقعة', value: '5000 عملة 💰', inline: true }

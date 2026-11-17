@@ -5,7 +5,7 @@ const { hasPermOrOwner, getAuthor } = require('../../utils/permissions');
 module.exports = {
     name: 'unlock',
     aliases: ['فتح', 'تشغيل', 'افتح'],
-    description: 'فتح القناة المقفولة',
+    description: 'يفتح القناة المقفولة',
     usage: 'unlock',
     permissions: [PermissionFlagsBits.ManageChannels],
 
@@ -15,7 +15,7 @@ module.exports = {
 
         // صاحب البوت يتخطى فحص الصلاحيات
         if (!hasPermOrOwner(context.member, PermissionFlagsBits.ManageChannels)) {
-            const msg = '❌ ليس لديك صلاحية فتح القنوات!';
+            const msg = '❌ ما عندك صلاحية تفتح القنوات.';
             return isInteraction ? context.reply({ content: msg, ephemeral: true }) : context.reply(msg);
         }
 
@@ -25,7 +25,7 @@ module.exports = {
 
         const embed = PremiumEmbedBuilder.success(
             '🔓 فتح القناة',
-            'تم فتح القناة والسماح للأعضاء بالكتابة مرة أخرى.',
+            'انفتحت القناة، والأعضاء يگدرون يكتبون بيها من جديد.',
             []
         );
 

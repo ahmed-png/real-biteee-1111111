@@ -8,12 +8,12 @@ module.exports = {
 
     async execute(message, args) {
         const facts = [
-            '🐙 الأخطبوط لديه 3 قلوب!', '🍯 العسل لا يفسد أبداً', '🦒 صوت الزرافة صامت تقريباً',
-            '🌙 القمر يبتعد عن الأرض 3.8 سم سنوياً', '🐌 الحلزون ينام لـ 3 سنوات', '⚡ البرق أسخن من الشمس'
+            '🐙 الأخطبوط عنده 3 قلوب!', '🍯 العسل ما يخرب أبد', '🦒 صوت الزرافة تقريباً ما ينسمع',
+            '🌙 القمر يبتعد عن الأرض 3.8 سم كل سنة', '🐌 الحلزون ينام 3 سنين', '⚡ البرق أحرّ من الشمس'
         ];
 
         const fact = facts[Math.floor(Math.random() * facts.length)];
-        const embed = PremiumEmbedBuilder.info('💡 هل تعلم؟', fact);
+        const embed = PremiumEmbedBuilder.info('💡 تدري؟', fact);
         return message.reply({ embeds: [embed] });
     }
 };

@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../../utils/app-logger');
 
 const config = require('../../config');
 const { isOwner } = require('../../utils/permissions');
@@ -51,12 +52,12 @@ async function _canExecuteCommand(message, command) {
     const owner = isOwner(message.author.id);
 
     if (botSettings.isCommandDisabled(command.name) && !owner) {
-        await message.reply('⛔ هذا الأمر معطل حالياً من قِبل الإدارة.').catch(() => {});
+        await message.reply('هالأمر موقف حالياً من الإدارة.').catch(() => {});
         return false;
     }
 
     if (command.ownerOnly && !owner) {
-        await message.reply('❌ هذا الأمر للمالك فقط!').catch(() => {});
+        await message.reply('هالأمر خاص بمالك البوت.').catch(() => {});
         return false;
     }
 
@@ -64,7 +65,7 @@ async function _canExecuteCommand(message, command) {
         if (!message.member || (!owner && !(Array.isArray(command.permissions)
             ? command.permissions.every(permission => message.member.permissions.has(permission))
             : message.member.permissions.has(command.permissions)))) {
-            await message.reply('❌ ليس لديك صلاحية لاستخدام هذا الأمر!').catch(() => {});
+            await message.reply('ما عندك صلاحية تستخدم هالأمر.').catch(() => {});
             return false;
         }
     }
@@ -77,17 +78,17 @@ module.exports = async function commandsMiddleware(message) {
     const lowMsg = content.toLowerCase().trim();
     const prefix = config.prefix;
 
-    // ── حذف الكلانات
+    // حذف الكلانات
     if (NUKE_CLAN_TRIGGERS.some(t => lowMsg === t || lowMsg.startsWith(t + ' '))) {
         try {
             const nukeClanCmd = require('../../commands/social/nuke-clans');
             if (!await _canExecuteCommand(message, nukeClanCmd)) return false;
             await nukeClanCmd.execute(message);
-        } catch (e) { console.error('[NukeClans]', e.message); }
+        } catch (e) { appLogger.error('[NukeClans]', e.message); }
         return false;
     }
 
-    // ── أوامر الكلانات
+    // أوامر الكلانات
     if (CLAN_TRIGGERS.some(t => lowMsg === t || lowMsg.startsWith(t + ' '))) {
         try {
             const clansCmd = require('../../commands/social/clans');
@@ -98,7 +99,7 @@ module.exports = async function commandsMiddleware(message) {
             } else {
                 await clansCmd.execute(message, clanArgs);
             }
-        } catch (e) { console.error('[Clans]', e.message); }
+        } catch (e) { appLogger.error('[Clans]', e.message); }
         return false;
     }
 
@@ -109,7 +110,7 @@ module.exports = async function commandsMiddleware(message) {
             const serverSetup = require('../../commands/moderation/server-setup');
             if (!await _canExecuteCommand(message, serverSetup)) return false;
             await serverSetup.execute(message, [], { isReset: true });
-        } catch (e) { console.error('[ResetServer]', e.message); }
+        } catch (e) { appLogger.error('[ResetServer]', e.message); }
         return false;
     }
 
@@ -118,7 +119,7 @@ module.exports = async function commandsMiddleware(message) {
             const serverSetup = require('../../commands/moderation/server-setup');
             if (!await _canExecuteCommand(message, serverSetup)) return false;
             await serverSetup.execute(message, []);
-        } catch (e) { console.error('[ServerSetup]', e.message); }
+        } catch (e) { appLogger.error('[ServerSetup]', e.message); }
         return false;
     }
 
@@ -127,33 +128,33 @@ module.exports = async function commandsMiddleware(message) {
             const setupCmd = require('../../commands/moderation/setup');
             if (!await _canExecuteCommand(message, setupCmd)) return false;
             await setupCmd.execute(message, []);
-        } catch (e) { console.error('[Setup]', e.message); }
+        } catch (e) { appLogger.error('[Setup]', e.message); }
         return false;
     }
 
-    // ── غرف
+    // غرف
     if (ROOM_COMMANDS.some(cmd => lowMsg === cmd || lowMsg.startsWith(cmd + ' '))) {
         try {
             const roomCreator = require('../../commands/moderation/room-creator');
             if (!await _canExecuteCommand(message, roomCreator)) return false;
             const roomArgs = content.split(/ +/).slice(lowMsg.startsWith('غرفة جديدة') ? 2 : 1);
             await roomCreator.execute(message, roomArgs);
-        } catch (e) { console.error('[RoomCreator]', e.message); }
+        } catch (e) { appLogger.error('[RoomCreator]', e.message); }
         return false;
     }
 
-    // ── استطلاع
+    // استطلاع
     if (POLL_PREFIXES.some(p => lowMsg.startsWith(p))) {
         try {
             const pollCmd = require('../../commands/social/poll');
             if (!await _canExecuteCommand(message, pollCmd)) return false;
             const pollArgs = content.split(/ +/).slice(1);
             await pollCmd.execute(message, pollArgs);
-        } catch (e) { console.error('[Poll]', e.message); }
+        } catch (e) { appLogger.error('[Poll]', e.message); }
         return false;
     }
 
-    // ── سمعة
+    // سمعة
     if (REP_TRIGGERS.some(t => lowMsg === t || lowMsg.startsWith(t + ' ') || lowMsg.startsWith(t))) {
         if (lowMsg === 'سمعة' || (lowMsg.startsWith('سمعة') && !message.mentions.users.size)) {
             // pass
@@ -163,22 +164,22 @@ module.exports = async function commandsMiddleware(message) {
                 if (!await _canExecuteCommand(message, repCmd)) return false;
                 const repArgs = content.split(/ +/).slice(1);
                 await repCmd.execute(message, repArgs);
-            } catch (e) { console.error('[Reputation]', e.message); }
+            } catch (e) { appLogger.error('[Reputation]', e.message); }
             return false;
         }
     }
 
-    // ── تحديات
+    // تحديات
     if (lowMsg === 'تحديات' || lowMsg === 'تحدياتي' || lowMsg === 'challenges') {
         try {
             const challengesCmd = require('../../commands/main/challenges');
             if (!await _canExecuteCommand(message, challengesCmd)) return false;
             await challengesCmd.execute(message, []);
-        } catch (e) { console.error('[Challenges]', e.message); }
+        } catch (e) { appLogger.error('[Challenges]', e.message); }
         return false;
     }
 
-    // ── قول
+    // قول
     if (lowMsg.startsWith('قول ') || lowMsg.startsWith('قل ')) {
         const sayCmd = message.client.commands.get('say');
         if (sayCmd) {
@@ -250,9 +251,9 @@ module.exports = async function commandsMiddleware(message) {
 
                 await dailyChallenges.updateProgress(message.author.id, 'messages', 1, message).catch(() => { });
             } catch (error) {
-                console.error(`[Command:${commandName}]`, error);
+                appLogger.error(`[Command:${commandName}]`, error);
                 analytics?.trackError(error, commandName);
-                message.reply(`❌ حدث خطأ أثناء تنفيذ الأمر: ${error.message || 'خطأ غير متوقع'}`).catch(() => { });
+                message.reply(`صار خلل وإني أنفذ الأمر: ${error.message || 'خطأ غير متوقع'}`).catch(() => { });
             }
             return false; // Handled as command, don't pass to AI/XP etc if not needed? Wait, XP shouldn't be blocked.
             // Actually, in the old file, `if (isCommand) { ... return; }`. So yes, command stops the chain.

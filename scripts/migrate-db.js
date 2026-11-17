@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../utils/app-logger');
 
 /**
  * One-time migration from data/economy.json to MongoDB.
@@ -44,7 +45,7 @@ function toGuild(guildId, guild) {
 async function migrate() {
     if (!process.env.MONGODB_URI) throw new Error('MONGODB_URI is not configured');
     if (!fs.existsSync(jsonPath)) {
-        console.log('[Migrate] No economy.json found; nothing to migrate.');
+        appLogger.info('[Migrate] No economy.json found; nothing to migrate.');
         return;
     }
 
@@ -62,13 +63,13 @@ async function migrate() {
     }
 
     fs.copyFileSync(jsonPath, backupPath);
-    console.log(`[Migrate] Imported ${users.length} users and ${guilds.length} guilds into MongoDB.`);
-    console.log(`[Migrate] Backup saved to ${backupPath}`);
+    appLogger.info(`[Migrate] Imported ${users.length} users and ${guilds.length} guilds into MongoDB.`);
+    appLogger.info(`[Migrate] Backup saved to ${backupPath}`);
 }
 
 migrate()
     .catch(error => {
-        console.error('[Migrate] Failed:', error.message);
+        appLogger.error('[Migrate] Failed:', error.message);
         process.exitCode = 1;
     })
     .finally(async () => {

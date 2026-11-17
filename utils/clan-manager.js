@@ -1,3 +1,4 @@
+const appLogger = require('./app-logger');
 const fs = require('fs');
 const path = require('path');
 
@@ -23,7 +24,7 @@ class ClanManager {
             const data = fs.readFileSync(CLANS_FILE, 'utf8');
             return JSON.parse(data);
         } catch (error) {
-            console.error('خطأ في تحميل clans.json:', error);
+            appLogger.error('خطأ في تحميل clans.json:', error);
             return {};
         }
     }
@@ -32,7 +33,7 @@ class ClanManager {
         try {
             fs.writeFileSync(CLANS_FILE, JSON.stringify(this.clans, null, 2));
         } catch (error) {
-            console.error('خطأ في حفظ clans.json:', error);
+            appLogger.error('خطأ في حفظ clans.json:', error);
         }
     }
 
@@ -87,12 +88,12 @@ class ClanManager {
 
         // التحقق من الاسم
         if (this.nameExists(guildId, name)) {
-            return { success: false, error: 'يوجد كلان آخر بنفس الاسم! اختر اسماً مميزاً.' };
+            return { success: false, error: 'اكو كلان ثاني بهالاسم؛ اختار اسم غيره.' };
         }
 
         // التحقق من أن المستخدم ليس في كلان
         if (guildData.members[userId]) {
-            return { success: false, error: 'أنت بالفعل في كلان!' };
+            return { success: false, error: 'إنت منضم لكلان من قبل.' };
         }
 
         const clanId = `clan_${guildData.nextClanId++}`;
@@ -136,7 +137,7 @@ class ClanManager {
 
         let clanId = guildData.members[userId];
 
-        // ── إصلاح: إذا القائد غير مسجل في members لكنه فعلياً قائد لكلان ──
+        // إصلاح: إذا القائد غير مسجل في members لكنه فعلياً قائد لكلان
         if (!clanId) {
             const leaderClan = Object.values(guildData.clans).find(c => c.leaderId === userId);
             if (leaderClan) {

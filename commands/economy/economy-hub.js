@@ -17,7 +17,7 @@ const db = require('../../utils/database');
 const config = require('../../config');
 const levels = require('../../utils/levels');
 
-// ─── وظائف العمل ───────────────────────────────────────────
+// وظائف العمل
 const JOBS = [
     { name: 'مبرمج', emoji: '💻', min: 300, max: 700 },
     { name: 'طبيب', emoji: '🏥', min: 400, max: 800 },
@@ -33,7 +33,7 @@ const JOBS = [
     { name: 'رائد فضاء', emoji: '🚀', min: 600, max: 1200 },
 ];
 
-// ─── تنسيق الوقت المتبقي ──────────────────────────────────
+// تنسيق الوقت المتبقي
 function formatTimeLeft(ms) {
     const h = Math.floor(ms / 3600000);
     const m = Math.floor((ms % 3600000) / 60000);
@@ -43,16 +43,14 @@ function formatTimeLeft(ms) {
     return `${s}ث`;
 }
 
-// ─── شريط التقدم ──────────────────────────────────────────
+// شريط التقدم
 function progressBar(val, max, size = 12) {
     const pct = Math.min(val / max, 1);
     const filled = Math.round(pct * size);
     return '█'.repeat(filled) + '░'.repeat(size - filled);
 }
 
-// ═══════════════════════════════════════════════════════════
 // بناء اللوحة الرئيسية
-// ═══════════════════════════════════════════════════════════
 async function buildMainPanel(userId, client) {
     const userData = db.getUserData(userId);
     const balance = userData.balance || 0;
@@ -73,12 +71,12 @@ async function buildMainPanel(userId, client) {
     const dailyStreak = userData.dailyStreak || 0;
     const streakBonus = Math.min(dailyStreak * (config.streakBonus || 100), config.maxStreakBonus || 5000);
 
-    // ─── Embed ───────────────────────────────────────────────
+    // Embed
     const embed = new EmbedBuilder()
         .setColor('#2B2D31')
         .setTitle(`💼 لوحة الاقتصاد — <@${userId}>`)
         .setDescription([
-            '> مركز التحكم المالي الخاص بك',
+            '> لوحة التحكم بفلوسك',
             '',
             `💰 **المحفظة:**  \`${balance.toLocaleString()} ${config.currency}\``,
             `🏦 **البنك:**     \`${bank.toLocaleString()}    ${config.currency}\``,
@@ -91,7 +89,7 @@ async function buildMainPanel(userId, client) {
                 inline: false
             },
             {
-                name: '🔥 Daily Streak',
+                name: '🔥 أيام التتابع',
                 value: `${dailyStreak} يوم ${dailyStreak >= 7 ? '🏆' : dailyStreak >= 3 ? '⚡' : ''}`,
                 inline: true
             },
@@ -101,15 +99,15 @@ async function buildMainPanel(userId, client) {
                 inline: true
             },
             {
-                name: '🎁 المكافأة اليومية',
+                name: '🎁 مكافأة اليوم',
                 value: dailyReady ? `✅ جاهزة (+${streakBonus.toLocaleString()})` : `⏰ ${formatTimeLeft(dailyLeft)}`,
                 inline: true
             }
         )
         .setTimestamp()
-        .setFooter({ text: 'اضغط على الأزرار للتفاعل • محدّث الآن' });
+        .setFooter({ text: 'اضغط الأزرار حتى تتفاعل • تحدّثت هسه' });
 
-    // ─── الصف الأول: عمليات الكسب ────────────────────────────
+    // الصف الأول: عمليات الكسب
     const row1 = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId('eco_daily')
@@ -128,7 +126,7 @@ async function buildMainPanel(userId, client) {
             .setDisabled(!robReady)
     );
 
-    // ─── الصف الثاني: البنك ───────────────────────────────────
+    // الصف الثاني: البنك
     const vault = userData.inventory?.vault;
     const vaultBal = userData.vaultBalance || 0;
     const vaultCap = userData.vaultCap || 0;
@@ -154,7 +152,7 @@ async function buildMainPanel(userId, client) {
             .setStyle(ButtonStyle.Secondary)
     );
 
-    // ─── صف الخزنة (يظهر فقط إذا تملّك الخزنة) ─────────────
+    // صف الخزنة (يظهر فقط إذا تملّك الخزنة)
     const hasVault = !!(vault || vaultCap > 0);
     const vaultRow = hasVault ? new ActionRowBuilder().addComponents(
         new ButtonBuilder()
@@ -163,7 +161,7 @@ async function buildMainPanel(userId, client) {
             .setStyle(ButtonStyle.Success)
     ) : null;
 
-    // ─── الصف الثالث: تنقل ───────────────────────────────────
+    // الصف الثالث: تنقل
     const row3 = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId('eco_leaderboard')
@@ -193,20 +191,18 @@ async function buildMainPanel(userId, client) {
     return { embeds: [embed], components: rows };
 }
 
-// ═══════════════════════════════════════════════════════════
 // معالج كل زر
-// ═══════════════════════════════════════════════════════════
 async function handleEcoButton(interaction) {
     const userId = interaction.user.id;
     const action = interaction.customId;
 
-    // ── تحديث اللوحة ──────────────────────────────────────────
+    // تحديث اللوحة
     if (action === 'eco_refresh') {
         const panel = await buildMainPanel(userId, interaction.client);
         return interaction.update({ ...panel });
     }
 
-    // ── مكافأة يومية ──────────────────────────────────────────
+    // مكافأة يومية
     if (action === 'eco_daily') {
         const userData = db.getUserData(userId);
         const now = Date.now();
@@ -214,7 +210,7 @@ async function handleEcoButton(interaction) {
 
         if (userData.lastDaily && (now - userData.lastDaily) < cooldown) {
             const left = cooldown - (now - userData.lastDaily);
-            return interaction.reply({ content: `⏰ يمكنك الحصول على المكافأة بعد **${formatTimeLeft(left)}**`, flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: `⏰ تگدر تاخذ المكافأة بعد **${formatTimeLeft(left)}**`, flags: MessageFlags.Ephemeral });
         }
 
         const streak = (userData.dailyStreak || 0) + 1;
@@ -222,17 +218,17 @@ async function handleEcoButton(interaction) {
         const amount = (config.dailyAmount || 500) + bonus;
 
         db.updateFields(userId, { balance: (userData.balance || 0) + amount, lastDaily: now, dailyStreak: streak });
-        db.addTransaction(userId, 'daily', amount, `Daily Streak ${streak}`);
+        db.addTransaction(userId, 'daily', amount, `مكافأة يومية — التتابع ${streak}`);
 
         const embed = new EmbedBuilder()
             .setColor('#FFD700')
-            .setTitle('🎁 مكافأة يومية!')
+            .setTitle('🎁 مكافأتك اليومية!')
             .setDescription([
-                `تم إضافة **${amount.toLocaleString()} ${config.currency}** لمحفظتك! 💰`,
+                `انضاف **${amount.toLocaleString()} ${config.currency}** لمحفظتك! 💰`,
                 '',
-                `🔥 **Streak:** ${streak} يوم متتالٍ`,
-                `⭐ **مكافأة الـ Streak:** +${bonus.toLocaleString()} ${config.currency}`,
-                streak >= 7 ? '\n🏆 **مبروك! أسبوع متتالٍ!** (+خصم خاص قريبًا)' : '',
+                `🔥 **أيام التتابع:** ${streak} يوم ورا بعض`,
+                `⭐ **مكافأة التتابع:** +${bonus.toLocaleString()} ${config.currency}`,
+                streak >= 7 ? '\n🏆 **عاشت إيدك، أسبوع كامل ورا بعض!** (خصم خاص قريباً)' : '',
             ].join('\n'))
             .setTimestamp();
 
@@ -244,7 +240,7 @@ async function handleEcoButton(interaction) {
         return;
     }
 
-    // ── عمل ───────────────────────────────────────────────────
+    // عمل
     if (action === 'eco_work') {
         const userData = db.getUserData(userId);
         const now = Date.now();
@@ -252,21 +248,21 @@ async function handleEcoButton(interaction) {
 
         if (userData.lastWork && (now - userData.lastWork) < cooldown) {
             const left = cooldown - (now - userData.lastWork);
-            return interaction.reply({ content: `⏰ يمكنك العمل بعد **${formatTimeLeft(left)}**`, flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: `⏰ تگدر تشتغل بعد **${formatTimeLeft(left)}**`, flags: MessageFlags.Ephemeral });
         }
 
         const job = JOBS[Math.floor(Math.random() * JOBS.length)];
         const earned = Math.floor(Math.random() * (job.max - job.min + 1)) + job.min;
 
         db.updateFields(userId, { balance: (userData.balance || 0) + earned, lastWork: now });
-        db.addTransaction(userId, 'work', earned, `Work: ${job.name}`);
+        db.addTransaction(userId, 'work', earned, `شغل: ${job.name}`);
         try { levels.addXP(userId, 3, interaction); } catch (_) { }
 
         const embed = new EmbedBuilder()
             .setColor('#00CED1')
-            .setTitle(`${job.emoji} عمل ناجح!`)
+            .setTitle(`${job.emoji} شغل مرتب!`)
             .setDescription([
-                `عملت كـ **${job.name}** وكسبت **${earned.toLocaleString()} ${config.currency}**! 🎉`,
+                `اشتغلت **${job.name}** وكسبت **${earned.toLocaleString()} ${config.currency}**! 🎉`,
                 '',
                 `💰 **رصيدك الجديد:** ${((userData.balance || 0) + earned).toLocaleString()} ${config.currency}`,
             ].join('\n'))
@@ -278,34 +274,34 @@ async function handleEcoButton(interaction) {
         return;
     }
 
-    // ── سرقة ──────────────────────────────────────────────────
+    // سرقة
     if (action === 'eco_rob') {
         const embed = new EmbedBuilder()
             .setColor('#E74C3C')
             .setTitle('🕵️ السرقة')
             .setDescription([
-                'مَن تريد سرقته؟ **منشن الشخص** في قناة الشات وستُفعّل السرقة تلقائياً!',
+                'منو تريد تسرق؟ **منشن الشخص** بالشات وتبدي المحاولة!',
                 '',
                 'مثال: `سرقة @اسم`',
                 '',
                 '⚠️ **احتمال النجاح: 40%**',
-                '❌ **العقوبة عند الفشل: 10% من رصيدك**',
+                '❌ **إذا ما ضبطت، تنخصم 10% من رصيدك**',
             ].join('\n'))
             .setTimestamp();
 
         return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 
-    // ── إيداع ─────────────────────────────────────────────────
+    // إيداع
     if (action === 'eco_deposit') {
         const modal = new ModalBuilder()
             .setCustomId('eco_deposit_modal')
-            .setTitle('🏦 إيداع في البنك');
+            .setTitle('🏦 إيداع بالبنك');
 
         const amountInput = new TextInputBuilder()
             .setCustomId('deposit_amount')
             .setLabel('المبلغ (أو اكتب: كامل / نصف / ربع)')
-            .setPlaceholder('مثال: 1000  أو  كامل  أو  نصف')
+            .setPlaceholder('مثال: 1000 أو كامل أو نصف')
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
 
@@ -313,7 +309,7 @@ async function handleEcoButton(interaction) {
         return interaction.showModal(modal);
     }
 
-    // ── سحب ───────────────────────────────────────────────────
+    // سحب
     if (action === 'eco_withdraw') {
         const modal = new ModalBuilder()
             .setCustomId('eco_withdraw_modal')
@@ -322,7 +318,7 @@ async function handleEcoButton(interaction) {
         const amountInput = new TextInputBuilder()
             .setCustomId('withdraw_amount')
             .setLabel('المبلغ (أو اكتب: كامل / نصف / ربع)')
-            .setPlaceholder('مثال: 500  أو  كامل')
+            .setPlaceholder('مثال: 500 أو كامل')
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
 
@@ -330,16 +326,16 @@ async function handleEcoButton(interaction) {
         return interaction.showModal(modal);
     }
 
-    // ── تحويل ─────────────────────────────────────────────────
+    // تحويل
     if (action === 'eco_transfer') {
         const modal = new ModalBuilder()
             .setCustomId('eco_transfer_modal')
-            .setTitle('🔄 تحويل أموال');
+            .setTitle('🔄 تحويل فلوس');
 
         const userInput = new TextInputBuilder()
             .setCustomId('transfer_user_id')
-            .setLabel('ID المستخدم المستلم')
-            .setPlaceholder('الصق الـ ID هنا...')
+            .setLabel('معرّف الشخص المستلم')
+            .setPlaceholder('الصق المعرّف هنا...')
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
 
@@ -357,29 +353,30 @@ async function handleEcoButton(interaction) {
         return interaction.showModal(modal);
     }
 
-    // ── سجل المعاملات ─────────────────────────────────────────
+    // سجل المعاملات
     if (action === 'eco_transactions') {
         const userData = db.getUserData(userId);
         const txs = (userData.transactions || []).slice(-10).reverse();
 
         const lines = txs.length === 0
-            ? ['لا توجد معاملات بعد.']
+            ? ['ماكو حركات لحد هسه.']
             : txs.map((tx, i) => {
                 const sign = tx.type === 'work' || tx.type === 'daily' || tx.type === 'deposit' ? '+' : '-';
                 const emoji = tx.type === 'work' ? '💼' : tx.type === 'daily' ? '🎁' : tx.type === 'rob' ? '🕵️' : tx.type === 'deposit' ? '🏦' : tx.type === 'withdraw' ? '💵' : '💱';
-                return `${emoji} **${tx.note || tx.type}** — ${sign}${(tx.amount || 0).toLocaleString()} ${config.currency}`;
+                const note = localizeTransactionNote(tx.note || tx.type, tx.type);
+                return `${emoji} **${note}** — ${sign}${(tx.amount || 0).toLocaleString()} ${config.currency}`;
             });
 
         const embed = new EmbedBuilder()
             .setColor('#9B59B6')
-            .setTitle('📋 آخر 10 معاملات')
+            .setTitle('📋 آخر 10 حركات')
             .setDescription(lines.join('\n'))
             .setTimestamp();
 
         return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 
-    // ── لوحة المتصدرين ────────────────────────────────────────
+    // لوحة المتصدرين
     if (action === 'eco_leaderboard') {
         const allUsers = db.getAllUsers();
         const sorted = Object.entries(allUsers)
@@ -395,22 +392,22 @@ async function handleEcoButton(interaction) {
 
         const embed = new EmbedBuilder()
             .setColor('#FFD700')
-            .setTitle('🏆 قائمة أثرياء السيرفر')
+            .setTitle('🏆 أغنياء السيرفر')
             .setDescription(lines.join('\n'))
             .setTimestamp();
 
         return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
 
-    // ── عرض الخزنة الشخصية ────────────────────────────────────
+    // عرض الخزنة الشخصية
     if (action === 'eco_vault') {
         const userData = db.getUserData(userId);
         if (!userData.inventory?.vault && !(userData.vaultCap > 0)) {
             return interaction.reply({
                 embeds: [new EmbedBuilder()
                     .setColor('#E74C3C')
-                    .setTitle('🔐 لا تملك خزنة شخصية')
-                    .setDescription('اشترِ **🏦 خزنة شخصية** من المتجر (قسم VIP) بـ **8,000** عملة.\n\nأكتب `متجر` أو اضغط زر **المتجر** للشراء.')
+                    .setTitle('🔐 ما عندك خزنة شخصية')
+                    .setDescription('اشتري **🏦 خزنة شخصية** من المتجر (قسم VIP) بـ **8,000** عملة.\n\nاكتب `متجر` أو اضغط زر **المتجر** حتى تشتريها.')
                 ],
                 flags: MessageFlags.Ephemeral
             });
@@ -424,7 +421,7 @@ async function handleEcoButton(interaction) {
             .setColor('#F1C40F')
             .setTitle('🔐 خزنتك الشخصية')
             .setDescription([
-                '> مالك هنا **محمي تماماً** من السرقة.',
+                '> فلوسك هنا **محمية بالكامل** من السرقة.',
                 '',
                 `💰 **المحفظة:** \`${walletBal.toLocaleString()} ${config.currency}\``,
                 `🔐 **الخزنة:** \`${vaultBal.toLocaleString()} / ${vaultCap.toLocaleString()} ${config.currency}\``,
@@ -432,45 +429,45 @@ async function handleEcoButton(interaction) {
                 progressBar(vaultBal, vaultCap) + ` **${Math.floor((vaultBal / vaultCap) * 100)}%** ممتلئة`,
             ].join('\n'))
             .setTimestamp()
-            .setFooter({ text: 'الخزنة آمنة 100% — لا أحد يسرق منها' });
+            .setFooter({ text: 'الخزنة محمية 100% — ما حد يگدر يسرق منها' });
 
         const vRow = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId('eco_vault_deposit')
-                .setLabel('إيداع في الخزنة 🔐')
+                .setLabel('أودع بالخزنة 🔐')
                 .setStyle(ButtonStyle.Success)
                 .setDisabled(walletBal <= 0 || vaultBal >= vaultCap),
             new ButtonBuilder()
                 .setCustomId('eco_vault_withdraw')
-                .setLabel('سحب من الخزنة 💵')
+                .setLabel('اسحب من الخزنة 💵')
                 .setStyle(ButtonStyle.Primary)
                 .setDisabled(vaultBal <= 0),
             new ButtonBuilder()
                 .setCustomId('eco_refresh')
-                .setLabel('رجوع 🔙')
+                .setLabel('ارجع 🔙')
                 .setStyle(ButtonStyle.Secondary)
         );
 
         return interaction.reply({ embeds: [embed], components: [vRow], flags: MessageFlags.Ephemeral });
     }
 
-    // ── إيداع في الخزنة ───────────────────────────────────────
+    // إيداع في الخزنة
     if (action === 'eco_vault_deposit') {
         const modal = new ModalBuilder()
             .setCustomId('eco_vault_deposit_modal')
-            .setTitle('🔐 إيداع في الخزنة الشخصية');
+            .setTitle('🔐 إيداع بالخزنة الشخصية');
         modal.addComponents(new ActionRowBuilder().addComponents(
             new TextInputBuilder()
                 .setCustomId('vault_deposit_amount')
-                .setLabel('المبلغ (أو: كامل / نصف / ربع)')
-                .setPlaceholder('مثال: 5000  أو  كامل')
+                    .setLabel('المبلغ (أو: كامل / نصف / ربع)')
+                    .setPlaceholder('مثال: 5000 أو كامل')
                 .setStyle(TextInputStyle.Short)
                 .setRequired(true)
         ));
         return interaction.showModal(modal);
     }
 
-    // ── سحب من الخزنة ─────────────────────────────────────────
+    // سحب من الخزنة
     if (action === 'eco_vault_withdraw') {
         const modal = new ModalBuilder()
             .setCustomId('eco_vault_withdraw_modal')
@@ -479,14 +476,14 @@ async function handleEcoButton(interaction) {
             new TextInputBuilder()
                 .setCustomId('vault_withdraw_amount')
                 .setLabel('المبلغ (أو: كامل / نصف / ربع)')
-                .setPlaceholder('مثال: 2000  أو  كامل')
+                .setPlaceholder('مثال: 2000 أو كامل')
                 .setStyle(TextInputStyle.Short)
                 .setRequired(true)
         ));
         return interaction.showModal(modal);
     }
 
-    // ── المتجر ────────────────────────────────────────────────
+    // المتجر
     if (action === 'eco_shop') {
         const shopModule = require('../economy/shop');
         const panel = shopModule.buildMainShop(userId);
@@ -494,54 +491,52 @@ async function handleEcoButton(interaction) {
     }
 }
 
-// ═══════════════════════════════════════════════════════════
 // معالج المودالز
-// ═══════════════════════════════════════════════════════════
 async function handleEcoModal(interaction) {
     const userId = interaction.user.id;
     const id = interaction.customId;
 
-    // ── إيداع ─────────────────────────────────────────────────
+    // إيداع
     if (id === 'eco_deposit_modal') {
         const userData = db.getUserData(userId);
         const bal = userData.balance || 0;
         const input = interaction.fields.getTextInputValue('deposit_amount').trim().toLowerCase();
 
         let amount = parseAmount(input, bal);
-        if (!amount || amount <= 0) return interaction.reply({ content: '❌ مبلغ غير صحيح!', flags: MessageFlags.Ephemeral });
-        if (amount > bal) return interaction.reply({ content: `❌ رصيدك في المحفظة: **${bal.toLocaleString()}** فقط!`, flags: MessageFlags.Ephemeral });
+        if (!amount || amount <= 0) return interaction.reply({ content: '❌ المبلغ مو صحيح!', flags: MessageFlags.Ephemeral });
+        if (amount > bal) return interaction.reply({ content: `❌ بمحفظتك بس **${bal.toLocaleString()}**!`, flags: MessageFlags.Ephemeral });
 
         db.updateFields(userId, { balance: bal - amount, bank: (userData.bank || 0) + amount });
-        db.addTransaction(userId, 'deposit', amount, 'Bank Deposit');
+        db.addTransaction(userId, 'deposit', amount, 'إيداع بالبنك');
 
-        const embed = bankEmbed('🏦 إيداع ناجح', `تم إيداع **${amount.toLocaleString()} ${config.currency}** في البنك!`, bal - amount, (userData.bank || 0) + amount);
+        const embed = bankEmbed('🏦 تم الإيداع', `حطّيت **${amount.toLocaleString()} ${config.currency}** بالبنك!`, bal - amount, (userData.bank || 0) + amount);
         await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         const panel = await buildMainPanel(userId, interaction.client);
         await interaction.message.edit({ ...panel }).catch(() => { });
         return;
     }
 
-    // ── سحب ───────────────────────────────────────────────────
+    // سحب
     if (id === 'eco_withdraw_modal') {
         const userData = db.getUserData(userId);
         const bank = userData.bank || 0;
         const input = interaction.fields.getTextInputValue('withdraw_amount').trim().toLowerCase();
 
         let amount = parseAmount(input, bank);
-        if (!amount || amount <= 0) return interaction.reply({ content: '❌ مبلغ غير صحيح!', flags: MessageFlags.Ephemeral });
-        if (amount > bank) return interaction.reply({ content: `❌ رصيد البنك: **${bank.toLocaleString()}** فقط!`, flags: MessageFlags.Ephemeral });
+        if (!amount || amount <= 0) return interaction.reply({ content: '❌ المبلغ مو صحيح!', flags: MessageFlags.Ephemeral });
+        if (amount > bank) return interaction.reply({ content: `❌ بالبنك بس **${bank.toLocaleString()}**!`, flags: MessageFlags.Ephemeral });
 
         db.updateFields(userId, { balance: (userData.balance || 0) + amount, bank: bank - amount });
-        db.addTransaction(userId, 'withdraw', amount, 'Bank Withdraw');
+        db.addTransaction(userId, 'withdraw', amount, 'سحب من البنك');
 
-        const embed = bankEmbed('💵 سحب ناجح', `تم سحب **${amount.toLocaleString()} ${config.currency}** إلى محفظتك!`, (userData.balance || 0) + amount, bank - amount);
+        const embed = bankEmbed('💵 تم السحب', `سحبت **${amount.toLocaleString()} ${config.currency}** لمحفظتك!`, (userData.balance || 0) + amount, bank - amount);
         await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         const panel = await buildMainPanel(userId, interaction.client);
         await interaction.message.edit({ ...panel }).catch(() => { });
         return;
     }
 
-    // ── إيداع في الخزنة الشخصية ───────────────────────────────
+    // إيداع في الخزنة الشخصية
     if (id === 'eco_vault_deposit_modal') {
         const userData = db.getUserData(userId);
         const walletBal = userData.balance || 0;
@@ -549,13 +544,13 @@ async function handleEcoModal(interaction) {
         const vaultCap = userData.vaultCap || 100000;
         const space = vaultCap - vaultBal;
 
-        if (space <= 0) return interaction.reply({ content: '❌ الخزنة ممتلئة!', flags: MessageFlags.Ephemeral });
+        if (space <= 0) return interaction.reply({ content: '❌ الخزنة امتلت!', flags: MessageFlags.Ephemeral });
 
         const input = interaction.fields.getTextInputValue('vault_deposit_amount').trim().toLowerCase();
         let amount = parseAmount(input, Math.min(walletBal, space));
 
-        if (!amount || amount <= 0) return interaction.reply({ content: '❌ مبلغ غير صحيح!', flags: MessageFlags.Ephemeral });
-        if (amount > walletBal) return interaction.reply({ content: `❌ محفظتك فيها **${walletBal.toLocaleString()}** فقط!`, flags: MessageFlags.Ephemeral });
+        if (!amount || amount <= 0) return interaction.reply({ content: '❌ المبلغ مو صحيح!', flags: MessageFlags.Ephemeral });
+        if (amount > walletBal) return interaction.reply({ content: `❌ بمحفظتك بس **${walletBal.toLocaleString()}**!`, flags: MessageFlags.Ephemeral });
         if (amount > space) {
             amount = space;
         }
@@ -564,12 +559,12 @@ async function handleEcoModal(interaction) {
             balance: walletBal - amount,
             vaultBalance: vaultBal + amount
         });
-        db.addTransaction(userId, 'vault_deposit', amount, 'Vault Deposit');
+        db.addTransaction(userId, 'vault_deposit', amount, 'إيداع بالخزنة');
 
         const embed = new EmbedBuilder()
             .setColor('#F1C40F')
-            .setTitle('🔐 إيداع في الخزنة')
-            .setDescription(`تم إيداع **${amount.toLocaleString()} ${config.currency}** في خزنتك الشخصية! ✅`)
+            .setTitle('🔐 إيداع بالخزنة')
+            .setDescription(`حطّيت **${amount.toLocaleString()} ${config.currency}** بخزنتك الشخصية! ✅`)
             .addFields(
                 { name: '💰 المحفظة', value: `${(walletBal - amount).toLocaleString()} ${config.currency}`, inline: true },
                 { name: '🔐 الخزنة', value: `${(vaultBal + amount).toLocaleString()} / ${vaultCap.toLocaleString()} ${config.currency}`, inline: true }
@@ -581,26 +576,26 @@ async function handleEcoModal(interaction) {
         return;
     }
 
-    // ── سحب من الخزنة الشخصية ─────────────────────────────────
+    // سحب من الخزنة الشخصية
     if (id === 'eco_vault_withdraw_modal') {
         const userData = db.getUserData(userId);
         const vaultBal = userData.vaultBalance || 0;
         const input = interaction.fields.getTextInputValue('vault_withdraw_amount').trim().toLowerCase();
         const amount = parseAmount(input, vaultBal);
 
-        if (!amount || amount <= 0) return interaction.reply({ content: '❌ مبلغ غير صحيح!', flags: MessageFlags.Ephemeral });
-        if (amount > vaultBal) return interaction.reply({ content: `❌ خزنتك فيها **${vaultBal.toLocaleString()}** فقط!`, flags: MessageFlags.Ephemeral });
+        if (!amount || amount <= 0) return interaction.reply({ content: '❌ المبلغ مو صحيح!', flags: MessageFlags.Ephemeral });
+        if (amount > vaultBal) return interaction.reply({ content: `❌ بخزنتك بس **${vaultBal.toLocaleString()}**!`, flags: MessageFlags.Ephemeral });
 
         db.updateFields(userId, {
             balance: (userData.balance || 0) + amount,
             vaultBalance: vaultBal - amount
         });
-        db.addTransaction(userId, 'vault_withdraw', amount, 'Vault Withdraw');
+        db.addTransaction(userId, 'vault_withdraw', amount, 'سحب من الخزنة');
 
         const embed = new EmbedBuilder()
             .setColor('#3498DB')
             .setTitle('🔐 سحب من الخزنة')
-            .setDescription(`تم سحب **${amount.toLocaleString()} ${config.currency}** من خزنتك إلى محفظتك! ✅`)
+            .setDescription(`سحبت **${amount.toLocaleString()} ${config.currency}** من الخزنة لمحفظتك! ✅`)
             .addFields(
                 { name: '💰 المحفظة', value: `${((userData.balance || 0) + amount).toLocaleString()} ${config.currency}`, inline: true },
                 { name: '🔐 الخزنة', value: `${(vaultBal - amount).toLocaleString()} ${config.currency}`, inline: true }
@@ -612,29 +607,29 @@ async function handleEcoModal(interaction) {
         return;
     }
 
-    // ── تحويل ─────────────────────────────────────────────────
+    // تحويل
     if (id === 'eco_transfer_modal') {
         const userData = db.getUserData(userId);
         const targetId = interaction.fields.getTextInputValue('transfer_user_id').trim().replace(/\D/g, '');
         const input = interaction.fields.getTextInputValue('transfer_amount').trim().toLowerCase();
         const amount = parseAmount(input, userData.balance || 0);
 
-        if (!targetId || targetId === userId) return interaction.reply({ content: '❌ ID غير صحيح!', flags: MessageFlags.Ephemeral });
-        if (!amount || amount <= 0) return interaction.reply({ content: '❌ مبلغ غير صحيح!', flags: MessageFlags.Ephemeral });
-        if (amount > (userData.balance || 0)) return interaction.reply({ content: `❌ رصيدك لا يكفي! محفظتك: **${(userData.balance || 0).toLocaleString()}**`, flags: MessageFlags.Ephemeral });
+        if (!targetId || targetId === userId) return interaction.reply({ content: '❌ معرّف الشخص مو صحيح!', flags: MessageFlags.Ephemeral });
+        if (!amount || amount <= 0) return interaction.reply({ content: '❌ المبلغ مو صحيح!', flags: MessageFlags.Ephemeral });
+        if (amount > (userData.balance || 0)) return interaction.reply({ content: `❌ رصيدك ما يكفي! بمحفظتك: **${(userData.balance || 0).toLocaleString()}**`, flags: MessageFlags.Ephemeral });
 
         const targetUser = await interaction.client.users.fetch(targetId).catch(() => null);
-        if (!targetUser) return interaction.reply({ content: '❌ المستخدم غير موجود!', flags: MessageFlags.Ephemeral });
+        if (!targetUser) return interaction.reply({ content: '❌ ما لكيت هالشخص!', flags: MessageFlags.Ephemeral });
 
         db.removeMoney(userId, amount);
         db.addMoney(targetId, amount);
-        db.addTransaction(userId, 'transfer_out', amount, `To: ${targetUser.username}`);
-        db.addTransaction(targetId, 'transfer_in', amount, `From: ${interaction.user.username}`);
+        db.addTransaction(userId, 'transfer_out', amount, `إلى: ${targetUser.username}`);
+        db.addTransaction(targetId, 'transfer_in', amount, `من: ${interaction.user.username}`);
 
         const embed = new EmbedBuilder()
             .setColor('#27AE60')
-            .setTitle('🔄 تحويل ناجح!')
-            .setDescription(`تم تحويل **${amount.toLocaleString()} ${config.currency}** إلى **${targetUser.username}**!`)
+            .setTitle('🔄 تم التحويل!')
+            .setDescription(`حوّلت **${amount.toLocaleString()} ${config.currency}** إلى **${targetUser.username}**!`)
             .setTimestamp();
 
         await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
@@ -644,9 +639,7 @@ async function handleEcoModal(interaction) {
     }
 }
 
-// ═══════════════════════════════════════════════════════════
 // دوال مساعدة
-// ═══════════════════════════════════════════════════════════
 function parseAmount(input, max) {
     if (input === 'كامل' || input === 'all') return max;
     if (input === 'نصف' || input === 'half') return Math.floor(max / 2);
@@ -669,13 +662,86 @@ function bankEmbed(title, desc, bal, bank) {
         .setTimestamp();
 }
 
-// ═══════════════════════════════════════════════════════════
+function localizeTransactionNote(note, type) {
+    const knownNotes = {
+        'Deposited to bank': 'إيداع بالبنك',
+        'Bank Deposit': 'إيداع بالبنك',
+        'Bank Withdraw': 'سحب من البنك',
+        'Withdrew from bank': 'سحب من البنك',
+        'Vault Deposit': 'إيداع بالخزنة',
+        'Vault Withdraw': 'سحب من الخزنة',
+        'Weekly Salary': 'راتب أسبوعي',
+        'Investment Withdrawal': 'سحب الاستثمار',
+        'Slots Loss': 'خسارة بالسلوتس',
+        'Crash Loss': 'خسارة بالكراش',
+        'Loan fully paid': 'سداد القرض بالكامل',
+        'Rob failed — fined': 'السرقة ما ضبطت وانخصمت غرامة',
+    };
+    if (knownNotes[note]) return knownNotes[note];
+
+    const patterns = [
+        [/^Daily \(Streak: (\d+)\)$/, ([, streak]) => `مكافأة يومية (التتابع: ${streak})`],
+        [/^Daily Streak (\d+)$/, ([, streak]) => `مكافأة يومية — التتابع ${streak}`],
+        [/^Work(?:: | — )(.*)$/, ([, job]) => `شغل: ${job}`],
+        [/^Investment Profit: (\d+) days$/, ([, days]) => `ربح الاستثمار: ${days} يوم`],
+        [/^Investment: \+(\d+)$/, ([, amount]) => `استثمار: +${amount}`],
+        [/^Slots Win \(x(.+)\)$/, ([, multiplier]) => `فوز بالسلوتس (x${multiplier})`],
+        [/^Crash Cashout x(.+)$/, ([, multiplier]) => `سحب بالكراش x${multiplier}`],
+        [/^Roulette (Win|Loss) \((.+)\)$/, ([, result, bet]) => `${result === 'Win' ? 'فوز' : 'خسارة'} بالروليت (${bet})`],
+        [/^Loan: (\d+) \+ (\d+) interest$/, ([, amount, interest]) => `قرض: ${amount} + ${interest} فائدة`],
+        [/^Loan partial: (\d+) remaining$/, ([, remaining]) => `سداد جزئي للقرض: باقي ${remaining}`],
+        [/^Robbed (.+)$/, ([, username]) => `سرقت من ${username}`],
+        [/^Robbed by (.+)$/, ([, username]) => `سرقك ${username}`],
+        [/^Admin gift from (.+)$/, ([, username]) => `هدية إدارية من ${username}`],
+        [/^To: (.+)$/, ([, username]) => `إلى: ${username}`],
+        [/^From: (.+)$/, ([, username]) => `من: ${username}`],
+    ];
+
+    for (const [pattern, format] of patterns) {
+        const match = note.match(pattern);
+        if (match) return format(match);
+    }
+
+    const typeLabels = {
+        daily: 'مكافأة يومية',
+        work: 'شغل',
+        purchase: 'شراء',
+        deposit: 'إيداع بالبنك',
+        withdraw: 'سحب من البنك',
+        vault_deposit: 'إيداع بالخزنة',
+        vault_withdraw: 'سحب من الخزنة',
+        transfer_out: 'تحويل لغيرك',
+        transfer_in: 'تحويل إلك',
+        casino_win: 'فوز بالكازينو',
+        casino_loss: 'خسارة بالكازينو',
+        crash_win: 'فوز بالكراش',
+        crash_loss: 'خسارة بالكراش',
+        roulette_win: 'فوز بالروليت',
+        roulette_loss: 'خسارة بالروليت',
+        market_buy: 'شراء من السوق',
+        market_sell: 'بيع بالسوق',
+        game_win: 'فوز باللعبة',
+        game_loss: 'خسارة باللعبة',
+        rob: 'سرقة',
+        invest_profit: 'ربح الاستثمار',
+        invest: 'استثمار',
+        loan_borrow: 'قرض جديد',
+        loan_pay: 'سداد قرض',
+        admin_give: 'هدية إدارية',
+        rob_success: 'سرقة ناجحة',
+        robbed: 'فلوس انسرقت',
+        rob_fail: 'غرامة سرقة',
+        weekly: 'راتب أسبوعي',
+        withdraw_investment: 'سحب الاستثمار',
+    };
+    return typeLabels[type] || note;
+}
+
 // الأمر الرئيسي
-// ═══════════════════════════════════════════════════════════
 module.exports = {
     name: 'economy',
     aliases: ['اقتصاد', 'رصيد', 'فلوس', 'محفظة', 'bal', 'money', 'eco'],
-    description: 'لوحة الاقتصاد الكاملة — بالأزرار',
+    description: 'لوحة الاقتصاد كاملة وبالأزرار',
     usage: 'اقتصاد / رصيد',
 
     async execute(context, args) {

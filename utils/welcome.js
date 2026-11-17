@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('./app-logger');
 
 /**
  * welcome.js — نظام الترحيب
@@ -15,7 +16,7 @@
 const { EmbedBuilder, AttachmentBuilder, PermissionsBitField } = require('discord.js');
 const db = require('../src/database/db');
 
-// ── الصلاحيات المطلوبة لإرسال الترحيب ────────────────────────────────────────
+// الصلاحيات المطلوبة لإرسال الترحيب
 const REQUIRED_PERMS = [
     PermissionsBitField.Flags.ViewChannel,
     PermissionsBitField.Flags.SendMessages,
@@ -26,7 +27,7 @@ const REQUIRED_PERMS_EMBED = [
     PermissionsBitField.Flags.AttachFiles,
 ];
 
-// ── جلب صورة كـ Buffer ────────────────────────────────────────────────────────
+// جلب صورة كـ Buffer
 async function fetchImageBuffer(url) {
     if (url.startsWith('/api/public/welcome-image/')) {
         const guildId = url.split('/').pop();
@@ -53,7 +54,7 @@ async function fetchImageBuffer(url) {
     return Buffer.from(await res.arrayBuffer());
 }
 
-// ── بناء صورة الترحيب بـ Canvas ──────────────────────────────────────────────
+// بناء صورة الترحيب بـ Canvas
 async function buildWelcomeImage(guildData, member) {
     const imageUrl = String(guildData.welcomeImage || '').trim();
     if (!imageUrl) return { attachment: null, error: 'رابط الصورة غير موجود' };
@@ -106,22 +107,22 @@ async function buildWelcomeImage(guildData, member) {
             avBuf = await fetchImageBuffer(avatarUrl);
             ctx.drawImage(await loadImage(avBuf), startX, startY, aW, aH);
         } catch (avErr) {
-            console.error('[Welcome] فشل تحميل صورة العضو:', avErr.message);
+            appLogger.error('[Welcome] فشل تحميل صورة العضو:', avErr.message);
             // تجاهل خطأ صورة العضو وأكمل الرسم بدونها أو ارسم مربع فارغ
             ctx.fillStyle = 'rgba(0,0,0,0.5)';
             ctx.fillRect(startX, startY, aW, aH);
         }
         ctx.restore();
 
-        console.log(`[Welcome] ✅ تم بناء صورة الترحيب للعضو ${member.user.tag}`);
+        appLogger.info(`[Welcome] تم بناء صورة الترحيب للعضو ${member.user.tag}`);
         return { attachment: new AttachmentBuilder(canvas.toBuffer('image/png'), { name: 'welcome.png' }), error: null };
     } catch (err) {
-        console.error(`[Welcome] ⚠️ فشل بناء الصورة (لن يُوقف الإرسال):`, err.message);
+        appLogger.error(`[Welcome] فشل بناء الصورة (لن يُوقف الإرسال):`, err.message);
         return { attachment: null, error: err.message };
     }
 }
 
-// ── فحص صلاحيات البوت في القناة ──────────────────────────────────────────────
+// فحص صلاحيات البوت في القناة
 function checkBotPermissions(channel, hasImage) {
     const me = channel.guild?.members?.me;
     if (!me) return { ok: false, missing: ['Bot member not found in guild'] };
@@ -134,25 +135,25 @@ function checkBotPermissions(channel, hasImage) {
     return { ok: missing.length === 0, missing };
 }
 
-// ── الدالة الرئيسية للترحيب ───────────────────────────────────────────────────
+// الدالة الرئيسية للترحيب
 async function sendWelcome(member) {
     const guildId  = member.guild.id;
     const memberId = member.user.id;
     const tag      = member.user.tag;
 
-    // ── [1] قراءة إعدادات السيرفر — المصدر الوحيد ───────────────────────────
+    // [1] قراءة إعدادات السيرفر — المصدر الوحيد
     const guildData = db.getGuildData(guildId);
 
-    // ── [2] هل الترحيب مفعّل؟ ───────────────────────────────────────────────
+    // [2] هل الترحيب مفعّل؟
     if (!guildData.welcomeEnabled) {
-        console.log(`[Welcome] ⏭️  الترحيب معطّل في Guild ${guildId} — لا يوجد إجراء`);
+        appLogger.info(`[Welcome] الترحيب معطّل في Guild ${guildId} — لا يوجد إجراء`);
         return;
     }
 
-    // ── [3] هل تم تحديد قناة ترحيب؟ ────────────────────────────────────────
+    // [3] هل تم تحديد قناة ترحيب؟
     const channelId = guildData.welcomeChannel;
     if (!channelId) {
-        console.warn(
+        appLogger.warn(
             `[Welcome] ⚠️  Guild: ${guildId} | Member: ${memberId} (${tag})\n` +
             `  → الترحيب مفعّل لكن لم يتم تحديد قناة ترحيب.\n` +
             `  → الحل: اذهب للـ Dashboard وحدد روم الترحيب.`
@@ -160,12 +161,12 @@ async function sendWelcome(member) {
         return;
     }
 
-    // ── [4] جلب القناة من Discord ────────────────────────────────────────────
+    // [4] جلب القناة من Discord
     let welcomeChannel = null;
     try {
         welcomeChannel = await member.client.channels.fetch(channelId);
     } catch (fetchErr) {
-        console.error(
+        appLogger.error(
             `[Welcome] ❌ فشل جلب قناة الترحيب\n` +
             `  → Guild: ${guildId} | Member: ${memberId} (${tag})\n` +
             `  → Channel ID: ${channelId}\n` +
@@ -178,9 +179,9 @@ async function sendWelcome(member) {
         return;
     }
 
-    // ── [5] تأكد أن القناة تنتمي لنفس السيرفر ──────────────────────────────
+    // [5] تأكد أن القناة تنتمي لنفس السيرفر
     if (welcomeChannel.guildId && welcomeChannel.guildId !== guildId) {
-        console.error(
+        appLogger.error(
             `[Welcome] ❌ القناة ${channelId} تنتمي لسيرفر مختلف!\n` +
             `  → Guild المتوقع: ${guildId}\n` +
             `  → Guild الفعلي:  ${welcomeChannel.guildId}\n` +
@@ -189,20 +190,20 @@ async function sendWelcome(member) {
         return;
     }
 
-    // ── [6] تأكد أن القناة نصية ─────────────────────────────────────────────
+    // [6] تأكد أن القناة نصية
     if (!welcomeChannel.isTextBased()) {
-        console.error(
+        appLogger.error(
             `[Welcome] ❌ القناة ${channelId} ليست قناة نصية\n` +
             `  → Guild: ${guildId} | Type: ${welcomeChannel.type}`
         );
         return;
     }
 
-    // ── [7] فحص صلاحيات البوت ───────────────────────────────────────────────
+    // [7] فحص صلاحيات البوت
     const hasImage = Boolean(guildData.welcomeImage);
     const permCheck = checkBotPermissions(welcomeChannel, hasImage);
     if (!permCheck.ok) {
-        console.error(
+        appLogger.error(
             `[Welcome] ❌ البوت لا يملك الصلاحيات الكافية في قناة الترحيب\n` +
             `  → Guild: ${guildId} | Channel: ${channelId} (#${welcomeChannel.name})\n` +
             `  → الصلاحيات الناقصة: ${permCheck.missing.join(', ')}\n` +
@@ -211,7 +212,7 @@ async function sendWelcome(member) {
         return;
     }
 
-    console.log(
+    appLogger.info(
         `[Welcome] 📨 بدء إرسال ترحيب\n` +
         `  → Guild: ${guildId} (${member.guild.name})\n` +
         `  → Member: ${memberId} (${tag})\n` +
@@ -219,7 +220,7 @@ async function sendWelcome(member) {
         `  → Image: ${hasImage ? '✅ موجودة' : '❌ غير موجودة'}`
     );
 
-    // ── [8] بناء الصورة (اختياري) ───────────────────────────────────────────
+    // [8] بناء الصورة (اختياري)
     let attachment = null;
     let imgError = null;
     if (hasImage) {
@@ -228,20 +229,20 @@ async function sendWelcome(member) {
         imgError = result.error;
     }
 
-    // ── [9] إرسال رسالة الترحيب ─────────────────────────────────────────────
+    // [9] إرسال رسالة الترحيب
     try {
         const payload = {
-            content: `||@everyone|| 🎊 مرحباً بك يا ${member}! نورت سيرفر **${member.guild.name}**!`,
+            content: `||@everyone|| هلا بيك ${member}! نورت سيرفر **${member.guild.name}**.`,
         };
         if (attachment) {
             payload.files = [attachment];
         } else if (hasImage) {
-            payload.content += `\n\n*(⚠️ فشل إنشاء صورة الترحيب: ${imgError})*`;
+            payload.content += `\n\n*(ما گدرت أجهز صورة الترحيب: ${imgError})*`;
         }
         await welcomeChannel.send(payload);
-        console.log(`[Welcome] ✅ تم إرسال ترحيب للعضو ${tag} في #${welcomeChannel.name}`);
+        appLogger.info(`[Welcome] تم إرسال ترحيب للعضو ${tag} في #${welcomeChannel.name}`);
     } catch (sendErr) {
-        console.error(
+        appLogger.error(
             `[Welcome] ❌ فشل إرسال رسالة الترحيب\n` +
             `  → Guild: ${guildId} | Member: ${memberId} (${tag})\n` +
             `  → Channel: ${channelId} (#${welcomeChannel.name})\n` +
@@ -250,28 +251,28 @@ async function sendWelcome(member) {
         return;
     }
 
-    // ── [10] رسالة خاصة للعضو (DM) ─────────────────────────────────────────
+    // [10] رسالة خاصة للعضو (DM)
     try {
         const { config } = (() => { try { return { config: require('../config') }; } catch { return { config: {} }; } })();
         const dmEmbed = new EmbedBuilder()
             .setColor('#9B59B6')
-            .setTitle(`مرحباً بك في ${member.guild.name}! 👋`)
-            .setDescription(`أهلاً ${member.user.username}! نحن سعداء جداً بانضمامك!`)
+            .setTitle(`هلا بيك بـ ${member.guild.name}!`)
+            .setDescription(`نورتنا يا ${member.user.username}، خوش انضمام.`)
             .addFields(
-                { name: '🎮 ابدأ الآن', value: '• `تفعيل` — لإعداد حسابك\n• `يومي` — مكافأة يومية\n• `!help` — جميع الأوامر' },
-                { name: '💰 مكافأة الانضمام', value: `حصلت على **${config.startBalance ?? 1000} ${config.currency ?? '💰'}** هدية ترحيب!` },
-                { name: '📜 القوانين', value: 'تأكد من قراءة قوانين السيرفر!' }
+                { name: '🎮 منين تبدي؟', value: '• `تفعيل` — جهّز حسابك\n• `يومي` — خذ مكافأتك\n• `!help` — شوف الأوامر' },
+                { name: '💰 هدية الانضمام', value: `نزل برصيدك **${config.startBalance ?? 1000} ${config.currency ?? '💰'}** هدية ترحيب.` },
+                { name: '📜 القوانين', value: 'اقرأ قوانين السيرفر قبل لا تبدي.' }
             )
             .setThumbnail(member.guild.iconURL())
             .setFooter({ text: 'استمتع بوقتك معنا! 🎉' })
             .setTimestamp();
         await member.send({ embeds: [dmEmbed] });
     } catch {
-        console.log(`[Welcome] ℹ️ لا يمكن إرسال DM لـ ${tag} (الخصوصية مغلقة أو Block)`);
+        appLogger.info(`[Welcome] ℹ لا يمكن إرسال DM لـ ${tag} (الخصوصية مغلقة أو Block)`);
     }
 }
 
-// ── إرسال تجريبي مباشر لقناة محددة (من الـ Dashboard) ──────────────────────
+// إرسال تجريبي مباشر لقناة محددة (من الـ Dashboard)
 async function sendWelcomeToChannel(channel, member, overrideSettings = {}) {
     // دمج إعدادات الـ Guild مع أي override من الـ Dashboard
     const guildData = member?.guild?.id ? db.getGuildData(member.guild.id) : {};
@@ -287,17 +288,17 @@ async function sendWelcomeToChannel(channel, member, overrideSettings = {}) {
     }
 
     const payload = {
-        content: `||@everyone|| 🎊 **[تجربة]** مرحباً بك يا ${member}! نورت سيرفر **${member.guild.name}**!`,
+        content: `||@everyone|| **[تجربة]** هلا بيك ${member}! نورت سيرفر **${member.guild.name}**.`,
     };
     
     if (attachment) {
         payload.files = [attachment];
     } else if (hasImage) {
-        payload.content += `\n\n*(⚠️ فشل إنشاء صورة الترحيب: ${imgError})*`;
+        payload.content += `\n\n*(ما گدرت أجهز صورة الترحيب: ${imgError})*`;
     }
     
     await channel.send(payload);
-    console.log(`[Welcome] 🧪 تجربة ترحيب تم إرسالها إلى #${channel.name} في ${member.guild.name}`);
+    appLogger.info(`[Welcome] تجربة ترحيب تم إرسالها إلى #${channel.name} في ${member.guild.name}`);
 }
 
 module.exports = { sendWelcome, sendWelcomeToChannel };

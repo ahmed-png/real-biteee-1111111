@@ -35,7 +35,7 @@ test('special poll aliases honor the bot-owner disabled-command setting', async 
     await commandsMiddleware(message);
 
     assert.equal(executed, false);
-    assert.match(message.replies[0], /هذا الأمر معطل/);
+    assert.match(message.replies[0], /الأمر موقف/);
 });
 
 test('special server setup aliases enforce the command permission', async t => {
@@ -47,7 +47,7 @@ test('special server setup aliases enforce the command permission', async t => {
     await commandsMiddleware(message);
 
     assert.equal(executed, false);
-    assert.match(message.replies[0], /ليس لديك صلاحية/);
+    assert.match(message.replies[0], /ما عندك صلاحية/);
 });
 
 test('special server setup aliases proceed for members with the required permission', async t => {

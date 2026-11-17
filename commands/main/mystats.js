@@ -25,12 +25,12 @@ module.exports = {
         const lvlInfo = levels.getLevelProgress(targetUser.id);
         const now = Date.now();
 
-        // ── حساب الثروة الكلية ─────────────────────────────────────────
+        // حساب الثروة الكلية
         const wallet = userData.balance || 0;
         const bank   = userData.bank    || 0;
         const total  = wallet + bank;
 
-        // ── حساب رتبة الثروة ───────────────────────────────────────────
+        // حساب رتبة الثروة
         const allUsers = db.getAllUsers();
         const wealthRank = Object.values(allUsers)
             .map(u => (u.balance || 0) + (u.bank || 0))
@@ -41,14 +41,14 @@ module.exports = {
             .sort((a, b) => b - a)
             .findIndex(x => x <= (userData.xp || 0)) + 1;
 
-        // ── الإحصائيات ──────────────────────────────────────────────────
+        // الإحصائيات
         const stats = userData.stats || {};
         const gamesPlayed = stats.gamesPlayed  || 0;
         const gamesWon    = stats.gamesWon     || 0;
         const winRate     = gamesPlayed > 0 ? Math.round((gamesWon / gamesPlayed) * 100) : 0;
         const biggestWin  = stats.biggestWin   || 0;
 
-        // ── نظام الزواج ─────────────────────────────────────────────────
+        // نظام الزواج
         let marriageInfo = '> 💔 غير متزوج/ة';
         if (userData.marriedTo) {
             try {
@@ -62,7 +62,7 @@ module.exports = {
             }
         }
 
-        // ── حالة الكولداونات ────────────────────────────────────────────
+        // حالة الكولداونات
         const dailyCd = userData.lastDaily
             ? Math.max(0, 86_400_000 - (now - userData.lastDaily))
             : 0;
@@ -77,18 +77,18 @@ module.exports = {
             return h > 0 ? `${h}س ${m}د` : `${m} دقيقة`;
         };
 
-        // ── شريط XP ─────────────────────────────────────────────────────
+        // شريط XP
         const xpBar = levels.createProgressBar(lvlInfo.percentage, 12);
 
-        // ── عدد العناصر في الحقيبة ──────────────────────────────────────
+        // عدد العناصر في الحقيبة
         const inv = userData.inventory || {};
         const invCount = Object.keys(inv).length;
         const activeItems = Object.values(inv).filter(item => item.expiresAt > now).length;
 
-        // ── التحذيرات ────────────────────────────────────────────────────
+        // التحذيرات
         const warnings = userData.warnings || 0;
 
-        // ── بناء الـ Embed ──────────────────────────────────────────────
+        // بناء الـ Embed
         const embed = new EmbedBuilder()
             .setColor(isOther ? '#5865F2' : '#FFD700')
             .setTitle(`📊 إحصائيات ${targetUser.username}`)
@@ -99,7 +99,7 @@ module.exports = {
                     : '> لوحة إحصائياتك الشخصية الكاملة'
             )
             .addFields(
-                // ── القسم المالي ──────────────────────────────────────────
+                // القسم المالي
                 {
                     name: '💰 الوضع المالي',
                     value: [
@@ -110,7 +110,7 @@ module.exports = {
                     ].join('\n'),
                     inline: false,
                 },
-                // ── القسم الإحصائي ────────────────────────────────────────
+                // القسم الإحصائي
                 {
                     name: '⭐ المستوى والخبرة',
                     value: [
@@ -121,7 +121,7 @@ module.exports = {
                     ].join('\n'),
                     inline: false,
                 },
-                // ── الألعاب ───────────────────────────────────────────────
+                // الألعاب
                 {
                     name: '🎮 الألعاب',
                     value: [
@@ -131,7 +131,7 @@ module.exports = {
                     ].join('\n'),
                     inline: true,
                 },
-                // ── الحقيبة ───────────────────────────────────────────────
+                // الحقيبة
                 {
                     name: '🎒 الحقيبة',
                     value: [
@@ -141,7 +141,7 @@ module.exports = {
                     ].join('\n'),
                     inline: true,
                 },
-                // ── الحالة الاجتماعية ─────────────────────────────────────
+                // الحالة الاجتماعية
                 {
                     name: '❤️ الحياة الاجتماعية',
                     value: [
@@ -151,7 +151,7 @@ module.exports = {
                     ].join('\n'),
                     inline: false,
                 },
-                // ── الكولداونات ───────────────────────────────────────────
+                // الكولداونات
                 {
                     name: '⏰ الكولداونات',
                     value: [

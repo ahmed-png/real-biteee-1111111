@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../../utils/app-logger');
 
 /**
  * ╔══════════════════════════════════════════════════════════════════════╗
@@ -15,7 +16,7 @@ const config = require('../../config');
 const db = require('../../utils/database');
 const channelResolver = require('../../utils/channel-resolver');
 
-// ─── الألوان ──────────────────────────────────────────────────────────────────
+// الألوان
 const C = {
     gold:   '#FFD700',
     cyan:   '#00FFFF',
@@ -31,24 +32,23 @@ const C = {
     indigo: '#6610F2',
 };
 
-// ─── القوانين ─────────────────────────────────────────────────────────────────
+// القوانين
 const SERVER_RULES = [
-    { num: '١', icon: '🚫', rule: 'ممنوع السب والشتم والتنمر بأي شكل أو بأي لغة كانت' },
-    { num: '٢', icon: '🎵', rule: 'ممنوع إرسال روابط الأغاني أو الترفيه في قنوات غير مخصصة لها' },
-    { num: '٣', icon: '👑', rule: 'ممنوع الاستغلال بالسلطة أو التعسف في استخدام الصلاحيات الإدارية' },
-    { num: '٤', icon: '🕌', rule: 'ممنوع الطائفية والتعصب الديني أو القبلي — نحن هنا للعب معاً' },
-    { num: '٥', icon: '🛡️', rule: 'ممنوع انتقاد القائد (أونر السيرفر) علناً — إذا كان لديك ملاحظة تواصل خاص' },
-    { num: '٦', icon: '☮️', rule: 'دعوا الطائفية جانباً — عيشوا بسلام وتعاون من أجل المتعة والألعاب' },
-    { num: '٧', icon: '📵', rule: 'ممنوع الإعلانات والدعاية لأي سيرفر أو منتج أو خدمة دون إذن الإدارة' },
-    { num: '٨', icon: '🔞', rule: 'ممنوع نشر أي محتوى مسيء أو غير لائق أو للكبار فقط' },
-    { num: '٩', icon: '🤝', rule: 'احترام جميع الأعضاء واجب — التمييز العنصري ممنوع منعاً باتاً' },
+    { num: '١', icon: '🚫', rule: 'ممنوع السب والتنمر بكل أشكاله وبأي لغة' },
+    { num: '٢', icon: '🎵', rule: 'شارك روابط الأغاني والترفيه بالقنوات المخصصة إلها بس' },
+    { num: '٣', icon: '👑', rule: 'لا تستغل صلاحياتك الإدارية ولا تستخدمها بشكل تعسفي' },
+    { num: '٤', icon: '🕌', rule: 'ابتعدوا عن الطائفية والتعصب الديني أو القبلي؛ إحنا هنا حتى نلعب سوا' },
+    { num: '٥', icon: '🛡️', rule: 'إذا عندك ملاحظة تخص أونر السيرفر، احچي وياه بالخاص وباحترام' },
+    { num: '٦', icon: '☮️', rule: 'خلّونا نتعاون ونحافظ على جو هادي وممتع للجميع' },
+    { num: '٧', icon: '📵', rule: 'لا تعلن عن سيرفر أو منتج أو خدمة بدون إذن الإدارة' },
+    { num: '٨', icon: '🔞', rule: 'ممنوع نشر محتوى مسيء أو غير لائق أو مخصص للكبار' },
+    { num: '٩', icon: '🤝', rule: 'احترموا كل الأعضاء، والتمييز العنصري ممنوع' },
 ];
 
-// ─── بنية السيرفر الكاملة ─────────────────────────────────────────────────────
+// بنية السيرفر الكاملة
 function buildServerStructure(guild) {
     return {
         categories: [
-            // ══════════════════════════════════
             {
                 name: '📌 المعلومات والإعلانات',
                 emoji: '📌',
@@ -57,33 +57,32 @@ function buildServerStructure(guild) {
                     {
                         name: '📜┃القوانين',
                         type: ChannelType.GuildText,
-                        topic: '⚖️ قوانين السيرفر — يرجى القراءة والالتزام',
+                        topic: '⚖️ قوانين السيرفر — اقروها والتزموا بيها',
                         readOnly: true,
                         botPost: 'rules',   // البوت ينشر هنا
                     },
                     {
                         name: '📢┃الإعلانات',
                         type: ChannelType.GuildText,
-                        topic: '📢 الإعلانات الرسمية من الإدارة',
+                        topic: '📢 إعلانات الإدارة الرسمية',
                         readOnly: true,
                     },
                     {
                         name: '👋┃الترحيب',
                         type: ChannelType.GuildText,
-                        topic: '🌟 مرحباً بالأعضاء الجدد — رحلتك تبدأ هنا!',
+                        topic: '🌟 هلا بالأعضاء الجدد — من هنا تبدي رحلتكم!',
                         readOnly: true,
                     },
                     {
                         name: '🤖┃أوامر-البوت',
                         type: ChannelType.GuildText,
-                        topic: '⚙️ اكتب أوامر البوت هنا | شرح كامل: اكتب شرح',
+                        topic: '⚙️ اكتب أوامر البوت هنا | للشرح الكامل اكتب شرح',
                         readOnly: false,
                         dbKey: 'botChannel',
                         botPost: 'botGuide',
                     },
                 ]
             },
-            // ══════════════════════════════════
             {
                 name: '💬 الدردشة العامة',
                 emoji: '💬',
@@ -91,27 +90,26 @@ function buildServerStructure(guild) {
                     {
                         name: '💬┃الدردشة-العامة',
                         type: ChannelType.GuildText,
-                        topic: '🗣️ تكلم عن أي شيء — الدردشة العامة للجميع',
+                        topic: '🗣️ احچي عن أي شي — الدردشة مفتوحة للكل',
                     },
                     {
                         name: '🖼️┃الصور-والميمز',
                         type: ChannelType.GuildText,
-                        topic: '🎭 شارك أجمل الصور والميمز المضحكة',
+                        topic: '🎭 شارك الصور والميمز اللي تعجبك',
                     },
                     {
                         name: '📲┃السوشيال-ميديا',
                         type: ChannelType.GuildText,
-                        topic: '📱 شارك محتوى السوشيال ميديا — يوتيوب، تيك توك، انستا',
+                        topic: '📱 شارك محتوى السوشيال ميديا — يوتيوب، تيك توك، إنستا',
                     },
                     {
                         name: '🤖┃البوت-الذكي',
                         type: ChannelType.GuildText,
-                        topic: '🧠 تكلم مع الذكاء الاصطناعي — امنشن البوت أو اكتب رسالة',
+                        topic: '🧠 احچي ويا الذكاء الاصطناعي — منشن البوت أو اكتب رسالة',
                         dbKey: 'aiChannel',
                     },
                 ]
             },
-            // ══════════════════════════════════
             {
                 name: '💰 البنك والاقتصاد',
                 emoji: '💰',
@@ -119,29 +117,28 @@ function buildServerStructure(guild) {
                     {
                         name: '💰┃البنك',
                         type: ChannelType.GuildText,
-                        topic: '🏦 عمليات البنك — رصيد، يومي، عمل، تحويل',
+                        topic: '🏦 خدمات البنك — رصيد، يومي، عمل، تحويل',
                         dbKey: 'bankChannel',
                     },
                     {
                         name: '🛒┃المتجر',
                         type: ChannelType.GuildText,
-                        topic: '🛍️ اكتب: متجر | أيتمز نادرة وعروض يومية',
+                        topic: '🛍️ اكتب: متجر | أغراض نادرة وعروض يومية',
                     },
                     {
                         name: '📈┃الأسهم-والاستثمار',
                         type: ChannelType.GuildText,
-                        topic: '💹 اكتب: استثمار | ضاعف ثروتك',
+                        topic: '💹 اكتب: استثمار | جرّب تضاعف ثروتك',
                     },
                     {
                         name: '🏆┃لوحة-الصدارة',
                         type: ChannelType.GuildText,
-                        topic: '👑 أثرى أعضاء السيرفر — اكتب: صدارة',
+                        topic: '👑 أغنى أعضاء السيرفر — اكتب: صدارة',
                         dbKey: 'leaderboardChannel',
                         botPost: 'leaderboard',
                     },
                 ]
             },
-            // ══════════════════════════════════
             {
                 name: '🎮 ألعاب البوت',
                 emoji: '🎮',
@@ -149,7 +146,7 @@ function buildServerStructure(guild) {
                     {
                         name: '🎮┃الألعاب-المصغرة',
                         type: ChannelType.GuildText,
-                        topic: '🎲 العب XO، RPS، تريفيا — اكتب: العاب',
+                        topic: '🎲 العب XO وRPS وتريفيا — اكتب: العاب',
                         dbKey: 'gamesChannel',
                     },
                     {
@@ -165,11 +162,10 @@ function buildServerStructure(guild) {
                     {
                         name: '🏆┃الإنجازات',
                         type: ChannelType.GuildText,
-                        topic: '⭐ مستوياتك وإنجازاتك — اكتب: بروفايل',
+                        topic: '⭐ شوف مستواك وإنجازاتك — اكتب: بروفايل',
                     },
                 ]
             },
-            // ══════════════════════════════════
             {
                 name: '🕹️ غرف الألعاب الشهيرة',
                 emoji: '🕹️',
@@ -177,58 +173,57 @@ function buildServerStructure(guild) {
                     {
                         name: '👾┃عام-الألعاب',
                         type: ChannelType.GuildText,
-                        topic: '🎮 دردشة الألعاب العامة — شارك كليباتك ونتائجك',
+                        topic: '🎮 دردشة الألعاب — شارك مقاطعك ونتائجك',
                     },
                     {
                         name: '🔴┃أموك-اص-Among-Us',
                         type: ChannelType.GuildText,
-                        topic: '👀 من هو الغاشّ؟ | كتابة: غرفة جديدة [اسم] امونق اص',
+                        topic: '👀 منو الغشّاش؟ | اكتب: غرفة جديدة [اسم] امونق اص',
                         game: 'AmongUs',
                     },
                     {
                         name: '🟡┃ببجي-PUBG',
                         type: ChannelType.GuildText,
-                        topic: '🔫 غرف PUBG | كتابة: غرفة جديدة [اسم] ببجي',
+                        topic: '🔫 غرف PUBG | اكتب: غرفة جديدة [اسم] ببجي',
                         game: 'PUBG',
                     },
                     {
                         name: '🟢┃كول-اوف-ديوتي-COD',
                         type: ChannelType.GuildText,
-                        topic: '💥 غرف COD Warzone | كتابة: غرفة جديدة [اسم] كول اوف ديوتي',
+                        topic: '💥 غرف COD Warzone | اكتب: غرفة جديدة [اسم] كول اوف ديوتي',
                         game: 'COD',
                     },
                     {
                         name: '🔵┃فورتنايت',
                         type: ChannelType.GuildText,
-                        topic: '🏗️ غرف Fortnite | كتابة: غرفة جديدة [اسم] فورتنايت',
+                        topic: '🏗️ غرف Fortnite | اكتب: غرفة جديدة [اسم] فورتنايت',
                         game: 'Fortnite',
                     },
                     {
                         name: '🟣┃فالورانت',
                         type: ChannelType.GuildText,
-                        topic: '🎯 غرف Valorant | كتابة: غرفة جديدة [اسم] فالورانت',
+                        topic: '🎯 غرف Valorant | اكتب: غرفة جديدة [اسم] فالورانت',
                         game: 'Valorant',
                     },
                     {
                         name: '⚫┃ماين-كرافت',
                         type: ChannelType.GuildText,
-                        topic: '⛏️ غرف Minecraft | كتابة: غرفة جديدة [اسم] ماين كرافت',
+                        topic: '⛏️ غرف Minecraft | اكتب: غرفة جديدة [اسم] ماين كرافت',
                         game: 'Minecraft',
                     },
                     {
                         name: '🌟┃موبايل-ليجند',
                         type: ChannelType.GuildText,
-                        topic: '⚔️ غرف Mobile Legends | كتابة: غرفة جديدة [اسم] موبايل ليجند',
+                        topic: '⚔️ غرف Mobile Legends | اكتب: غرفة جديدة [اسم] موبايل ليجند',
                         game: 'MobileLegends',
                     },
                     {
                         name: '📣┃الإعلان-عن-غرف',
                         type: ChannelType.GuildText,
-                        topic: '📣 أعلن عن غرفتك هنا — لأي لعبة كانت',
+                        topic: '📣 أعلن عن غرفتك هنا، مهما كانت اللعبة',
                     },
                 ]
             },
-            // ══════════════════════════════════
             {
                 name: '🎨 الألوان والزينة',
                 emoji: '🎨',
@@ -236,14 +231,13 @@ function buildServerStructure(guild) {
                     {
                         name: '🎨┃اختيار-الألوان',
                         type: ChannelType.GuildText,
-                        topic: '🌈 اختر لون بروفايلك — اضغط على الأزرار!',
+                        topic: '🌈 اختار لون حسابك — اضغط أحد الأزرار!',
                         readOnly: true,
                         dbKey: 'colorsChannel',
                         botPost: 'colors',
                     },
                 ]
             },
-            // ══════════════════════════════════
             {
                 name: '🏠 الغرف المخصصة',
                 emoji: '🏠',
@@ -251,14 +245,13 @@ function buildServerStructure(guild) {
                     {
                         name: '📖┃شرح-نظام-الغرف',
                         type: ChannelType.GuildText,
-                        topic: '💡 كيف تنشئ غرفتك الخاصة؟',
+                        topic: '💡 شلون تسوي غرفتك الخاصة؟',
                         readOnly: true,
                         dbKey: 'roomsChannel',
                         botPost: 'roomsGuide',
                     },
                 ]
             },
-            // ══════════════════════════════════
             {
                 name: '⚖️ العقوبات والتقارير',
                 emoji: '⚖️',
@@ -267,14 +260,14 @@ function buildServerStructure(guild) {
                     {
                         name: '⚖️┃العقوبات',
                         type: ChannelType.GuildText,
-                        topic: '📋 سجل العقوبات التلقائية',
+                        topic: '📋 سجل إجراءات الإشراف التلقائية',
                         privateAdmin: true,
                         dbKey: 'punishmentsChannel',
                     },
                     {
                         name: '🚨┃التقارير',
                         type: ChannelType.GuildText,
-                        topic: '📝 تقارير الأعضاء — الإدارة ستتابع فوراً',
+                        topic: '📝 بلاغات الأعضاء — الإدارة تتابعها',
                         privateAdmin: true,
                     },
                     {
@@ -286,7 +279,6 @@ function buildServerStructure(guild) {
                     },
                 ]
             },
-            // ══════════════════════════════════
             {
                 name: '🔒 السجن',
                 emoji: '🔒',
@@ -295,12 +287,11 @@ function buildServerStructure(guild) {
                     {
                         name: '🔒┃السجن',
                         type: ChannelType.GuildText,
-                        topic: '⛓️ أنت هنا لأنك خالفت القوانين',
+                        topic: '⛓️ انحطّيت هنا بسبب مخالفة القوانين',
                         dbKey: 'jailChannel',
                     },
                 ]
             },
-            // ══════════════════════════════════
             {
                 name: '👑 الإدارة',
                 emoji: '👑',
@@ -309,27 +300,26 @@ function buildServerStructure(guild) {
                     {
                         name: '👑┃لوحة-الأونر',
                         type: ChannelType.GuildText,
-                        topic: '🔐 حصري للأونر — اكتب داشبورد للوحة التحكم الكاملة',
+                        topic: '🔐 للأونر بس — اكتب داشبورد حتى تفتح لوحة التحكم',
                         privateAdmin: true,
                         dbKey: 'ownerChannel',
                     },
                     {
                         name: '⚙️┃الإدارة-العامة',
                         type: ChannelType.GuildText,
-                        topic: '🛠️ قناة الإدارة — نقاشات داخلية وقرارات',
+                        topic: '🛠️ قناة الإدارة — للنقاشات والقرارات الداخلية',
                         privateAdmin: true,
                         dbKey: 'adminChannel',
                     },
                     {
                         name: '📝┃السجلات-الكاملة',
                         type: ChannelType.GuildText,
-                        topic: '📊 سجلات النظام التفصيلية — جميع الأحداث',
+                        topic: '📊 سجلات النظام بالتفصيل — كل الأحداث',
                         privateAdmin: true,
                         dbKey: 'logChannel',
                     },
                 ]
             },
-            // ══════════════════════════════════
             {
                 name: '🔊 القنوات الصوتية',
                 emoji: '🔊',
@@ -351,7 +341,7 @@ function buildServerStructure(guild) {
     };
 }
 
-// ─── نشر القوانين ─────────────────────────────────────────────────────────────
+// نشر القوانين
 async function postRules(guild, rulesChannel) {
     try {
         // حذف الرسائل القديمة
@@ -363,16 +353,16 @@ async function postRules(guild, rulesChannel) {
         // Embed القوانين الرئيسي
         const rulesEmbed = new EmbedBuilder()
             .setColor(C.gold)
-            .setTitle('⚖️ قوانين السيرفر الرسمية')
+            .setTitle('⚖️ قوانين السيرفر')
             .setDescription([
                 '```ansi',
                 '\u001b[1;33m══════════════════════════════════════════\u001b[0m',
-                '\u001b[1;33m      قوانين يجب الالتزام بها للجميع      \u001b[0m',
+                '\u001b[1;33m       قوانين لازم الكل يلتزم بيها       \u001b[0m',
                 '\u001b[1;33m══════════════════════════════════════════\u001b[0m',
                 '```',
                 '',
-                '> 📌 **قراءة القوانين والالتزام بها إلزامية لجميع الأعضاء**',
-                '> ⚠️ **المخالفة تؤدي إلى عقوبات تلقائية فورية**',
+                '> 📌 **كل الأعضاء لازم يقروها ويلتزمون بيها**',
+                '> ⚠️ **مخالفة القوانين ممكن يترتب عليها إجراء إشرافي**',
             ].join('\n'))
             .setThumbnail(guild.iconURL({ size: 256 }) || null)
             .setTimestamp()
@@ -389,32 +379,32 @@ async function postRules(guild, rulesChannel) {
         // Embed الإقرار
         const acceptEmbed = new EmbedBuilder()
             .setColor(C.green)
-            .setTitle('✅ إقرار القبول والالتزام')
+            .setTitle('✅ موافقتك على القوانين')
             .setDescription([
-                '**بمجرد انضمامك للسيرفر فأنت توافق تلقائياً على:**',
+                '**بانضمامك للسيرفر، إنت توافق على:**',
                 '',
-                '• 📖 قراءة جميع القوانين المذكورة أعلاه',
-                '• ✅ الالتزام التام بها في جميع الأوقات',
-                '• ⚖️ قبول أي عقوبة تترتب على المخالفة',
-                '• 🤝 المساهمة في بيئة إيجابية ومحترمة',
+                '• 📖 تقرا كل القوانين المذكورة فوق',
+                '• ✅ تلتزم بيها بكل الأوقات',
+                '• ⚖️ تتعاون ويّا الإدارة إذا صارت مخالفة',
+                '• 🤝 تساعدنا نخلي المكان إيجابي ومحترم',
                 '',
                 '```',
-                'نتمنى لك وقتاً ممتعاً في سيرفرنا! 🎮✨',
+                'نتمنى لك وقت حلو بسيرفرنا! 🎮✨',
                 '```',
             ].join('\n'))
             .setTimestamp();
 
         await rulesChannel.send({ embeds: [rulesEmbed] });
         await rulesChannel.send({ embeds: [acceptEmbed] });
-        console.log('[ServerSetup] ✅ تم نشر القوانين');
+        appLogger.info('[ServerSetup] تم نشر القوانين');
         return true;
     } catch (err) {
-        console.error('[ServerSetup] خطأ في نشر القوانين:', err.message);
+        appLogger.error('[ServerSetup] خطأ في نشر القوانين:', err.message);
         return false;
     }
 }
 
-// ─── نشر شرح نظام الغرف ─────────────────────────────────────────────────────
+// نشر شرح نظام الغرف
 async function postRoomsGuide(guild, roomsChannel) {
     try {
         const old = await roomsChannel.messages.fetch({ limit: 10 }).catch(() => null);
@@ -422,17 +412,17 @@ async function postRoomsGuide(guild, roomsChannel) {
 
         const embed = new EmbedBuilder()
             .setColor(C.purple)
-            .setTitle('🏠 نظام الغرف المخصصة — دليل كامل')
+            .setTitle('🏠 دليل الغرف الخاصة')
             .setDescription([
                 '```ansi',
                 '\u001b[1;35m═══════════════════════════════════════\u001b[0m',
-                '\u001b[1;35m     أنشئ غرفتك الخاصة الآن! 🏠      \u001b[0m',
+                '\u001b[1;35m       سوّي غرفتك الخاصة هسه! 🏠      \u001b[0m',
                 '\u001b[1;35m═══════════════════════════════════════\u001b[0m',
                 '```',
             ].join('\n'))
             .addFields(
                 {
-                    name: '🎮 الألعاب المدعومة',
+                    name: '🎮 الألعاب المتوفرة',
                     value: [
                         '> **👾 امونق اص** (Among Us)',
                         '> **🔫 ببجي** (PUBG)',
@@ -445,55 +435,55 @@ async function postRoomsGuide(guild, roomsChannel) {
                     inline: false,
                 },
                 {
-                    name: '🏠 إنشاء غرفة خاصة',
+                    name: '🏠 تسوي غرفة خاصة',
                     value: [
                         '```',
                         'الأمر: غرفة جديدة [اسم الغرفة] [اللعبة]',
                         'مثال: غرفة جديدة غرفة الصقور ببجي',
                         'مثال: غرفة جديدة عشيرة النور موبايل ليجند',
                         '```',
-                        '💰 **التكلفة:** **2,500** عملة من البنك',
-                        '⏰ **المدة:** 7 أيام (قابلة للتجديد)',
-                        '👑 **الصلاحيات:** تحكم كامل بالغرفة',
+                        '💰 **السعر:** **2,500** عملة من البنك',
+                        '⏰ **المدة:** 7 أيام (وتگدر تجدّدها)',
+                        '👑 **الصلاحيات:** تتحكم بالغرفة',
                     ].join('\n'),
                     inline: false,
                 },
                 {
-                    name: '⚙️ صلاحيات صاحب الغرفة',
+                    name: '⚙️ شتگدر تسوي بصفتك المالك',
                     value: [
-                        '✅ تغيير اسم الغرفة',
-                        '✅ طرد الأعضاء من الصوتي',
-                        '✅ كتم الأعضاء',
-                        '✅ قفل/فتح الغرفة',
-                        '✅ تجديد الغرفة (+1000 عملة)',
-                        '✅ حذف الغرفة في أي وقت',
+                        '✅ تغيّر اسم الغرفة',
+                        '✅ تنقل أعضاء من الروم الصوتي',
+                        '✅ تكتم الأعضاء',
+                        '✅ تقفل الغرفة أو تفتحها',
+                        '✅ تجدّد الغرفة (+1000 عملة)',
+                        '✅ تحذف الغرفة بأي وقت',
                     ].join('\n'),
                     inline: true,
                 },
                 {
                     name: '⚠️ قواعد الغرف',
                     value: [
-                        '❌ تطبق قوانين السيرفر كاملاً',
-                        '❌ ممنوع إيذاء الأعضاء',
-                        '❌ ممنوع الإعلانات التجارية',
-                        '❌ الغرف غير النشطة 48 ساعة تُحذف',
-                        '❌ غرفة واحدة فقط لكل شخص',
+                        '❌ قوانين السيرفر تنطبق عليها',
+                        '❌ لا تسيء للأعضاء',
+                        '❌ لا تنشر إعلانات تجارية',
+                        '❌ الغرف اللي ما تنستخدم لمدة 48 ساعة تنحذف',
+                        '❌ لكل شخص غرفة وحدة بس',
                     ].join('\n'),
                     inline: true,
                 },
                 {
                     name: '📋 أوامر الغرف',
                     value: [
-                        '`غرفة جديدة [اسم] [لعبة]` — إنشاء غرفة',
-                        '`غرف` — عرض جميع الغرف النشطة',
-                        '`غرفتي` — إدارة غرفتك بأزرار',
-                        '`تجديد غرفة` — تجديد 7 أيام (1000 💰)',
-                        '`حذف غرفة` — حذف غرفتك',
+                        '`غرفة جديدة [اسم] [لعبة]` — تسوي غرفة',
+                        '`غرف` — تشوف الغرف الشغّالة',
+                        '`غرفتي` — تدير غرفتك بالأزرار',
+                        '`تجديد غرفة` — تجدّدها 7 أيام (1000 💰)',
+                        '`حذف غرفة` — تحذف غرفتك',
                     ].join('\n'),
                     inline: false,
                 }
             )
-            .setFooter({ text: '💡 الغرف تُحذف تلقائياً بعد انتهاء المدة أو عدم النشاط' })
+            .setFooter({ text: '💡 الغرف تنحذف وحدها إذا انتهت مدتها أو ما استخدمها أحد' })
             .setTimestamp();
 
         // أزرار إنشاء غرفة سريع
@@ -511,23 +501,23 @@ async function postRoomsGuide(guild, roomsChannel) {
         );
 
         await roomsChannel.send({ embeds: [embed], components: [row1, row2] });
-        console.log('[ServerSetup] ✅ تم نشر دليل الغرف');
+        appLogger.info('[ServerSetup] تم نشر دليل الغرف');
     } catch (err) {
-        console.error('[ServerSetup] خطأ في نشر شرح الغرف:', err.message);
+        appLogger.error('[ServerSetup] خطأ في نشر شرح الغرف:', err.message);
     }
 }
 
-// ─── نشر شرح الألوان ────────────────────────────────────────────────────────
+// نشر شرح الألوان
 async function postColorsGuide(guild, colorsChannel) {
     try {
         const colorSystem = require('../../utils/color-system');
         await colorSystem.setupColorChannel(guild, colorsChannel, null);
     } catch (err) {
-        console.error('[ServerSetup] خطأ في إعداد قناة الألوان:', err.message);
+        appLogger.error('[ServerSetup] خطأ في إعداد قناة الألوان:', err.message);
     }
 }
 
-// ─── نشر دليل البوت ─────────────────────────────────────────────────────────
+// نشر دليل البوت
 async function postBotGuide(guild, botChannel) {
     try {
         const old = await botChannel.messages.fetch({ limit: 10 }).catch(() => null);
@@ -535,25 +525,25 @@ async function postBotGuide(guild, botChannel) {
 
         const embed = new EmbedBuilder()
             .setColor(C.cyan)
-            .setTitle('🤖 دليل البوت الكامل — نظام 2060')
+            .setTitle('🤖 دليل البوت — إصدار 2060')
             .setDescription([
                 '```ansi',
                 '\u001b[1;36m══════════════════════════════════════════════\u001b[0m',
-                '\u001b[1;36m   مرحباً بك في أذكى بوت ديسكورد! 🧠🚀    \u001b[0m',
+                '\u001b[1;36m     هلا بيك بأذكى بوت ديسكورد! 🧠🚀     \u001b[0m',
                 '\u001b[1;36m══════════════════════════════════════════════\u001b[0m',
                 '```',
-                '> **البوت يعمل بدون برفكس — اكتب الأمر مباشرةً!**',
+                '> **البوت يشتغل بدون بادئة — اكتب الأمر دغري!**',
             ].join('\n'))
             .addFields(
                 {
                     name: '💰 الاقتصاد',
                     value: [
-                        '`رصيد` — رصيدك الكامل',
-                        '`يومي` — مكافأة يومية',
-                        '`عمل` — اكسب عملات',
-                        '`متجر` — تسوق',
-                        '`استثمار` — استثمر',
-                        '`بنك` — عمليات البنك',
+                        '`رصيد` — تعرف على رصيدك',
+                        '`يومي` — مكافأتك اليومية',
+                        '`عمل` — اجمع عملات',
+                        '`متجر` — تسوّق',
+                        '`استثمار` — استثمر عملاتك',
+                        '`بنك` — خدمات البنك',
                     ].join('\n'),
                     inline: true,
                 },
@@ -562,22 +552,22 @@ async function postBotGuide(guild, botChannel) {
                     value: [
                         '`العاب` — قائمة الألعاب',
                         '`xo @شخص` — XO',
-                        '`رحجة @شخص` — حجرة ورقة',
-                        '`تريفيا` — اختبر معلوماتك',
-                        '`كازينو` — كازينو',
+                        '`رحجة @شخص` — حجرة، ورقة',
+                        '`تريفيا` — جرّب معلوماتك',
+                        '`كازينو` — ألعاب الكازينو',
                         '`سباق` — سباق الألعاب',
                     ].join('\n'),
                     inline: true,
                 },
                 {
-                    name: '📊 البروفايل',
+                    name: '📊 حسابك',
                     value: [
-                        '`بروفايل` — بروفايلك',
+                        '`بروفايل` — حسابك',
                         '`مستوى` — مستواك وXP',
                         '`إنجازات` — إنجازاتك',
-                        '`تحديات` — التحديات اليومية',
-                        '`سمعة @شخص` — السمعة',
-                        '`rep @شخص` — امنح سمعة',
+                        '`تحديات` — تحدياتك اليومية',
+                        '`سمعة @شخص` — سمعتك',
+                        '`rep @شخص` — زيد سمعة عضو',
                     ].join('\n'),
                     inline: true,
                 },
@@ -586,19 +576,19 @@ async function postBotGuide(guild, botChannel) {
                     value: [
                         '`غرفة جديدة [اسم] [لعبة]`',
                         '`غرف` — كل الغرف',
-                        '`غرفتي` — إدارة غرفتك',
-                        '`تجديد غرفة` — تجديد',
-                        '`حذف غرفة` — حذف',
+                        '`غرفتي` — تدير غرفتك',
+                        '`تجديد غرفة` — تجدّدها',
+                        '`حذف غرفة` — تحذفها',
                     ].join('\n'),
                     inline: true,
                 },
                 {
                     name: '🎨 التخصيص',
                     value: [
-                        '`ألوان` — ألوان البروفايل',
-                        '`لون [اسم]` — غير لونك',
-                        '`بول [سؤال]` — استطلاع',
-                        '`كلان` — إدارة الكلان',
+                        '`ألوان` — ألوان حسابك',
+                        '`لون [اسم]` — تغيّر لونك',
+                        '`بول [سؤال]` — تسوي استطلاع',
+                        '`كلان` — تدير الكلان',
                     ].join('\n'),
                     inline: true,
                 },
@@ -606,8 +596,8 @@ async function postBotGuide(guild, botChannel) {
                     name: '🛡️ الإدارة',
                     value: [
                         '`مساعدة` — قائمة الأوامر',
-                        '`تقرير @شخص` — بلّغ',
-                        '`عقوبات` — عقوباتك',
+                        '`تقرير @شخص` — بلّغ عن عضو',
+                        '`عقوبات` — إجراءات الإشراف',
                         '`بان @شخص` — حظر',
                         '`ميوت @شخص` — كتم',
                     ].join('\n'),
@@ -616,15 +606,15 @@ async function postBotGuide(guild, botChannel) {
                 {
                     name: '🧠 الذكاء الاصطناعي',
                     value: [
-                        '> 💬 **تكلم مع البوت في قناة البوت-الذكي**',
+                        '> 💬 **احچي ويا البوت بقناة البوت-الذكي**',
                         '> 🤖 يتذكر محادثاتك السابقة',
                         '> 📚 يتعلم من الأعضاء باستمرار',
-                        '> 🌟 يتكيف مع أسلوبك الشخصي',
+                        '> 🌟 يتأقلم ويا أسلوبك',
                     ].join('\n'),
                     inline: false,
                 }
             )
-            .setFooter({ text: '🚀 نظام البوت 2060 — الجيل القادم من الذكاء الاصطناعي' })
+            .setFooter({ text: '🚀 بوت 2060 — الذكاء الاصطناعي بإصدار أحدث' })
             .setTimestamp();
 
         const row = new ActionRowBuilder().addComponents(
@@ -635,13 +625,13 @@ async function postBotGuide(guild, botChannel) {
         );
 
         await botChannel.send({ embeds: [embed], components: [row] });
-        console.log('[ServerSetup] ✅ تم نشر دليل البوت');
+        appLogger.info('[ServerSetup] تم نشر دليل البوت');
     } catch (err) {
-        console.error('[ServerSetup] خطأ في نشر دليل البوت:', err.message);
+        appLogger.error('[ServerSetup] خطأ في نشر دليل البوت:', err.message);
     }
 }
 
-// ─── Embed شريط التقدم ────────────────────────────────────────────────────────
+// Embed شريط التقدم
 function buildProgressEmbed(status, percent, isReset) {
     const filled = Math.floor(percent / 5);
     const empty = 20 - filled;
@@ -649,7 +639,7 @@ function buildProgressEmbed(status, percent, isReset) {
 
     return new EmbedBuilder()
         .setColor(percent === 100 ? C.green : C.cyan)
-        .setTitle(isReset ? '♻️ إعادة تفعيل السيرفر' : '🚀 تفعيل السيرفر')
+        .setTitle(isReset ? '♻️ إعادة تجهيز السيرفر' : '🚀 تجهيز السيرفر')
         .setDescription([
             '```ansi',
             '\u001b[1;36m[' + bar + ']\u001b[0m',
@@ -660,48 +650,48 @@ function buildProgressEmbed(status, percent, isReset) {
         .setTimestamp();
 }
 
-// ─── Embed النتيجة النهائية ────────────────────────────────────────────────────
+// Embed النتيجة النهائية
 function buildSuccessEmbed(guild, results, isReset) {
     return new EmbedBuilder()
         .setColor(C.gold)
-        .setTitle(isReset ? '✅ تمت إعادة التفعيل بنجاح!' : '🚀 تم التفعيل بنجاح!')
+        .setTitle(isReset ? '✅ رجعنا جهّزنا السيرفر!' : '🚀 السيرفر صار جاهز!')
         .setDescription([
             '```ansi',
             '\u001b[1;32m══════════════════════════════════════\u001b[0m',
-            '\u001b[1;32m  السيرفر جاهز ومُهيأ بالكامل! 🎮   \u001b[0m',
+            '\u001b[1;32m    السيرفر صار جاهز ومترتّب! 🎮     \u001b[0m',
             '\u001b[1;32m══════════════════════════════════════\u001b[0m',
             '```',
             `> 🏠 **السيرفر:** ${guild.name}`,
-            `> 📅 **التاريخ:** <t:${Math.floor(Date.now() / 1000)}:f>`,
+            `> 📅 **الوقت:** <t:${Math.floor(Date.now() / 1000)}:f>`,
         ].join('\n'))
         .addFields(
-            { name: '📁 الفئات',  value: `**${results.categories}** فئة`,  inline: true },
+            { name: '📁 الأقسام',  value: `**${results.categories}** قسم`,  inline: true },
             { name: '📣 القنوات', value: `**${results.channels}** قناة`,   inline: true },
-            { name: '❌ الأخطاء', value: `**${results.errors}** خطأ`,      inline: true },
+            { name: '❌ المشاكل', value: `**${results.errors}** مشكلة`,      inline: true },
             {
-                name: '📋 ما تم تنفيذه',
+                name: '📋 شنو صار',
                 value: [
                     '✅ قنوات المعلومات والإعلانات',
                     '✅ قنوات الدردشة العامة',
                     '✅ قنوات البنك والاقتصاد',
                     '✅ قنوات ألعاب البوت',
-                    '✅ غرف 8 ألعاب شهيرة + Mobile Legends',
-                    '✅ نظام الألوان التفاعلي بأزرار',
-                    '✅ نظام الغرف المخصصة بأزرار',
-                    '✅ قنوات الإدارة السرية',
+                    '✅ غرف لـ 8 ألعاب شهيرة وMobile Legends',
+                    '✅ نظام ألوان تفاعلي بالأزرار',
+                    '✅ نظام غرف خاصة بالأزرار',
+                    '✅ قنوات خاصة للإدارة',
                     '✅ 10 قنوات صوتية',
                     '✅ نشر القوانين تلقائياً ✨',
-                    '✅ نشر جميع الأدلة تلقائياً ✨',
+                    '✅ نشر الأدلة تلقائياً ✨',
                 ].join('\n'),
                 inline: false,
             }
         )
         .setThumbnail(guild.iconURL({ size: 256 }) || null)
         .setTimestamp()
-        .setFooter({ text: '🤖 نظام البوت 2060 — خدمة متكاملة' });
+        .setFooter({ text: '🤖 بوت 2060 — كلشي جاهز للخدمة' });
 }
 
-// ─── دالة البناء الرئيسية ────────────────────────────────────────────────────
+// دالة البناء الرئيسية
 async function buildServer(guild, progressMsg, isReset = false) {
     const structure = buildServerStructure(guild);
     const guildData = db.getGuildData(guild.id);
@@ -710,8 +700,8 @@ async function buildServer(guild, progressMsg, isReset = false) {
     // خريطة لحفظ مراجع القنوات المنشأة
     const channelRefs = {};
 
-    // ─── الخطوة 1: حذف البنية القديمة ─────────────────────────────────────
-    await progressMsg.edit({ embeds: [buildProgressEmbed('🗑️ حذف الهيكل القديم...', 5, isReset)] }).catch(() => {});
+    // الخطوة 1: حذف البنية القديمة
+    await progressMsg.edit({ embeds: [buildProgressEmbed('🗑️ دا أحذف البنية القديمة...', 5, isReset)] }).catch(() => {});
 
     if (isReset) {
         const currentChannel = progressMsg.channel;
@@ -734,9 +724,9 @@ async function buildServer(guild, progressMsg, isReset = false) {
         }
     }
 
-    await progressMsg.edit({ embeds: [buildProgressEmbed('🏗️ إنشاء الرتب الأساسية...', 12, isReset)] }).catch(() => {});
+    await progressMsg.edit({ embeds: [buildProgressEmbed('🏗️ دا أنشئ الرتب الأساسية...', 12, isReset)] }).catch(() => {});
 
-    // ─── الخطوة 2: إنشاء الرتب ─────────────────────────────────────────────
+    // الخطوة 2: إنشاء الرتب
     let adminRole = guild.roles.cache.find(r => r.name === '🛡️ إدارة');
     if (!adminRole) {
         adminRole = await guild.roles.create({
@@ -782,12 +772,11 @@ async function buildServer(guild, progressMsg, isReset = false) {
         guildData.muteRole = muteRole.id;
     }
 
-
     const everyoneRole = guild.roles.everyone;
     const totalCats = structure.categories.length;
     let progress = 15;
 
-    // ─── الخطوة 3: إنشاء الفئات والقنوات ──────────────────────────────────
+    // الخطوة 3: إنشاء الفئات والقنوات
     for (let i = 0; i < structure.categories.length; i++) {
         const catDef = structure.categories[i];
         progress = 15 + Math.floor((i / totalCats) * 65);
@@ -893,18 +882,18 @@ async function buildServer(guild, progressMsg, isReset = false) {
                     await _sleep(350);
                 } catch (err) {
                     results.errors++;
-                    console.error(`[ServerSetup] فشل إنشاء ${chDef.name}:`, err.message);
+                    appLogger.error(`[ServerSetup] فشل إنشاء ${chDef.name}:`, err.message);
                 }
             }
 
             await _sleep(400);
         } catch (err) {
             results.errors++;
-            console.error(`[ServerSetup] فشل إنشاء فئة ${catDef.name}:`, err.message);
+            appLogger.error(`[ServerSetup] فشل إنشاء فئة ${catDef.name}:`, err.message);
         }
     }
 
-    // ─── الخطوة 4: حفظ البيانات + مسح cache القنوات ─────────────────────────
+    // الخطوة 4: حفظ البيانات + مسح cache القنوات
     guildData.setupComplete = true;
     guildData.setupDate = Date.now();
     db.updateGuildData(guild.id, guildData);
@@ -918,8 +907,8 @@ async function buildServer(guild, progressMsg, isReset = false) {
         }
     }
 
-    // ─── الخطوة 5: نشر المحتوى ─────────────────────────────────────────────
-    await progressMsg.edit({ embeds: [buildProgressEmbed('📝 نشر القوانين والأدلة...', 88, isReset)] }).catch(() => {});
+    // الخطوة 5: نشر المحتوى
+    await progressMsg.edit({ embeds: [buildProgressEmbed('📝 دا أنشر القوانين والأدلة...', 88, isReset)] }).catch(() => {});
 
     // نشر القوانين
     if (channelRefs['post_rules']) {
@@ -937,7 +926,7 @@ async function buildServer(guild, progressMsg, isReset = false) {
             const colorRoles = require('./color-roles');
             await colorRoles.createGuildColorRoles(guild);
         } catch (err) {
-            console.error('[ServerSetup] خطأ في إنشاء رتب الألوان:', err.message);
+            appLogger.error('[ServerSetup] خطأ في إنشاء رتب الألوان:', err.message);
         }
         await postColorsGuide(guild, channelRefs['post_colors']);
     }
@@ -956,23 +945,23 @@ async function buildServer(guild, progressMsg, isReset = false) {
                 guild.client,
                 guild.id
             );
-            console.log('[ServerSetup] ✅ تم نشر لوحة المتصدرين');
+            appLogger.info('[ServerSetup] تم نشر لوحة المتصدرين');
         } catch (err) {
-            console.warn('[ServerSetup] تعذر نشر لوحة المتصدرين:', err.message);
+            appLogger.warn('[ServerSetup] تعذر نشر لوحة المتصدرين:', err.message);
         }
     }
 
-    await progressMsg.edit({ embeds: [buildProgressEmbed('✅ اكتمل البناء!', 100, isReset)] }).catch(() => {});
+    await progressMsg.edit({ embeds: [buildProgressEmbed('✅ خلص تجهيز السيرفر!', 100, isReset)] }).catch(() => {});
 
     return { results, channelRefs };
 }
 
-// ─── مساعد: تأخير ────────────────────────────────────────────────────────────
+// مساعد: تأخير
 function _sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
 }
 
-// ─── تصدير الوحدة ────────────────────────────────────────────────────────────
+// تصدير الوحدة
 module.exports = {
     name: 'server-setup',
     aliases: [
@@ -985,7 +974,7 @@ module.exports = {
         'بناء-سيرفر',
         'بناءسيرفر',
     ],
-    description: 'بناء وإعداد القنوات والسيرفر بالكامل — تفعيل سيرفر',
+    description: 'يرتّب السيرفر وقنواته بالكامل — تفعيل سيرفر',
     permissions: [PermissionFlagsBits.Administrator],
     category: 'إدارة',
 
@@ -993,10 +982,10 @@ module.exports = {
         // فحص الصلاحيات
         if (!message.member?.permissions.has(PermissionFlagsBits.Administrator) &&
             message.author.id !== config.ownerId) {
-            return message.reply('❌ هذا الأمر يحتاج صلاحية **Administrator**!');
+            return message.reply('❌ هالأمر يحتاج صلاحية **Administrator**.');
         }
 
-        // ✅ إصلاح isReset: نكتشف من اسم الأمر المُستخدَم أو من محتوى الرسالة
+        // إصلاح isReset: نكتشف من اسم الأمر المُستخدَم أو من محتوى الرسالة
         const usedCommand = message.content.slice(config.prefix.length).trim().split(/\s+/)[0].toLowerCase();
         const resetKeywords = ['اعادةتفعيل', 'اعادة-تفعيل', 'reset-server', 'reset'];
         const isReset = options.isReset === true ||
@@ -1004,35 +993,34 @@ module.exports = {
             message.content.toLowerCase().includes('اعادة') ||
             message.content.toLowerCase().includes('reset');
 
-
         // رسالة التأكيد بأزرار
         const confirmEmbed = new EmbedBuilder()
             .setColor(C.orange)
-            .setTitle(isReset ? '⚠️ تأكيد إعادة التفعيل الكامل' : '🚀 تأكيد تفعيل السيرفر')
+            .setTitle(isReset ? '⚠️ تأكيد إعادة تجهيز السيرفر' : '🚀 تأكيد تجهيز السيرفر')
             .setDescription([
                 isReset
-                    ? '> **⚠️ سيتم حذف جميع القنوات الحالية وإعادة بنائها من الصفر!**'
-                    : '> **🚀 سيتم بناء هيكل السيرفر الكامل!**',
+                    ? '> **⚠️ راح تنحذف كل القنوات الحالية وينبني السيرفر من جديد!**'
+                    : '> **🚀 راح نرتّب هيكل السيرفر بالكامل!**',
                 '',
-                '**📋 ما سيحدث:**',
-                isReset ? '• 🗑️ حذف جميع القنوات الحالية' : '• ✅ بناء قنوات جديدة',
-                '• 📁 إنشاء 10 فئات منظمة',
-                '• 🎮 8 غرف ألعاب + Mobile Legends',
-                '• 💰 نظام البنك والاقتصاد',
-                '• 📜 نشر القوانين تلقائياً في روم القوانين',
-                '• 🏠 دليل الغرف مع أزرار إنشاء سريع',
-                '• 🎨 نظام الألوان التفاعلي بأزرار',
-                '• 🤖 دليل البوت الكامل',
-                '• 🔒 قنوات الإدارة السرية',
+                '**📋 شنو راح يصير:**',
+                isReset ? '• 🗑️ تنحذف كل القنوات الحالية' : '• ✅ تنعمل قنوات جديدة',
+                '• 📁 تنعمل 10 أقسام مرتبة',
+                '• 🎮 تنعمل قنوات لـ 8 ألعاب وMobile Legends',
+                '• 💰 ينضاف نظام البنك والاقتصاد',
+                '• 📜 تننشر القوانين تلقائياً بقناتها',
+                '• 🏠 يننشر دليل الغرف ويا أزرار الإنشاء السريع',
+                '• 🎨 ينضاف نظام الألوان التفاعلي',
+                '• 🤖 يننشر دليل البوت',
+                '• 🔒 تنعمل قنوات خاصة للإدارة',
                 '',
-                '> **اضغط ✅ للتأكيد أو ❌ للإلغاء (30 ثانية)**',
+                '> **اضغط ✅ حتى تأكد أو ❌ حتى تلغي (30 ثانية)**',
             ].join('\n'))
             .setTimestamp();
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId('setup_confirm')
-                .setLabel(isReset ? '✅ نعم، إعادة تفعيل' : '✅ نعم، تفعيل')
+                .setLabel(isReset ? '✅ إي، جهّز من جديد' : '✅ إي، جهّز')
                 .setStyle(ButtonStyle.Success),
             new ButtonBuilder()
                 .setCustomId('setup_cancel')
@@ -1057,7 +1045,7 @@ module.exports = {
 
             if (response.customId === 'setup_cancel') {
                 await safeAck({
-                    embeds: [new EmbedBuilder().setColor(C.red).setTitle('❌ تم إلغاء العملية').setDescription('> لم يتم أي تغيير.')],
+                    embeds: [new EmbedBuilder().setColor(C.red).setTitle('❌ انلغت العملية').setDescription('> ما صار أي تغيير.')],
                     components: []
                 });
                 return;
@@ -1065,7 +1053,7 @@ module.exports = {
 
             // بدء البناء
             await safeAck({
-                embeds: [buildProgressEmbed('🚀 بدء العملية...', 0, isReset)],
+                embeds: [buildProgressEmbed('🚀 دا أبدي...', 0, isReset)],
                 components: []
             });
 
@@ -1080,13 +1068,13 @@ module.exports = {
         } catch (err) {
             if (err.message?.includes('time')) {
                 await confirmMsg.edit({
-                    embeds: [new EmbedBuilder().setColor(C.red).setTitle('⏰ انتهت المهلة').setDescription('> لم يتم التأكيد خلال 30 ثانية.')],
+                    embeds: [new EmbedBuilder().setColor(C.red).setTitle('⏰ خلص الوقت').setDescription('> ما وصلني تأكيد خلال 30 ثانية.')],
                     components: []
                 }).catch(() => {});
             } else {
-                console.error('[ServerSetup] خطأ:', err.message);
+                appLogger.error('[ServerSetup] خطأ:', err.message);
                 await confirmMsg.edit({
-                    embeds: [new EmbedBuilder().setColor(C.red).setTitle('❌ حدث خطأ').setDescription(`> ${err.message}`)],
+                    embeds: [new EmbedBuilder().setColor(C.red).setTitle('❌ صار خطأ').setDescription(`> ${err.message}`)],
                     components: []
                 }).catch(() => {});
             }

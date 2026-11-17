@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('./app-logger');
 
 /**
  * ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -10,7 +11,7 @@
 
 const db = require('./database');
 
-// ─── خريطة أسماء القنوات المعروفة ────────────────────────────────────────────
+// خريطة أسماء القنوات المعروفة
 const CHANNEL_NAMES = {
     // قنوات سجلات وإدارة
     logChannel:         ['سجلات-كاملة', 'الحماية', 'سجلات', 'log', 'logs', 'bot-logs', 'سجل', 'audit-log'],
@@ -31,7 +32,7 @@ const CHANNEL_NAMES = {
     jailChannel:        ['السجن', 'سجن', 'jail'],
 };
 
-// ─── Cache لتسريع البحث ───────────────────────────────────────────────────────
+// Cache لتسريع البحث
 const _cache = new Map(); // guildId_key → channelId
 
 /**
@@ -49,7 +50,7 @@ function resolve(guild, key) {
 
     const cacheKey = `${guild.id}_${key}`;
 
-    // ── 1. فحص الـ Cache أولاً ──────────────────────────────────────────────
+    // 1. فحص الـ Cache أولاً
     if (_cache.has(cacheKey)) {
         const cachedId = _cache.get(cacheKey);
         const ch = guild.channels.cache.get(cachedId);
@@ -59,18 +60,18 @@ function resolve(guild, key) {
 
     const guildData = db.getGuildData(guild.id);
 
-    // ── 2. فحص قاعدة البيانات ───────────────────────────────────────────────
+    // 2. فحص قاعدة البيانات
     if (guildData[key]) {
         const ch = guild.channels.cache.get(guildData[key]);
         if (ch) {
             _cache.set(cacheKey, ch.id);
             return ch;
         }
-        // الـ ID مخزن لكن القناة محذوفة → مسح من DB
+        // الـ ID مخزن لكن القناة محذوفة  مسح من DB
         db.updateGuildData(guild.id, { [key]: null });
     }
 
-    // ── 3. البحث بالاسم ──────────────────────────────────────────────────────
+    // 3. البحث بالاسم
     const names = CHANNEL_NAMES[key] || [];
     if (names.length > 0) {
         const found = guild.channels.cache.find(ch => {
@@ -140,7 +141,7 @@ async function sendTo(guild, key, payload, fallbackChannel = null) {
         await ch.send(payload);
         return true;
     } catch (err) {
-        console.error(`[ChannelResolver] فشل الإرسال إلى ${key}:`, err.message);
+        appLogger.error(`[ChannelResolver] فشل الإرسال إلى ${key}:`, err.message);
         return false;
     }
 }

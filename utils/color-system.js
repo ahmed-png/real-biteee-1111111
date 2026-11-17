@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('./app-logger');
 
 /**
  * ════════════════════════════════════════════════════════
@@ -16,7 +17,7 @@ const {
 const config = require('../config');
 const db = require('./database');
 
-// ─── خريطة الألوان مع مجموعات ───────────────────────────────────────────────
+// خريطة الألوان مع مجموعات
 const COLOR_GROUPS = [
     {
         label: '🔥 ألوان النار',
@@ -45,7 +46,7 @@ const COLOR_GROUPS = [
     },
 ];
 
-// ─── Build Main Color Embed ──────────────────────────────────────────────────
+// Build Main Color Embed
 function buildColorEmbed() {
     const availColors = config.availableColors || {};
     const colorList = Object.entries(availColors)
@@ -56,22 +57,22 @@ function buildColorEmbed() {
         .setColor('#5865F2')
         .setTitle('🎨 نظام ألوان البروفايل')
         .setDescription([
-            '> اختر لونك المفضل لتخصيص بروفايلك في السيرفر',
+            '> اختار اللون اللي يعجبك لبروفايلك بالسيرفر.',
             '',
-            '**الألوان المتاحة:**',
+            '**الألوان الموجودة:**',
             colorList,
             '',
-            '> 💡 اختر من القائمة أدناه لتغيير لونك فوراً',
+            '> اختار لون من القائمة الجوه ويتبدل بروفايلك.',
         ].join('\n'))
         .addFields(
-            { name: '📌 كيف تستخدم اللون', value: 'اكتب `!profile` لترى بروفايلك بلونك الجديد', inline: true },
-            { name: '✅ مجاني', value: 'تغيير اللون مجاني بالكامل', inline: true },
+            { name: '📌 شلون تشوفه', value: 'اكتب `!profile` حتى تشوف بروفايلك باللون الجديد.', inline: true },
+            { name: '✅ مجاني', value: 'تغيير اللون ببلاش.', inline: true },
         )
-        .setFooter({ text: '🎨 نظام الألوان الاحترافي • اختر لونك الآن' })
+        .setFooter({ text: 'اختار لونك من القائمة.' })
         .setTimestamp();
 }
 
-// ─── Build Color Select Menu ─────────────────────────────────────────────────
+// Build Color Select Menu
 function buildColorSelectMenu() {
     const availColors = config.availableColors || {};
     const options = Object.entries(availColors).map(([id, c]) => ({
@@ -90,7 +91,7 @@ function buildColorSelectMenu() {
     const rows = chunks.map((chunk, idx) => {
         const menu = new StringSelectMenuBuilder()
             .setCustomId(`color_select_${idx}`)
-            .setPlaceholder(idx === 0 ? '🎨 اختر لونك...' : '🎨 المزيد من الألوان...')
+            .setPlaceholder(idx === 0 ? '🎨 اختار لون...' : '🎨 ألوان أكثر...')
             .addOptions(chunk);
         return new ActionRowBuilder().addComponents(menu);
     });
@@ -99,7 +100,7 @@ function buildColorSelectMenu() {
     return rows;
 }
 
-// ─── Setup Color Channel ──────────────────────────────────────────────────────
+// Setup Color Channel
 /**
  * يُجهّز قناة الألوان:
  * 1. يمسح رسائل البوت القديمة إذا أمكن
@@ -113,7 +114,7 @@ async function setupColorChannel(guild, channel, oldChannelId = null) {
     try {
         const guildData = db.getGuildData(guild.id);
 
-        // ─── 1. تنظيف القناة القديمة ────────────────────────────────────────
+        // 1. تنظيف القناة القديمة
         if (oldChannelId && oldChannelId !== channel.id) {
             const oldChannel = guild.channels.cache.get(oldChannelId);
             if (oldChannel && oldChannel.type === ChannelType.GuildText) {
@@ -127,7 +128,7 @@ async function setupColorChannel(guild, channel, oldChannelId = null) {
             }
         }
 
-        // ─── 2. تنظيف القناة الجديدة (رسائل البوت القديمة) ─────────────────
+        // 2. تنظيف القناة الجديدة (رسائل البوت القديمة)
         const botMember = guild.members.me;
         if (botMember?.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
             try {
@@ -144,7 +145,7 @@ async function setupColorChannel(guild, channel, oldChannelId = null) {
             } catch {}
         }
 
-        // ─── 3. إرسال النظام الجديد ─────────────────────────────────────────
+        // 3. إرسال النظام الجديد
         const embed = buildColorEmbed();
         const rows = buildColorSelectMenu();
 
@@ -153,21 +154,21 @@ async function setupColorChannel(guild, channel, oldChannelId = null) {
             components: rows,
         });
 
-        // ─── 4. حفظ Message ID ───────────────────────────────────────────────
+        // 4. حفظ Message ID
         db.updateGuildData(guild.id, {
             colorChannelId: channel.id,
             colorMessageId: sent.id,
         });
 
-        console.log(`[ColorSystem] ✅ Color channel setup in ${guild.name} → #${channel.name}`);
+        appLogger.info(`[ColorSystem] Color channel setup in ${guild.name}  #${channel.name}`);
         return sent;
     } catch (err) {
-        console.error(`[ColorSystem] ❌ Error in ${guild.name}:`, err.message);
+        appLogger.error(`[ColorSystem] Error in ${guild.name}:`, err.message);
         throw err;
     }
 }
 
-// ─── Check & Restore (بعد Restart — لا نُعيد الإرسال إذا الرسالة موجودة) ────
+// Check & Restore (بعد Restart — لا نُعيد الإرسال إذا الرسالة موجودة)
 /**
  * يتحقق عند Restart هل نظام الألوان موجود أم لا
  * إذا الرسالة موجودة: لا يُعيد الإرسال
@@ -191,7 +192,7 @@ async function checkAndRestoreColorChannel(guild) {
             try {
                 const msg = await channel.messages.fetch(colorMessageId);
                 if (msg) {
-                    console.log(`[ColorSystem] ✅ Color message exists in ${guild.name} — no re-send`);
+                    appLogger.info(`[ColorSystem] Color message exists in ${guild.name} — no re-send`);
                     return; // الرسالة موجودة — لا نُعيد الإرسال
                 }
             } catch {
@@ -202,11 +203,11 @@ async function checkAndRestoreColorChannel(guild) {
         // أعد الإرسال فقط إذا كانت الرسالة محذوفة
         await setupColorChannel(guild, channel, null);
     } catch (err) {
-        console.error(`[ColorSystem] Restore error in ${guild.name}:`, err.message);
+        appLogger.error(`[ColorSystem] Restore error in ${guild.name}:`, err.message);
     }
 }
 
-// ─── Handle Color Selection ─────────────────────────────────────────────────
+// Handle Color Selection
 /**
  * يُعالج اختيار المستخدم للون من Select Menu
  * @param {StringSelectMenuInteraction} interaction
@@ -227,7 +228,7 @@ async function handleColorSelect(interaction) {
         const db2 = require('./database');
         db2.updateUserData(interaction.user.id, { color: colorData.hex });
 
-        // ── إسناد رتبة في الديسكورد ليتغير اللون في الشات ──
+        // إسناد رتبة في الديسكورد ليتغير اللون في الشات
         let assignedRole = false;
         try {
             const roleName = `🎨 ${colorData.name}`;
@@ -248,7 +249,7 @@ async function handleColorSelect(interaction) {
                 });
             }
 
-            // إزالة جميع ألوان الأعضاء السابقة (الرتب التي تبدأ بـ 🎨 أو تطابق الألوان المتاحة)
+            // إزالة جميع ألوان الأعضاء السابقة (الرتب التي تبدأ بـ  أو تطابق الألوان المتاحة)
             const colorRoleNames = Object.values(availColors).map(c => c.name);
             const rolesToRemove = interaction.member.roles.cache.filter(r => 
                 r.name.startsWith('🎨') || colorRoleNames.includes(r.name)
@@ -262,7 +263,7 @@ async function handleColorSelect(interaction) {
             await interaction.member.roles.add(role);
             assignedRole = true;
         } catch (roleErr) {
-            console.error('[ColorSystem] Failed to assign role:', roleErr.message);
+            appLogger.error('[ColorSystem] Failed to assign role:', roleErr.message);
             // سنستمر حتى نعلم المستخدم، لكن مع رسالة تحذيرية بخصوص الرتب
         }
 
@@ -271,7 +272,7 @@ async function handleColorSelect(interaction) {
             embeds: [
                 new EB()
                     .setColor(colorData.hex)
-                    .setTitle(`${colorData.emoji} تم تغيير لونك بنجاح!`)
+                    .setTitle(`${colorData.emoji} تبدل لونك!`)
                     .setDescription([
                         `> **لون بروفايلك الآن:** ${colorData.name} (${colorData.hex})`,
                         assignedRole 
@@ -284,11 +285,11 @@ async function handleColorSelect(interaction) {
             ],
         });
     } catch (err) {
-        console.error('[ColorSystem] handleColorSelect error:', err.message);
+        appLogger.error('[ColorSystem] handleColorSelect error:', err.message);
         if (!interaction.replied && !interaction.deferred) {
-            interaction.reply({ content: '❌ حدث خطأ', ephemeral: true }).catch(() => {});
+            interaction.reply({ content: 'صار خلل وإني أبدل لونك.', ephemeral: true }).catch(() => {});
         } else {
-            interaction.editReply({ content: '❌ حدث خطأ' }).catch(() => {});
+            interaction.editReply({ content: 'صار خلل وإني أبدل لونك.' }).catch(() => {});
         }
     }
 }

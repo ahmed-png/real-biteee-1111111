@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../utils/app-logger');
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -21,12 +22,12 @@
 
 const { Events } = require('discord.js');
 
-// ── Lazy imports — محمّلة عند أول استخدام لتقليل وقت الـ boot ────────────────
+// Lazy imports — محمّلة عند أول استخدام لتقليل وقت الـ boot
 const _mod = {};
 function _require(name) {
     if (!_mod[name]) {
         try { _mod[name] = require(name); }
-        catch (e) { console.error(`[InteractionCreate] فشل تحميل: ${name}`, e.message); return null; }
+        catch (e) { appLogger.error(`[InteractionCreate] فشل تحميل: ${name}`, e.message); return null; }
     }
     return _mod[name];
 }
@@ -37,33 +38,25 @@ module.exports = {
     async execute(interaction) {
         try {
 
-            // ══════════════════════════════════════════════════════════════
             // 1. MODAL SUBMIT
-            // ══════════════════════════════════════════════════════════════
             if (interaction.isModalSubmit()) {
                 await _handleModal(interaction);
                 return;
             }
 
-            // ══════════════════════════════════════════════════════════════
             // 2. STRING SELECT MENU
-            // ══════════════════════════════════════════════════════════════
             if (interaction.isStringSelectMenu()) {
                 await _handleSelectMenu(interaction);
                 return;
             }
 
-            // ══════════════════════════════════════════════════════════════
             // 3. BUTTONS
-            // ══════════════════════════════════════════════════════════════
             if (interaction.isButton()) {
                 await _handleButton(interaction);
                 return;
             }
 
-            // ══════════════════════════════════════════════════════════════
             // 4. SLASH COMMANDS
-            // ══════════════════════════════════════════════════════════════
             if (interaction.isChatInputCommand()) {
                 const slashHandler = _require('../handlers/slashHandler');
                 if (slashHandler) {
@@ -76,17 +69,15 @@ module.exports = {
             // خطأ 10062 = Unknown Interaction (انتهت صلاحيتها) — تجاهل بصمت
             if (error.code === 10062) return;
 
-            console.error('[InteractionCreate] ❌ خطأ:', error.message, '| ID:', interaction.customId ?? interaction.commandName ?? '?');
+            appLogger.error('[InteractionCreate] خطأ:', error.message, '| ID:', interaction.customId ?? interaction.commandName ?? '?');
 
             // رد بالخطأ إذا لم يتم الرد بعد
-            _safeReplyError(interaction, `❌ حدث خطأ غير متوقع. حاول مرة أخرى.`);
+            _safeReplyError(interaction, 'صار خلل غير متوقع؛ جرّب مرة ثانية.');
         }
     },
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // MODAL HANDLER
-// ─────────────────────────────────────────────────────────────────────────────
 async function _handleModal(interaction) {
     const id = interaction.customId;
 
@@ -147,9 +138,7 @@ async function _handleModal(interaction) {
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // SELECT MENU HANDLER
-// ─────────────────────────────────────────────────────────────────────────────
 async function _handleSelectMenu(interaction) {
     const id = interaction.customId;
 
@@ -174,36 +163,32 @@ async function _handleSelectMenu(interaction) {
         return colorSystem?.handleColorSelect(interaction);
     }
 
-
-
     // Select غير معروف
     if (!interaction.replied && !interaction.deferred) {
         await interaction.reply({ content: '⚙️ هذه القائمة لا تعمل حالياً.', ephemeral: true }).catch(() => {});
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // BUTTON HANDLER
-// ─────────────────────────────────────────────────────────────────────────────
 async function _handleButton(interaction) {
     const id = interaction.customId;
 
-    // 🎫 Ticket system
+    // Ticket system
     if (id.startsWith('ticket_')) {
         return _require('../utils/ticket-system')?.handleTicketInteraction(interaction);
     }
 
-    // 🏠 Room Creator
+    // Room Creator
     if (id.startsWith('room_') || id.startsWith('quickroom_')) {
         return _require('../commands/moderation/room-creator')?.handleRoomInteraction(interaction);
     }
 
-    // 🗳️ Poll
+    // Poll
     if (id.startsWith('poll_')) {
         return _require('../commands/social/poll')?.handlePollInteraction(interaction);
     }
 
-    // 🎨 Color roles — موحّد (color_btn_ و color_)
+    // Color roles — موحّد (color_btn_ و color_)
     if (id.startsWith('color_btn_')) {
         const colorName = id.replace('color_btn_', '');
         return _require('../commands/moderation/color-roles')?.assignColorRole(interaction, colorName);
@@ -213,13 +198,13 @@ async function _handleButton(interaction) {
         return _require('../commands/moderation/color-roles')?.assignColorRole(interaction, colorName);
     }
 
-    // ✅ Server Setup — يُدار بـ awaitMessageComponent داخل server-setup.js
+    // Server Setup — يُدار بـ awaitMessageComponent داخل server-setup.js
     // يُمَرَّر مباشرة بدون deferUpdate لتجنب خطأ Unknown Interaction / Already Replied
     if (id === 'setup_confirm' || id === 'setup_cancel') {
         return;
     }
 
-    // 🤖 Bot guide
+    // Bot guide
     if (id.startsWith('bot_guide_')) {
         const guides = {
             'bot_guide_economy': '💰 **الاقتصاد:** `رصيد` `يومي` `عمل` `متجر` `استثمار` `بنك` `تحويل @شخص`',
@@ -233,63 +218,63 @@ async function _handleButton(interaction) {
         return;
     }
 
-    // ❌⭕ Tic-Tac-Toe
+    // Tic-Tac-Toe
     if (id.startsWith('ttt_')) {
         return _require('../commands/games/ttt')?.handleTicTacToeInteraction(interaction);
     }
 
-    // 🪨📄✂️ Rock Paper Scissors
+    // Rock Paper Scissors
     if (id.startsWith('rps_')) {
         return _require('../commands/games/rps')?.handleRPSInteraction(interaction);
     }
 
-    // 😵 Hangman
+    // Hangman
     if (id.startsWith('hangman_')) {
         return _require('../commands/games/hangman')?.handleHangmanInteraction(interaction);
     }
 
-    // 🧠 Memory Match
+    // Memory Match
     if (id.startsWith('memory_')) {
         return _require('../commands/games/memory')?.handleMemoryInteraction(interaction);
     }
 
-    // ➕ Math
+    // Math
     if (id.startsWith('math_')) {
         return _require('../commands/games/math')?.handleMathInteraction(interaction);
     }
 
-    // 🔮 Fortune
+    // Fortune
     if (id.startsWith('fortune_')) {
         return _require('../commands/fun/fun-buttons')?.fortune?.handleFortuneInteraction(interaction);
     }
 
-    // 🤔 Would You Rather
+    // Would You Rather
     if (id.startsWith('wyr_')) {
         return _require('../commands/fun/fun-buttons')?.wyr?.handleWYRInteraction(interaction);
     }
 
-    // 💘 Ship
+    // Ship
     if (id.startsWith('ship_')) {
         return _require('../commands/fun/fun-buttons')?.ship?.handleShipInteraction(interaction);
     }
 
-    // 🎲 Roll
+    // Roll
     if (id.startsWith('roll_')) {
         return _require('../commands/fun/fun-buttons')?.roll?.handleRollInteraction(interaction);
     }
 
-    // 🔮 8ball
+    // 8ball
     if (id.startsWith('ball_')) {
         return _require('../commands/fun/fun-buttons')?.ball?.handleBallInteraction(interaction);
     }
 
-    // 💹 Market
+    // Market
     if (id.startsWith('market_') || id.startsWith('mkt_')) {
         const m = _require('../commands/economy/market');
         return m?.handleMarketInteraction?.(interaction);
     }
 
-    // 🎯 Mini-Games (من القائمة الرئيسية)
+    // Mini-Games (من القائمة الرئيسية)
     if (id.startsWith('mg_')) {
         const minigames = _require('../commands/games/minigames');
         if (!minigames) return _safeAck(interaction);
@@ -299,13 +284,13 @@ async function _handleButton(interaction) {
         return _safeAck(interaction);
     }
 
-    // 🏅 Achievements
+    // Achievements
     if (id.startsWith('ach_')) {
         const m = _require('../commands/main/achievements-cmd');
         return m?.handleAchievementsInteraction?.(interaction);
     }
 
-    // 📊 Analytics
+    // Analytics
     if (id.startsWith('analytics_') || id.startsWith('anal_')) {
         const m = _require('../commands/main/analytics');
         return m?.handleAnalyticsInteraction?.(interaction);
@@ -315,8 +300,6 @@ async function _handleButton(interaction) {
     if (id.startsWith('remove_')) {
         return _require('../utils/punishments')?.handlePunishmentButton(interaction);
     }
-
-
 
     // Property
     if (id.startsWith('prop_')) {
@@ -416,13 +399,10 @@ async function _handleButton(interaction) {
         });
     }
 
-
     // Economy Hub (eco_)
     if (id.startsWith('eco_')) {
         return _require('../commands/economy/economy-hub')?.handleEcoButton(interaction);
     }
-
-
 
     // Leaderboard
     if (id.startsWith('lb_')) {
@@ -483,15 +463,13 @@ async function _handleButton(interaction) {
         return;
     }
 
-    // ── زر غير معروف ─────────────────────────────────────────────────────────
+    // زر غير معروف
     if (!interaction.replied && !interaction.deferred) {
         await interaction.reply({ content: '⚙️ هذا الزر لا يعمل في الوقت الحالي.', ephemeral: true }).catch(() => {});
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // CLAN BUTTON SUB-HANDLER
-// ─────────────────────────────────────────────────────────────────────────────
 async function _handleClanButton(interaction, id) {
     const clans = _require('../commands/social/clans');
     if (!clans) return _safeAck(interaction);
@@ -528,9 +506,7 @@ async function _handleClanButton(interaction, id) {
     await _safeAck(interaction);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
 
 /** رد صامت لمنع "This interaction failed" */
 async function _safeAck(interaction) {

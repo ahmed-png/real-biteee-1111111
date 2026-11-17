@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../../utils/app-logger');
 /**
  * db-instance.js
  * نقطة وصول واحدة لكائن MongoDB (Mongoose)
@@ -16,21 +17,21 @@ async function connectDb() {
     if (!uri) {
         const error = new Error('MONGODB_URI is not configured.');
         if (process.env.NODE_ENV === 'production') throw error;
-        console.warn('[DB] ⚠️ MONGODB_URI غير مضبوط — سيتم استخدام تخزين الذاكرة في بيئة التطوير.');
+        appLogger.warn('[DB] MONGODB_URI غير مضبوط — سيتم استخدام تخزين الذاكرة في بيئة التطوير.');
         return false;
     }
 
     try {
         await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
         _isConnected = true;
-        console.log('[DB] ✅ Connected to MongoDB Atlas');
+        appLogger.info('[DB] Connected to MongoDB Atlas');
         return true;
     } catch (err) {
         if (process.env.NODE_ENV === 'production') {
             throw new Error(`MongoDB connection failed: ${err.message}`, { cause: err });
         }
-        console.warn('[DB] ⚠️ فشل الاتصال بقاعدة MongoDB Atlas:', err.message);
-        console.warn('[DB] ⚡ سيتم استخدام تخزين الذاكرة في بيئة التطوير.');
+        appLogger.warn('[DB] فشل الاتصال بقاعدة MongoDB Atlas:', err.message);
+        appLogger.warn('[DB] سيتم استخدام تخزين الذاكرة في بيئة التطوير.');
         _isConnected = false;
         return false;
     }
@@ -39,7 +40,7 @@ async function connectDb() {
 // دالة تُرجع mongoose في حال احتاجها مكان آخر (رغم أن النماذج تكفي عادة)
 function getDb() {
     if (!_isConnected) {
-        console.warn('[DB] ⚠️ getDb() called before connection is established');
+        appLogger.warn('[DB] getDb() called before connection is established');
     }
     return mongoose.connection;
 }

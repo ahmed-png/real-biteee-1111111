@@ -7,17 +7,17 @@ const ecoHub = require('./economy-hub');
 module.exports = {
     name: 'balance',
     aliases: ['bal_view', 'رصيد_عرض'],
-    description: 'عرض رصيد مستخدم آخر (بدون منشن = لوحة الاقتصاد)',
+    description: 'شوف رصيد شخص ثاني (بدون منشن تطلعلك لوحة الاقتصاد)',
     usage: 'balance @user',
 
-    // ✅ Slash Command Definition
+    // Slash Command Definition
     slash: {
         name: 'balance',
-        description: 'عرض رصيدك الاقتصادي أو رصيد شخص آخر',
+        description: 'شوف رصيدك أو رصيد شخص ثاني',
         options: [
             {
                 name: 'user',
-                description: 'المستخدم الذي تريد عرض رصيده',
+                description: 'الشخص اللي تريد تشوف رصيده',
                 type: 6, // USER
                 required: false,
             },
@@ -32,14 +32,14 @@ module.exports = {
             ? (context.options?.getUser?.('user') || null)
             : (context.mentions?.users?.first() || null);
 
-        // بدون منشن أو منشن نفسك → لوحة الاقتصاد الكاملة
+        // بدون منشن أو منشن نفسك  لوحة الاقتصاد الكاملة
         if (!target || target.id === author.id) {
             const panel = await ecoHub.buildMainPanel(author.id, context.client);
             if (isInteraction) return context.reply({ ...panel });
             return context.reply({ ...panel });
         }
 
-        // عرض رصيد شخص آخر فقط
+        // عرض رصيد شخص ثاني
         const userData = db.getUserData(target.id);
         const levels = require('../../utils/levels');
         const balance = userData?.balance || 0;

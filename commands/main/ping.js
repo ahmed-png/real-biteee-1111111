@@ -18,7 +18,7 @@ module.exports = {
     name: 'ping', aliases: ['بينج', 'latency', 'اختبار', ],
     description: 'فحص سرعة البوت والخوادم',
 
-    // ✅ Slash Command Definition
+    // Slash Command Definition
     slash: {
         name: 'ping',
         description: 'فحص سرعة استجابة البوت وقاعدة البيانات',
@@ -28,7 +28,6 @@ module.exports = {
         const isInteraction = context.isCommand?.();
         const startTime = Date.now();
         const author = isInteraction ? context.user : context.author;
-
 
         const loadingEmbed = new EmbedBuilder()
             .setColor('#FFD700')

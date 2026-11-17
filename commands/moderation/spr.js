@@ -1,3 +1,4 @@
+const appLogger = require('../../utils/app-logger');
 const { PermissionFlagsBits } = require('discord.js');
 const { PremiumEmbedBuilder } = require('../../utils/embed-builder');
 const { hasPermOrOwner, getAuthor } = require('../../utils/permissions');
@@ -5,7 +6,7 @@ const { hasPermOrOwner, getAuthor } = require('../../utils/permissions');
 module.exports = {
     name: 'spr',
     aliases: ['spr+'],
-    description: 'كتم / فك كتم جميع الأعضاء في الروم الصوتي',
+    description: 'يكتم أو يفك الكتم عن كل الأعضاء بالروم الصوتي',
     usage: 'spr | spr+',
     permissions: [PermissionFlagsBits.MuteMembers],
 
@@ -15,13 +16,13 @@ module.exports = {
 
         // تخطي فحص الصلاحيات لصاحب البوت، التحقق من البقية
         if (!hasPermOrOwner(context.member, PermissionFlagsBits.MuteMembers)) {
-            const msg = '❌ ليس لديك صلاحية لكتم الأعضاء (Mute Members)!';
+            const msg = '❌ ما عندك صلاحية تكتم الأعضاء (Mute Members).';
             return isInteraction ? context.reply({ content: msg, ephemeral: true }) : context.reply(msg);
         }
 
         const voiceChannel = context.member?.voice?.channel;
         if (!voiceChannel) {
-            const msg = '❌ يجب أن تكون متواجداً في روم صوتي لاستخدام هذا الأمر!';
+            const msg = '❌ لازم تكون بروم صوتي حتى تستخدم هالأمر.';
             return isInteraction ? context.reply({ content: msg, ephemeral: true }) : context.reply(msg);
         }
 
@@ -49,15 +50,15 @@ module.exports = {
                 await member.voice.setMute(!isUnmute);
                 affected++;
             } catch (err) {
-                console.error(`Failed to ${isUnmute ? 'unmute' : 'mute'} member ${member.user.tag}:`, err.message);
+                appLogger.error(`Failed to ${isUnmute ? 'unmute' : 'mute'} member ${member.user.tag}:`, err.message);
             }
         }
 
         const embed = PremiumEmbedBuilder.info(
             isUnmute ? '🔊 فك الكتم الجماعي' : '🔇 الكتم الجماعي',
-            isUnmute 
-                ? `تم فك الكتم عن **${affected}** عضو في روم **${voiceChannel.name}** بنجاح.`
-                : `تم كتم **${affected}** عضو في روم **${voiceChannel.name}** بنجاح.`
+            isUnmute
+                ? `انفك الكتم عن **${affected}** عضو بروم **${voiceChannel.name}**.`
+                : `انكتم **${affected}** عضو بروم **${voiceChannel.name}**.`
         );
 
         return isInteraction 

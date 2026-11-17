@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('./utils/app-logger');
 
 require('dotenv').config();
 
@@ -9,13 +10,13 @@ const commandHandler = require('./handlers/commandHandler');
 
 // A process with an uncaught error may be left in an unsafe state; let Render restart it.
 function exitOnFatalError(type, error) {
-    console.error(`[${type}]`, error?.stack || error?.message || error);
+    appLogger.error(`[${type}]`, error?.stack || error?.message || error);
     process.exit(1);
 }
 process.on('uncaughtException', error => exitOnFatalError('CRASH', error));
 process.on('unhandledRejection', reason => exitOnFatalError('UNHANDLED', reason));
 
-// ─── إنشاء Client ───────────────────────────────────────────────────────────
+// إنشاء Client
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -32,7 +33,7 @@ const client = new Client({
     rest: { timeout: 15_000 },
 });
 
-// ─── تحميل قاعدة البيانات ───────────────────────────────────────────────────
+// تحميل قاعدة البيانات
 const dbInstance = require('./src/database/db-instance');
 const db = require('./src/database/db');
 const botSettingsDb = require('./src/database/bot-settings-db');
@@ -46,44 +47,44 @@ async function startBot() {
         await db.loadDatabase();
         await botSettingsDb.loadBotSettings();
         
-        console.log('[Startup] ✅ Database and caches loaded successfully.');
+        appLogger.info('[Startup] Database and caches loaded successfully.');
 
-        // ─── تنظيف ملفات JSON القديمة (مرّة واحدة) ───────────────────────────
+        // تنظيف ملفات JSON القديمة (مرّة واحدة)
         try {
             const cleanup = require('./utils/startup-cleanup');
             cleanup.cleanupLegacyFiles();
             cleanup.auditLegacyUsage();
         } catch (err) {
-            console.warn('[Startup] ⚠️ Cleanup skipped:', err.message);
+            appLogger.warn('[Startup] Cleanup skipped:', err.message);
         }
     } catch (err) {
-        console.error('[Startup] ❌ Database initialization failed:', err.message);
+        appLogger.error('[Startup] Database initialization failed:', err.message);
         process.exit(1);
     }
 
-    // ─── تشغيل لوحة التحكم الاحترافية (تدعم Render تلقائياً) ────────────────────
+    // تشغيل لوحة التحكم الاحترافية (تدعم Render تلقائياً)
     try {
         const dashboard = require('./dashboard-server');
         dashboard.setClient(client);
         dashboard.start(); 
-        console.log('[Dashboard] ✅ لوحة التحكم مُشغَّلة');
+        appLogger.info('[Dashboard] لوحة التحكم مُشغَّلة');
     } catch (err) {
-        console.error('[Dashboard] ❌ فشل تشغيل لوحة التحكم:', err.message);
+        appLogger.error('[Dashboard] فشل تشغيل لوحة التحكم:', err.message);
     }
 
-    // ─── تحميل الـ Handlers ──────────────────────────────────────────────────────
+    // تحميل الـ Handlers
     try {
         eventHandler(client);
         commandHandler(client);
-        console.log('[Handlers] ✅ الأحداث والأوامر محمّلة بنجاح');
+        appLogger.info('[Handlers] الأحداث والأوامر محمّلة بنجاح');
     } catch (err) {
-        console.error('[Handlers] ❌ فشل التحميل:', err.message);
+        appLogger.error('[Handlers] فشل التحميل:', err.message);
         process.exit(1);
     }
 
-    // ─── تسجيل الدخول ───────────────────────────────────────────────────────────
+    // تسجيل الدخول
     client.login(config.token).catch((err) => {
-        console.error('[Login] ❌ فشل تسجيل الدخول — تحقق من DISCORD_TOKEN في .env:', err.message);
+        appLogger.error('[Login] فشل تسجيل الدخول — تحقق من DISCORD_TOKEN في .env:', err.message);
         process.exit(1);
     });
 }

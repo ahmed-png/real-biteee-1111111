@@ -11,7 +11,7 @@ const config = require('../../config');
 module.exports = {
     name: 'broadcast',
     aliases: ['بث', 'اعلان_عام'],
-    description: 'إرسال رسالة لجميع السيرفرات (للمالك فقط)',
+    description: 'دز رسالة لكل السيرفرات (للمالك بس)',
     usage: 'broadcast <الرسالة>',
 
     async execute(message, args) {
@@ -22,14 +22,14 @@ module.exports = {
 
         if (!args || args.length === 0) {
             return message.reply([
-                '❌ **استخدام خاطئ!**',
+                'صيغة الأمر مو صحيحة:',
                 '`!broadcast <الرسالة>`',
                 'أو: `!broadcast "عنوان" <الرسالة>`',
             ].join('\n'));
         }
 
         const fullText = args.join(' ');
-        let title = '📢 إعلان من مالك البوت';
+        let title = 'رسالة من مالك البوت';
         let body = fullText;
 
         // دعم صيغة: !broadcast "العنوان" الرسالة
@@ -44,7 +44,7 @@ module.exports = {
             .setTitle(`📢 ${title}`)
             .setDescription(body)
             .setAuthor({
-                name: 'رسالة رسمية من مالك البوت',
+                name: 'رسالة من مالك البوت',
                 iconURL: message.author.displayAvatarURL()
             })
             .setTimestamp();
@@ -53,7 +53,7 @@ module.exports = {
         let sent = 0;
         let failed = 0;
 
-        const statusMsg = await message.reply(`⏳ جاري إرسال البث لـ **${guilds.size}** سيرفر...`);
+        const statusMsg = await message.reply(`دا أرسل الرسالة لـ **${guilds.size}** سيرفر...`);
 
         for (const [, guild] of guilds) {
             try {
@@ -76,10 +76,10 @@ module.exports = {
         }
 
         await statusMsg.edit([
-            `✅ **تم اكتمال البث!**`,
-            `📤 نجح الإرسال: **${sent}** سيرفر`,
-            `❌ فشل الإرسال: **${failed}** سيرفر`,
-            `📊 الإجمالي: **${guilds.size}** سيرفر`,
+            `خلص الإرسال.`,
+            `وصلت لـ **${sent}** سيرفر`,
+            `ما وصلت لـ **${failed}** سيرفر`,
+            `المجموع: **${guilds.size}** سيرفر`,
         ].join('\n'));
     }
 };

@@ -5,7 +5,7 @@ const { hasPermOrOwner, getAuthor } = require('../../utils/permissions');
 module.exports = {
     name: 'lock',
     aliases: ['قفل', 'اغلاق', 'سكر'],
-    description: 'قفل القناة الحالية',
+    description: 'يقفل القناة الحالية',
     usage: 'lock',
     permissions: [PermissionFlagsBits.ManageChannels],
 
@@ -15,7 +15,7 @@ module.exports = {
 
         // صاحب البوت يتخطى فحص الصلاحيات
         if (!hasPermOrOwner(context.member, PermissionFlagsBits.ManageChannels)) {
-            const msg = '❌ ليس لديك صلاحية قفل القنوات!';
+            const msg = '❌ ما عندك صلاحية تقفل القنوات.';
             return isInteraction ? context.reply({ content: msg, ephemeral: true }) : context.reply(msg);
         }
 
@@ -25,7 +25,7 @@ module.exports = {
 
         const embed = PremiumEmbedBuilder.moderation(
             '🔒 قفل القناة',
-            'تم قفل هذه القناة ومنع الأعضاء من الكتابة.',
+            'انقفلت القناة، والأعضاء ما يگدرون يكتبون بيها.',
             [],
             author
         );

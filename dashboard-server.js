@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('./utils/app-logger');
 
 require('dotenv').config();
 
@@ -67,27 +68,27 @@ module.exports.setClient = (c) => {
     app.set('client', c);
 };
 
-// ─── HTTP Server ────────────────────────────────────────────────
+// HTTP Server
 const server = http.createServer(app);
 
-// ─── Socket.io Game Engine ──────────────────────────────────────
+// Socket.io Game Engine
 let gameServerMounted = false;
 try {
     const { mountGameServer } = require('./src/game-server');
     mountGameServer(server);
     gameServerMounted = true;
 } catch (err) {
-    console.warn('[GameServer] ⚠️ Socket.io game server not mounted:', err.message);
-    console.warn('[GameServer] Run: npm install socket.io');
+    appLogger.warn('[GameServer] Socket.io game server not mounted:', err.message);
+    appLogger.warn('[GameServer] Run: npm install socket.io');
 }
 
 module.exports.start = () => {
     server.listen(PORT, '0.0.0.0', () => {
-        console.log(`[Dashboard] 🌐 Server running on port ${PORT}`);
-        console.log(`[Dashboard] 📱 Network URL: http://${getLocalIp()}:${PORT}`);
-        if (EXTERNAL_URL) console.log(`[Dashboard] ☁️ Public URL: ${EXTERNAL_URL}`);
+        appLogger.info(`[Dashboard] Server running on port ${PORT}`);
+        appLogger.info(`[Dashboard] Network URL: http://${getLocalIp()}:${PORT}`);
+        if (EXTERNAL_URL) appLogger.info(`[Dashboard] Public URL: ${EXTERNAL_URL}`);
         if (gameServerMounted) {
-            console.log(`[GameServer] 🎮 Real-time multiplayer active on /game-ws`);
+            appLogger.info(`[GameServer] Real-time multiplayer active on /game-ws`);
         }
     });
 };

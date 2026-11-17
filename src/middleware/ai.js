@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../../utils/app-logger');
 
 const protection = require('../../utils/protection');
 const chatLearner = require('../../utils/chat-learner');
@@ -70,7 +71,7 @@ module.exports = async function aiMiddleware(message) {
                 return false;
             }
         }
-    } catch (e) { console.error('[DashboardAutoRes]', e.message); }
+    } catch (e) { appLogger.error('[DashboardAutoRes]', e.message); }
 
     // المنشن المباشر
     const isMentionedDirectly = message.mentions.has(message.client.user) && !message.reference;

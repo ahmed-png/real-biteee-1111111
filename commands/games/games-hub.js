@@ -36,35 +36,35 @@ function buildGamesPanel(username = '') {
 
     const embed = new EmbedBuilder()
         .setColor('#0d1fd4')
-        .setTitle('🎮 مركز الألعاب 2.0 — Arcade Hub')
+        .setTitle('🎮 مركز الألعاب 2.0')
         .setDescription([
-            '> 🚀 **ألعاب 2D تفاعلية في المتصفح مع دعم أونلاين!**',
-            '> اضغط على الأزرار بالأسفل أو افتح الروابط المباشرة:',
+            '> 🚀 **ألعاب تفاعلية بالمتصفح، تگدر تلعب وحدك أو أونلاين!**',
+            '> اضغط الأزرار جوّه أو افتح رابط اللعبة مباشرة:',
             '',
-            `⚔️ [**Battle Arena — قتال أبطال 4 لاعبين**](${arenaUrl})`,
+            `⚔️ [**ساحة المعركة — قتال 4 لاعبين**](${arenaUrl})`,
             `🎯 [**المهمة الأخيرة — نجاة وتصويب (فردي)**](${survivalUrl})`,
-            `🥊 [**ساحة المبارزة — قتال منصات ضد خصم ذكي**](${duelUrl})`,
-            `🚀 [**Space Defender — حرب الفضاء**](${spaceUrl})`,
-            `🛡️ [**Tank Clash — حرب دبابات تكتيكية**](${tankUrl})`,
-            `🌩️ [**Cyber Jump — منصات سايبربانك**](${cyberUrl})`,
+            `🥊 [**ساحة المبارزة — واجه خصم ذكي**](${duelUrl})`,
+            `🚀 [**مدافع الفضاء — حرب بالفضاء**](${spaceUrl})`,
+            `🛡️ [**مواجهة الدبابات — معركة دبابات**](${tankUrl})`,
+            `🌩️ [**قفزة سايبر — قفز بعالم سايبربانك**](${cyberUrl})`,
             '',
-            '> 💡 *إذا لم يستجب الزر في ديسكورد، اضغط على اسم اللعبة الأزرق أعلاه مباشرة.*',
+            '> 💡 *إذا الزر ما اشتغل بديسكورد، اضغط على اسم اللعبة الأزرق فوگ.*',
         ].join('\n'))
         .setTimestamp()
-        .setFooter({ text: '⚡ ألعاب فردية وجماعية — تعمل على الكمبيوتر والجوال!' });
+        .setFooter({ text: '⚡ العب وحدك أو ويا جماعة — تشتغل عالكمبيوتر والموبايل!' });
 
     // ── Row 1: Battle Arena ────────────────────────────────────
     const row1 = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-            .setLabel('⚔️ Battle Arena — منفرد')
+            .setLabel('⚔️ ساحة المعركة — وحدك')
             .setStyle(ButtonStyle.Link)
             .setURL(gameUrl('battle-arena.html', { name: nameParam, mode: 'solo' })),
         new ButtonBuilder()
-            .setLabel('🤺 Battle Arena — ضد Bot')
+            .setLabel('🤺 ساحة المعركة — ضد البوت')
             .setStyle(ButtonStyle.Link)
             .setURL(gameUrl('battle-arena.html', { name: nameParam, mode: 'bot' })),
         new ButtonBuilder()
-            .setLabel('🌐 Battle Arena — مولتي بلاير')
+            .setLabel('🌐 ساحة المعركة — جماعي')
             .setStyle(ButtonStyle.Link)
             .setURL(gameUrl('battle-arena.html', { name: nameParam, mode: 'multi' }))
     );
@@ -80,11 +80,11 @@ function buildGamesPanel(username = '') {
             .setStyle(ButtonStyle.Link)
             .setURL(duelUrl),
         new ButtonBuilder()
-            .setLabel('🚀 Space Defender')
+            .setLabel('🚀 مدافع الفضاء')
             .setStyle(ButtonStyle.Link)
             .setURL(spaceUrl),
         new ButtonBuilder()
-            .setLabel('🛡️ Tank Clash')
+            .setLabel('🛡️ مواجهة الدبابات')
             .setStyle(ButtonStyle.Link)
             .setURL(tankUrl)
     );
@@ -92,7 +92,7 @@ function buildGamesPanel(username = '') {
     // ── Row 3: Cyber Jump ─────────────────────────────────────
     const row3 = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-            .setLabel('🌩️ Cyber Jump')
+            .setLabel('🌩️ قفزة سايبر')
             .setStyle(ButtonStyle.Link)
             .setURL(cyberUrl)
     );
@@ -101,11 +101,11 @@ function buildGamesPanel(username = '') {
     const row4 = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId('games_info')
-            .setLabel('ℹ️ كيف تلعب مع أصدقائك?')
+            .setLabel('ℹ️ شلون تلعب ويا أصحابك؟')
             .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
             .setCustomId('games_create_room')
-            .setLabel('🌐 إنشاء غرفة مشتركة')
+            .setLabel('🌐 سوّي غرفة جماعية')
             .setStyle(ButtonStyle.Primary)
     );
 
@@ -124,18 +124,18 @@ async function handleGameButton(interaction) {
     if (id === 'games_info') {
         const embed = new EmbedBuilder()
             .setColor('#00c8ff')
-            .setTitle('🌐 كيف تلعب مع أصدقائك؟')
+            .setTitle('🌐 شلون تلعب ويا أصحابك؟')
             .setDescription([
-                '**خطوات بسيطة:**',
+                '**الخطوات سهلة:**',
                 '',
-                '1️⃣ اضغط على **"مولتي بلاير"** في أي لعبة',
-                '2️⃣ اختر **"إنشاء غرفة"** وسيظهر لك **كود من 6 أحرف**',
-                '3️⃣ شارك الكود مع أصدقائك في الديسكورد',
-                '4️⃣ يضغطون على **"مولتي بلاير"** ويدخلون الكود',
-                '5️⃣ ابدأ اللعبة — بسيط! 🎮',
+                '1️⃣ اضغط **"جماعي"** بأي لعبة',
+                '2️⃣ اختار **"إنشاء غرفة"** وراح يطلعلك **كود من 6 أحرف**',
+                '3️⃣ دز الكود لأصحابك بديسكورد',
+                '4️⃣ يضغطون **"جماعي"** ويدخلون الكود',
+                '5️⃣ ابدي اللعب — سهلة! 🎮',
                 '',
-                '> ⚡ **ملاحظة:** لا يُحفظ أي تاريخ أو نقاط — اللعبة مؤقتة بالكامل',
-                '> 🔒 **أمان:** كل جلسة معزولة تماماً عن الأخريات',
+                '> ⚡ **ملاحظة:** ما تنحفظ نقاط أو بيانات — اللعبة مؤقتة',
+                '> 🔒 **الخصوصية:** كل جلسة منفصلة عن الثانية',
             ].join('\n'))
             .setTimestamp();
 
@@ -146,32 +146,32 @@ async function handleGameButton(interaction) {
     if (id === 'games_create_room') {
         const embed = new EmbedBuilder()
             .setColor('#00ff88')
-            .setTitle('🌐 إنشاء غرفة مشتركة')
+            .setTitle('🌐 سوّي غرفة جماعية')
             .setDescription([
-                `مرحباً **${username}**!`,
+                `هلا **${username}**!`,
                 '',
-                '**اختر لعبة للعب الجماعي:**',
+                '**اختار لعبة تلعبها ويا جماعة:**',
             ].join('\n'))
             .setTimestamp();
 
         const row1 = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
-                .setLabel('⚔️ Battle Arena')
+                .setLabel('⚔️ ساحة المعركة')
                 .setStyle(ButtonStyle.Link)
                 .setURL(gameUrl('battle-arena.html', { name: nameParam, mode: 'multi' })),
             new ButtonBuilder()
-                .setLabel('🛡️ Tank Clash')
+                .setLabel('🛡️ مواجهة الدبابات')
                 .setStyle(ButtonStyle.Link)
                 .setURL(gameUrl('tank-clash.html', { name: nameParam, mode: 'multi' })),
             new ButtonBuilder()
-                .setLabel('🌩️ Cyber Jump')
+                .setLabel('🌩️ قفزة سايبر')
                 .setStyle(ButtonStyle.Link)
                 .setURL(gameUrl('cyber-jump.html', { name: nameParam, mode: 'multi' }))
         );
 
         const row2 = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
-                .setLabel('🚀 Space Defender')
+                .setLabel('🚀 مدافع الفضاء')
                 .setStyle(ButtonStyle.Link)
                 .setURL(gameUrl('space-defender.html', { name: nameParam, mode: 'multi' })),
         );
@@ -192,7 +192,7 @@ async function handleGameButton(interaction) {
 module.exports = {
     name: 'games',
     aliases: ['ألعاب', 'العاب', 'العب', 'لعبة', 'game', 'arcade'],
-    description: 'مركز الألعاب 2D الاحترافية — مولتي بلاير أونلاين',
+    description: 'مركز ألعاب تفاعلية — العب وحدك أو أونلاين ويا أصحابك',
     usage: 'العاب / games',
 
     async execute(context) {

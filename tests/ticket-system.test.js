@@ -38,7 +38,7 @@ test.after(() => {
 
 test('ticket panel has an open-ticket button and private-support instructions', () => {
     const panel = tickets.buildTicketPanel({ name: 'Test Guild' });
-    assert.match(panel.embeds[0].data.description, /لا يمكن للأعضاء الآخرين رؤية محادثتك/);
+    assert.match(panel.embeds[0].data.description, /بس إنت وفريق الإدارة تشوفون المحادثة/);
     assert.equal(panel.components[0].components[0].data.custom_id, 'ticket_open');
 });
 

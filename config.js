@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('./utils/app-logger');
 
 require('dotenv').config();
 
@@ -11,13 +12,13 @@ require('dotenv').config();
 const REQUIRED_ENV = ['DISCORD_TOKEN', 'OWNER_ID'];
 for (const key of REQUIRED_ENV) {
     if (!process.env[key]) {
-        console.error(`[Config] ❌ المتغير البيئي "${key}" غير موجود في ملف .env`);
+        appLogger.error(`[Config] المتغير البيئي "${key}"غير موجود في ملف .env`);
         process.exit(1);
     }
 }
 
 module.exports = {
-    // ─── بيانات البوت الحساسة (من .env) ─────────────────────────
+    // بيانات البوت الحساسة (من .env)
     token: process.env.DISCORD_TOKEN,
     ownerId: process.env.OWNER_ID,
     geminiApiKey: process.env.GEMINI_API_KEY || '',
@@ -26,15 +27,15 @@ module.exports = {
     nvidiaApiKey: process.env.NVIDIA_API_KEY || '',
     openrouterApiKey: process.env.OPENROUTER_API_KEY || '',
 
-    // ─── إعدادات عامة ─────────────────────────────────────────────
+    // إعدادات عامة
     prefix: '!',
 
-    // ─── إعدادات الاقتصاد ─────────────────────────────────────────
+    // إعدادات الاقتصاد
     currency: '💰',
     dailyAmount: 500,
     startBalance: 1000,
 
-    // ─── حدود الاقتصاد (مهمة لمنع الثغرات) ────────────────────────
+    // حدود الاقتصاد (مهمة لمنع الثغرات)
     maxLoan: 50000,              // حد أقصى للقرض
     maxInvestment: 1000000,      // حد أقصى للاستثمار الواحد
     maxBankBalance: 10000000,    // حد أقصى للبنك
@@ -54,7 +55,7 @@ module.exports = {
     levelUpReward: 500,          // مكافأة كل مستوى
     bigLevelReward: 2000,        // مكافأة كل 10 مستويات
 
-    // ─── أسماء القنوات والرتب (يُعيَّن يدوياً لكل سيرفر عبر setup) ─
+    // أسماء القنوات والرتب (يُعيَّن يدوياً لكل سيرفر عبر setup)
     bankChannelName: '💰┃البنك',
     jailRoleName: '🔒┃سجين',
     muteRoleName: '🔇┃مكتوم',
@@ -62,24 +63,24 @@ module.exports = {
     gamesChannelName: '🎮┃الألعاب',
     punishmentsChannelName: '⚖️┃العقوبات',
 
-    // ─── نظام الاستثمار ──────────────────────────────────────────
+    // نظام الاستثمار
     investmentRate: 0.02,        // 2% ربح يومي (خُفِّضت من 5%)
     investmentMinAmount: 1000,
     investmentMaxDays: 30,       // الحد الأقصى لأيام جمع الأرباح دفعة واحدة
 
-    // ─── نظام الراتب والعمل ──────────────────────────────────────
+    // نظام الراتب والعمل
     weeklyPayAmount: 2000,
     workAmount: 300,             // مكافأة العمل
     workCooldown: 3600000,       // ساعة واحدة
 
-    // ─── إعدادات الرسائل التلقائية ──────────────────────────────
+    // إعدادات الرسائل التلقائية
     autoMessagesEnabled: true,   // تفعيل/تعطيل الرسائل التلقائية (يمكن تغييره من الداشبورد)
     randomEventInterval: 20,     // كل 20 دقيقة (بدلاً من 3)
     challengeInterval: 45,       // كل 45 دقيقة (بدلاً من 12)
     moodMessageInterval: 180,    // كل 3 ساعات (بدلاً من 55 دقيقة)
     greetingInterval: 240,       // كل 4 ساعات (بدلاً من 60 دقيقة)
 
-    // ─── أيتمز المتجر (الأصول الواقعية) ──────────────────────────
+    // أيتمز المتجر (الأصول الواقعية)
     shopItems: {
         // أجهزة وإلكترونيات
         smartphone: { name: 'هاتف ذكي', price: 5000, description: 'هاتف ذكي بآخر إصدار', emoji: '📱', duration: 999, image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=800' },
@@ -106,7 +107,7 @@ module.exports = {
         xp_boost_large: { name: 'مضاعف الخبرة (أسبوع)', price: 15000, description: 'مضاعف للخبرة لمدة 7 أيام', emoji: '⚡', duration: 7, image: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=800' }
     },
 
-    // ─── ألوان البروفايل المتاحة ─────────────────────────────────
+    // ألوان البروفايل المتاحة
     availableColors: {
         red: { name: 'أحمر ناري', hex: '#FF0000', emoji: '🔴' },
         blue: { name: 'أزرق سماوي', hex: '#0099FF', emoji: '🔵' },
@@ -120,7 +121,7 @@ module.exports = {
         white: { name: 'أبيض ناصع', hex: '#FFFFFF', emoji: '⚪' }
     },
 
-    // ─── إعدادات المنشن الوهمي (Ghost Ping) ─────────────────────
+    // إعدادات المنشن الوهمي (Ghost Ping)
     ghostPingEnabled: false,          // معطّل بشكل افتراضي (يشغّله المالك من الداشبورد)
     ghostPingInterval: 21600000,      // كل 6 ساعات (بدلاً من 10 دقائق)
 };

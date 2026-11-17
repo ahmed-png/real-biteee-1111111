@@ -11,7 +11,7 @@ const db = require('../../utils/database');
 const config = require('../../config');
 const { EmbedBuilder } = require('discord.js');
 
-// ─── XP Rewards per game ──────────────────────────────────────────────────────
+// XP Rewards per game
 const GAME_XP = {
     ttt:       { play: 5, win: 15 },
     rps:       { play: 3, win: 10 },
@@ -23,7 +23,7 @@ const GAME_XP = {
     casino:    { play: 2, win: 5  },
 };
 
-// ─── تسجيل نتيجة لعبة ────────────────────────────────────────────────────────
+// تسجيل نتيجة لعبة
 function recordGameResult(userId, gameType, won = false, wagered = 0, wonAmount = 0) {
     const user = db.getUserData(userId);
     const rewards = GAME_XP[gameType] || { play: 3, win: 8 };
@@ -60,7 +60,7 @@ function recordGameResult(userId, gameType, won = false, wagered = 0, wonAmount 
     return { xpGain, newXp, newLevel, leveledUp, levelUpReward: updates.levelUpReward };
 }
 
-// ─── بناء Embed نتيجة اللعبة ──────────────────────────────────────────────────
+// بناء Embed نتيجة اللعبة
 function buildResultEmbed(result, playerName, gameEmoji = '🎮') {
     const { xpGain, newLevel, leveledUp, levelUpReward } = result;
 
@@ -79,7 +79,7 @@ function buildResultEmbed(result, playerName, gameEmoji = '🎮') {
     return embed;
 }
 
-// ─── حساب المستوى من XP ───────────────────────────────────────────────────────
+// حساب المستوى من XP
 function levelFromXP(xp) {
     return Math.floor(Math.sqrt(xp / 100)) + 1;
 }

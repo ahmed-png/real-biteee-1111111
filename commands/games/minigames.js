@@ -17,7 +17,7 @@ const activeBombs = new Map(); // channelId -> { target, current, players }
 
 async function playNumberBomb(message) {
     if (activeBombs.has(message.channel.id)) {
-        return message.reply('⚠️ هناك لعبة **Number Bomb** نشطة في هذه القناة!');
+        return message.reply('⚠️ أكو لعبة **قنبلة الأرقام** شغّالة بهالقناة!');
     }
 
     const target = Math.floor(Math.random() * 50) + 20; // 20-70
@@ -25,16 +25,16 @@ async function playNumberBomb(message) {
 
     const embed = new EmbedBuilder()
         .setColor('#FF6B6B')
-        .setTitle('💣 Number Bomb — الألغام الرقمية!')
+        .setTitle('💣 قنبلة الأرقام!')
         .setDescription([
-            '> أضف أرقاماً من **1 إلى 5** في كل مرة!',
-            '> **من يصل للرقم المحدد — يخسر ويدفع 200 عملة!**',
+            '> ضيف رقم من **1 إلى 5** بكل دور!',
+            '> **اللي يوصل للرقم المحدد يخسر ويدفع 200 عملة!**',
             '',
-            '> ابدأ بكتابة رقم (1-5)...',
-            '> الرقم الحالي: **0**',
+            '> يلا، اكتب رقم (1-5)...',
+            '> المجموع هسه: **0**',
         ].join('\n'))
-        .addFields({ name: '🎯 الهدف', value: `||**${target}**|| (مخفي حتى النهاية!)`, inline: true })
-        .setFooter({ text: '⏰ كل لاعب عنده 15 ثانية للرد' });
+        .addFields({ name: '🎯 الهدف', value: `||**${target}**|| (يبقى مخفي لآخر لحظة!)`, inline: true })
+        .setFooter({ text: '⏰ كل لاعب عنده 15 ثانية يرد' });
 
     await message.reply({ embeds: [embed] });
 
@@ -58,7 +58,7 @@ async function playNumberBomb(message) {
 
         // لا يمكن اللاعب أن يلعب مرتين متتاليتين
         if (userId === lastPlayer) {
-            const warn = await msg.reply('⚠️ لا يمكنك اللعب مرتين متتاليتين!').catch(() => null);
+            const warn = await msg.reply('⚠️ ما يصير تلعب دورين ورا بعض! خلي غيرك يلعب 😄').catch(() => null);
             if (warn) setTimeout(() => warn.delete().catch(() => {}), 3000);
             return;
         }
@@ -81,18 +81,18 @@ async function playNumberBomb(message) {
 
             const loseEmbed = new EmbedBuilder()
                 .setColor('#FF0000')
-                .setTitle('💥 BOOM! انفجرت القنبلة!')
+                .setTitle('💥 بوم! انفجرت القنبلة!')
                 .setDescription([
-                    `> 💣 ${msg.author} **وصل للرقم ${current} وفجّر القنبلة!**`,
-                    `> 🎯 الهدف الخفي كان: **${target}**`,
-                    `> 💸 خسر: **${fine.toLocaleString()} ${config.currency}**`,
+                    `> 💣 ${msg.author} **وصل للـ ${current} وفجّر القنبلة!**`,
+                    `> 🎯 الهدف المخفي جان: **${target}**`,
+                    `> 💸 خسر **${fine.toLocaleString()} ${config.currency}**`,
                 ].join('\n'))
                 .addFields({
-                    name: '📊 إحصائيات اللعبة',
+                    name: '📊 إحصائيات اللعب',
                     value: [...players.entries()]
                         .sort((a, b) => b[1] - a[1])
                         .map(([uid, turns]) => `<@${uid}> — ${turns} دور`)
-                        .join('\n') || '*لاعب واحد*'
+                        .join('\n') || '*لاعب واحد بس*'
                 })
                 .setTimestamp();
 
@@ -101,12 +101,12 @@ async function playNumberBomb(message) {
             // متابعة
             const safeEmbed = new EmbedBuilder()
                 .setColor(current > target * 0.8 ? '#FF6B6B' : current > target * 0.5 ? '#FFD700' : '#00FF88')
-                .setTitle(`💣 Number Bomb — الرقم: ${current}`)
+                .setTitle(`💣 قنبلة الأرقام — المجموع: ${current}`)
                 .setDescription([
-                    `> ${msg.author} أضاف **${num}** → الإجمالي: **${current}**`,
-                    `> ${current > target * 0.8 ? '🔴 **خطر! القنبلة على وشك الانفجار!**' : current > target * 0.5 ? '🟡 **توخَّ الحذر!**' : '🟢 آمن'}`,
+                    `> ${msg.author} ضاف **${num}** → المجموع: **${current}**`,
+                    `> ${current > target * 0.8 ? '🔴 **خطر! القنبلة قربت تنفجر!**' : current > target * 0.5 ? '🟡 **دير بالك!**' : '🟢 آمن'}`,
                     '',
-                    '> اكتب رقماً من 1 إلى 5...',
+                    '> اكتب رقم من 1 لـ 5...',
                 ].join('\n'));
 
             await msg.reply({ embeds: [safeEmbed] });
@@ -116,7 +116,7 @@ async function playNumberBomb(message) {
     collector.on('end', () => {
         activeBombs.delete(message.channel.id);
         if (isActive) {
-            message.channel.send('⏰ **انتهى وقت لعبة Number Bomb!**').catch(() => {});
+            message.channel.send('⏰ **خلص وقت لعبة قنبلة الأرقام!**').catch(() => {});
         }
     });
 }
@@ -161,7 +161,7 @@ async function playSpeedChallenge(message) {
     const channelId = message.channel.id;
 
     if (speedChallenges.has(channelId)) {
-        return message.reply('⚠️ هناك تحدي سرعة نشط بالفعل!');
+        return message.reply('⚠️ أكو تحدي سرعة شغّال أصلاً!');
     }
 
     const types = Object.keys(SPEED_CHALLENGES);
@@ -178,9 +178,9 @@ async function playSpeedChallenge(message) {
             `> **${challenge.question}**`,
             '',
             `> 🎁 الجائزة: **${prize.toLocaleString()} ${config.currency}**`,
-            '> ⏰ **لديك 20 ثانية!**',
+            '> ⏰ **عندك 20 ثانية!**',
         ].join('\n'))
-        .setFooter({ text: 'أول من يجيب يفوز!' });
+        .setFooter({ text: 'أول واحد يجاوب يفوز!' });
 
     await message.reply({ embeds: [embed] });
 
@@ -207,10 +207,10 @@ async function playSpeedChallenge(message) {
 
             const winEmbed = new EmbedBuilder()
                 .setColor('#00FF88')
-                .setTitle('✅ إجابة صحيحة!')
+                .setTitle('✅ جواب صحيح!')
                 .setDescription([
                     `> 🏆 ${msg.author} **فاز بتحدي السرعة!**`,
-                    `> ✅ الإجابة الصحيحة: **${challenge.answer}**`,
+                    `> ✅ الجواب الصح: **${challenge.answer}**`,
                     `> 💰 الجائزة: **+${prize.toLocaleString()} ${config.currency}**`,
                 ].join('\n'));
 
@@ -222,8 +222,8 @@ async function playSpeedChallenge(message) {
         speedChallenges.delete(channelId);
         if (!won) {
             message.channel.send([
-                `⏰ **انتهى الوقت!**`,
-                `> الإجابة الصحيحة كانت: **${challenge.answer}**`
+                `⏰ **خلص الوقت!**`,
+                `> الجواب الصح جان: **${challenge.answer}**`
             ].join('\n')).catch(() => {});
         }
     });
@@ -236,7 +236,7 @@ async function playWordChain(message) {
     const channelId = message.channel.id;
 
     if (wordChains.has(channelId)) {
-        return message.reply('⚠️ هناك لعبة **تسلسل الكلمات** نشطة! العب فيها أو انتظر انتهاءها.');
+        return message.reply('⚠️ أكو لعبة **تسلسل الكلمات** شغّالة! العب بيها أو انتظرها تخلص.');
     }
 
     const startWord = ['شمس', 'قمر', 'نجم', 'بحر', 'جبل'][Math.floor(Math.random() * 5)];
@@ -252,13 +252,13 @@ async function playWordChain(message) {
         .setColor('#3498DB')
         .setTitle('🔗 تسلسل الكلمات')
         .setDescription([
-            '> قاعدة اللعبة: كل كلمة تبدأ بآخر حرف من الكلمة السابقة!',
+            '> القاعدة: كل كلمة تبدي بآخر حرف من الكلمة اللي قبلها!',
             '',
-            `> 🎯 الكلمة الأولى: **"${startWord}"**`,
+            `> 🎯 أول كلمة: **"${startWord}"**`,
             `> آخر حرف: **"${startWord[startWord.length - 1]}"**`,
             '',
-            '> اكتب كلمة تبدأ بهذا الحرف. كل كلمة صحيحة = **+50 عملة!**',
-            '> من يكتب كلمة مكررة أو خاطئة يخسر **-100 عملة!**',
+            '> اكتب كلمة تبدي بهالحرف. كل كلمة صحيحة = **+50 عملة!**',
+            '> اللي يكتب كلمة مكررة أو غلط يخسر **-100 عملة!**',
         ].join('\n'));
 
     await message.reply({ embeds: [embed] });
@@ -287,12 +287,12 @@ async function playWordChain(message) {
             // حرف خاطئ
             await msg.react('❌').catch(() => {});
             db.updateFields(userId, { balance: Math.max(0, (db.getUserData(userId).balance || 0) - 100) });
-            await msg.reply(`❌ الكلمة يجب أن تبدأ بـ **"${lastChar}"**! (-100 ${config.currency})`);
+            await msg.reply(`❌ الكلمة لازم تبدي بـ **"${lastChar}"**! (-100 ${config.currency})`);
         } else if (c.usedWords.has(word)) {
             // كلمة مكررة
             await msg.react('🔄').catch(() => {});
             db.updateFields(userId, { balance: Math.max(0, (db.getUserData(userId).balance || 0) - 100) });
-            await msg.reply(`🔄 الكلمة **"${word}"** استُخدمت من قبل! (-100 ${config.currency})`);
+            await msg.reply(`🔄 الكلمة **"${word}"** مستخدمة من قبل! (-100 ${config.currency})`);
         } else {
             // صحيح!
             c.lastWord = word;
@@ -311,12 +311,12 @@ async function playWordChain(message) {
 
         const endEmbed = new EmbedBuilder()
             .setColor('#95A5A6')
-            .setTitle('🔗 انتهت لعبة تسلسل الكلمات!')
+            .setTitle('🔗 خلصت لعبة تسلسل الكلمات!')
             .setDescription([
                 topPlayer
-                    ? `> 🏆 **أفضل لاعب:** <@${topPlayer[0]}> بـ **${topPlayer[1]} عملة**`
-                    : '> لم يفز أحد!',
-                `> 📝 **الكلمات المستخدمة:** ${c.usedWords.size} كلمة`,
+                    ? `> 🏆 **أكثر واحد جمع:** <@${topPlayer[0]}> بـ **${topPlayer[1]} عملة**`
+                    : '> محد فاز!',
+                `> 📝 **الكلمات اللي انكتبت:** ${c.usedWords.size} كلمة`,
             ].join('\n'));
 
         message.channel.send({ embeds: [endEmbed] }).catch(() => {});
@@ -327,7 +327,7 @@ async function playWordChain(message) {
 module.exports = {
     name: 'minigames',
     aliases: ['ألعاب-مصغرة', 'mini', 'bomb', 'قنبلة', 'سرعة', 'speed', 'chain', 'تسلسل'],
-    description: 'ألعاب مصغرة متطورة',
+    description: 'ألعاب مصغّرة سريعة',
     usage: 'mini [bomb|speed|chain]',
 
     async execute(message, args) {
@@ -343,25 +343,25 @@ module.exports = {
             // عرض القائمة
             const embed = new EmbedBuilder()
                 .setColor('#E74C3C')
-                .setTitle('🎮 الألعاب المصغرة')
-                .setDescription('> اختر لعبة وابدأ المتعة!')
+                .setTitle('🎮 الألعاب المصغّرة')
+                .setDescription('> اختار لعبة ويلا نلعب!')
                 .addFields(
-                    { name: '💣 Number Bomb', value: '`mini bomb` — لعبة الأرقام المتفجرة! اجمع أرقاماً ولا تصل للهدف!', inline: false },
-                    { name: '⚡ Speed Challenge', value: '`mini speed` — تحدي السرعة! أجب على السؤال أول من يجيب يفوز!', inline: false },
-                    { name: '🔗 Word Chain', value: '`mini chain` — تسلسل الكلمات! كل كلمة تبدأ بآخر حرف!', inline: false },
+                    { name: '💣 قنبلة الأرقام', value: '`mini bomb` — اجمع أرقام ولا توصل للهدف!', inline: false },
+                    { name: '⚡ تحدي السرعة', value: '`mini speed` — جاوب على السؤال، أول واحد يفوز!', inline: false },
+                    { name: '🔗 تسلسل الكلمات', value: '`mini chain` — كل كلمة تبدي بآخر حرف!', inline: false },
                 )
-                .setFooter({ text: `💰 جميع الألعاب تمنح مكافآت عملة! البريفكس: ${config.prefix}` });
+                .setFooter({ text: `💰 كل الألعاب بيها جوائز! البادئة: ${config.prefix}` });
 
             const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('mg_bomb').setLabel('💣 Bomb').setStyle(ButtonStyle.Danger),
-                new ButtonBuilder().setCustomId('mg_speed').setLabel('⚡ Speed').setStyle(ButtonStyle.Primary),
-                new ButtonBuilder().setCustomId('mg_chain').setLabel('🔗 Chain').setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder().setCustomId('mg_bomb').setLabel('💣 قنبلة').setStyle(ButtonStyle.Danger),
+                new ButtonBuilder().setCustomId('mg_speed').setLabel('⚡ سرعة').setStyle(ButtonStyle.Primary),
+                new ButtonBuilder().setCustomId('mg_chain').setLabel('🔗 كلمات').setStyle(ButtonStyle.Secondary),
             );
 
             const reply = await message.reply({ embeds: [embed], components: [row] });
             const collector = reply.createMessageComponentCollector({ time: 30000 });
             collector.on('collect', async (i) => {
-                if (i.user.id !== message.author.id) return i.reply({ content: '❌', flags: MessageFlags.Ephemeral });
+                if (i.user.id !== message.author.id) return i.reply({ content: '❌ مو إلك!', flags: MessageFlags.Ephemeral });
                 await i.deferUpdate();
                 if (i.customId === 'mg_bomb') await playNumberBomb(message);
                 else if (i.customId === 'mg_speed') await playSpeedChallenge(message);

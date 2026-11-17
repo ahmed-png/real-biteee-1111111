@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../../../utils/app-logger');
 
 /**
  * ════════════════════════════════════════════════════════
@@ -50,7 +51,7 @@ const LEGACY_PROTECTION_FLAGS = {
 // جميع الـ routes تتطلب Server Owner لهذا الـ guild بالذات
 router.use(requireServerOwner);
 
-// ─── Helper: التحقق من صلاحيات البوت في قناة ─────────────────────────────────
+// Helper: التحقق من صلاحيات البوت في قناة
 function checkBotPerms(channel, botMember, requiredPerms) {
     const missing = [];
     for (const [perm, label] of requiredPerms) {
@@ -61,7 +62,7 @@ function checkBotPerms(channel, botMember, requiredPerms) {
     return missing;
 }
 
-// ─── Helper: جلب معلومات القناة بشكل آمن ─────────────────────────────────────
+// Helper: جلب معلومات القناة بشكل آمن
 function channelInfo(channel, botMember) {
     const perms = channel.permissionsFor(botMember);
     return {
@@ -92,9 +93,7 @@ async function getGuildTextChannel(guild, channelId) {
         : null;
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
 // معلومات السيرفر
-// ──────────────────────────────────────────────────────────────────────────────
 router.get('/info', async (req, res) => {
     const { guildId } = req.params;
     const client = req.app.get('client');
@@ -139,9 +138,7 @@ router.get('/info', async (req, res) => {
     }
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // قائمة القنوات (Text Channels فقط)
-// ──────────────────────────────────────────────────────────────────────────────
 router.get('/channels', async (req, res) => {
     const { guildId } = req.params;
     const client = req.app.get('client');
@@ -161,9 +158,7 @@ router.get('/channels', async (req, res) => {
     }
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // تعيين Color Channel
-// ──────────────────────────────────────────────────────────────────────────────
 router.post('/color-channel', async (req, res) => {
     const { guildId } = req.params;
     const { channelId } = req.body;
@@ -209,7 +204,7 @@ router.post('/color-channel', async (req, res) => {
             const colorSystem = require('../../../utils/color-system');
             await colorSystem.setupColorChannel(guild, channel, oldChannelId);
         } catch (csErr) {
-            console.error('[ColorSystem] Error:', csErr.message);
+            appLogger.error('[ColorSystem] Error:', csErr.message);
         }
 
         res.json({
@@ -223,9 +218,7 @@ router.post('/color-channel', async (req, res) => {
     }
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // تعيين Log Channel
-// ──────────────────────────────────────────────────────────────────────────────
 router.post('/log-channel', async (req, res) => {
     const { guildId } = req.params;
     const { channelId } = req.body;
@@ -285,9 +278,7 @@ router.post('/log-channel', async (req, res) => {
     }
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // إعدادات الحماية
-// ──────────────────────────────────────────────────────────────────────────────
 router.get('/protection', (req, res) => {
     const { guildId } = req.params;
     const guildData = db.getGuildData(guildId);
@@ -353,9 +344,7 @@ router.post('/protection', (req, res) => {
     res.json({ success: true, message: 'تم حفظ إعدادات الحماية' });
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // إعدادات الترحيب — قراءة فقط (الكتابة تتم من Bot Owner Dashboard)
-// ──────────────────────────────────────────────────────────────────────────────
 
 /**
  * GET /server/:guildId/welcome-settings
@@ -437,14 +426,14 @@ router.post('/welcome-settings', async (req, res) => {
             db.setWelcomeImageBase64(guildId, req.body.welcomeImageBase64).catch(console.error);
             updates.welcomeImage = `/api/public/welcome-image/${guildId}`;
         } catch (uploadErr) {
-            console.error('[ServerOwner/Welcome] فشل حفظ الصورة المرفوعة:', uploadErr);
+            appLogger.error('[ServerOwner/Welcome] فشل حفظ الصورة المرفوعة:', uploadErr);
         }
     } else if (welcomeImage !== undefined) {
         updates.welcomeImage = welcomeImage || null;
     }
 
     db.updateGuildData(guildId, updates);
-    console.log(`[ServerOwner/Welcome] ✅ تم حفظ إعدادات الترحيب لـ Guild ${guildId}:`, updates);
+    appLogger.info(`[ServerOwner/Welcome] تم حفظ إعدادات الترحيب لـ Guild ${guildId}:`, updates);
 
     res.json({ success: true, message: 'تم حفظ إعدادات الترحيب ✅' });
 });
@@ -505,14 +494,12 @@ router.post('/test-welcome', async (req, res) => {
             message: `✅ تم إرسال رسالة ترحيب تجريبية إلى #${channel.name} بنجاح! 🎉`
         });
     } catch (err) {
-        console.error('[ServerOwner/test-welcome]', err);
+        appLogger.error('[ServerOwner/test-welcome]', err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // الأعضاء
-// ──────────────────────────────────────────────────────────────────────────────
 router.get('/members/leaderboard', async (req, res) => {
     const { guildId } = req.params;
     const client = req.app.get('client');
@@ -544,9 +531,7 @@ router.get('/members/leaderboard', async (req, res) => {
     }
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
 // Roles
-// ──────────────────────────────────────────────────────────────────────────────
 router.get('/auto-role', async (req, res) => {
     const { guildId } = req.params;
     const client = req.app.get('client');
@@ -562,7 +547,7 @@ router.get('/auto-role', async (req, res) => {
             try {
                 botMember = await guild.members.fetchMe();
             } catch (err) {
-                console.error(`[ServerOwner/auto-role] Failed to fetch bot member in guild ${guildId}:`, err);
+                appLogger.error(`[ServerOwner/auto-role] Failed to fetch bot member in guild ${guildId}:`, err);
                 return res.status(503).json({ success: false, error: 'تعذر التحقق من صلاحيات البوت' });
             }
         }
@@ -572,7 +557,7 @@ router.get('/auto-role', async (req, res) => {
             try {
                 role = await guild.roles.fetch(roleId);
             } catch (err) {
-                console.error(`[ServerOwner/auto-role] Failed to fetch configured role in guild ${guildId}:`, err);
+                appLogger.error(`[ServerOwner/auto-role] Failed to fetch configured role in guild ${guildId}:`, err);
                 return res.status(500).json({ success: false, error: 'تعذر التحقق من الرتبة المحفوظة' });
             }
         }
@@ -666,7 +651,7 @@ router.post('/auto-role', async (req, res) => {
             try {
                 botMember = await guild.members.fetchMe();
             } catch (err) {
-                console.error(`[ServerOwner/auto-role] Failed to fetch bot member in guild ${guildId}:`, err);
+                appLogger.error(`[ServerOwner/auto-role] Failed to fetch bot member in guild ${guildId}:`, err);
                 return res.status(503).json({ success: false, error: 'تعذر التحقق من صلاحيات البوت' });
             }
         }
@@ -683,7 +668,7 @@ router.post('/auto-role', async (req, res) => {
             try {
                 role = await guild.roles.fetch(guildData.autoRoleId);
             } catch (err) {
-                console.error(`[ServerOwner/auto-role] Failed to fetch configured role in guild ${guildId}:`, err);
+                appLogger.error(`[ServerOwner/auto-role] Failed to fetch configured role in guild ${guildId}:`, err);
                 return res.status(500).json({ success: false, error: 'تعذر التحقق من الرتبة المحفوظة' });
             }
         }
@@ -730,7 +715,7 @@ router.post('/auto-role', async (req, res) => {
             message: 'تم حفظ الرتبة التلقائية وإعداد صلاحياتها ✅',
         });
     } catch (err) {
-        console.error('[ServerOwner/auto-role]', err);
+        appLogger.error('[ServerOwner/auto-role]', err);
         res.status(500).json({ success: false, error: err.message });
     }
 });
@@ -839,7 +824,7 @@ router.post('/roles/manage', async (req, res) => {
             message: action === 'add' ? 'تمت إضافة الدور للعضو ✅' : 'تمت إزالة الدور من العضو ✅',
         });
     } catch (err) {
-        console.error('[ServerOwner/roles/manage]', err);
+        appLogger.error('[ServerOwner/roles/manage]', err);
         res.status(500).json({ success: false, error: err.message });
     }
 });

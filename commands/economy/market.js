@@ -13,7 +13,7 @@ const config = require('../../config');
 const analytics = require('../../utils/analytics');
 const achievementsCmd = require('../main/achievements-cmd');
 
-// ─── الأصول المتاحة للتداول ───────────────────────────────────────────────────
+// الأصول المتاحة للتداول
 const ASSETS = {
     gold: {
         name: 'ذهب', emoji: '🥇',
@@ -65,7 +65,7 @@ const ASSETS = {
     }
 };
 
-// ─── نظام الأسعار الديناميكي ──────────────────────────────────────────────────
+// نظام الأسعار الديناميكي
 let marketData = {};
 let lastUpdate = 0;
 
@@ -133,7 +133,7 @@ function getMarketStatus() {
     }));
 }
 
-// ─── رسم بياني نصي للسعر ─────────────────────────────────────────────────────
+// رسم بياني نصي للسعر
 function drawPriceChart(history) {
     const relevant = history.slice(-20);
     const max = Math.max(...relevant);
@@ -150,10 +150,10 @@ function drawPriceChart(history) {
     return rows.join('\n');
 }
 
-// ─── أمر السوق الرئيسي ───────────────────────────────────────────────────────
+// أمر السوق الرئيسي
 module.exports = {
     name: 'market', aliases: ['سوق', 'بورصة-جديدة', 'تداول', ],
-    description: 'سوق مالي متطور مع أسعار ديناميكية',
+    description: 'سوق مالي متطور وأسعاره تتغير باستمرار',
     usage: 'سوق [شراء|بيع|محفظة|أسعار] [أصل] [كمية]',
 
     async execute(message, args) {
@@ -190,8 +190,8 @@ async function showMarket(message) {
         .setColor('#00D2FF')
         .setTitle('📊 السوق المالي — أسعار مباشرة')
         .setDescription([
-            '> جميع الأسعار تتغير ديناميكياً كل دقيقة!',
-            '> اشترِ عند الانخفاض وبع عند الارتفاع 📈',
+            '> الأسعار تتغير كل دقيقة!',
+            '> اشتري من ينزل السعر وبيع من يرتفع 📈',
         ].join('\n'));
 
     const categories = {
@@ -217,15 +217,15 @@ async function showMarket(message) {
     }
 
     embed.addFields({
-        name: '💡 كيفية التداول',
-        value: '`سوق شراء [أصل] [كمية]` — شراء أصل\n`سوق بيع [أصل] [كمية]` — بيع أصل\n`سوق محفظة` — عرض محفظتك\n\n**أمثلة الأصول:** `gold` `tech` `crypto` `oil` `gaming`',
+        name: '💡 شلون تتداول',
+        value: '`سوق شراء [أصل] [كمية]` — اشتري أصل\n`سوق بيع [أصل] [كمية]` — بيع أصل\n`سوق محفظة` — شوف محفظتك\n\n**أمثلة للأصول:** `gold` `tech` `crypto` `oil` `gaming`',
         inline: false
     });
 
     const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId('market_refresh')
-            .setLabel('🔄 تحديث الأسعار')
+            .setLabel('🔄 حدّث الأسعار')
             .setStyle(ButtonStyle.Primary),
         new ButtonBuilder()
             .setCustomId('market_portfolio')
@@ -238,7 +238,7 @@ async function showMarket(message) {
 
     collector.on('collect', async (interaction) => {
         if (interaction.user.id !== message.author.id) {
-            return interaction.reply({ content: '❌ ليس لك', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: '❌ هالزر مو إلك.', flags: MessageFlags.Ephemeral });
         }
         if (interaction.customId === 'market_refresh') {
             updatePrices();
@@ -253,7 +253,7 @@ async function showMarket(message) {
 async function buyAsset(message, assetKey, quantity) {
     if (!assetKey || !ASSETS[assetKey]) {
         const assetList = Object.keys(ASSETS).join(', ');
-        return message.reply(`❌ أصل غير صحيح! الأصول المتاحة: \`${assetList}\``);
+        return message.reply(`❌ اسم الأصل مو صحيح! تگدر تختار من: \`${assetList}\``);
     }
 
     const userId = message.author.id;
@@ -262,7 +262,7 @@ async function buyAsset(message, assetKey, quantity) {
     const totalCost = price * quantity;
 
     if ((userData.balance || 0) < totalCost) {
-        return message.reply(`❌ رصيدك غير كافٍ! تحتاج: **${totalCost.toLocaleString()} ${config.currency}**`);
+        return message.reply(`❌ رصيدك ما يكفي! تحتاج: **${totalCost.toLocaleString()} ${config.currency}**`);
     }
 
     // تحديث المحفظة
@@ -290,12 +290,12 @@ async function buyAsset(message, assetKey, quantity) {
 
     const embed = new EmbedBuilder()
         .setColor('#00FF88')
-        .setTitle(`✅ تم الشراء — ${ASSETS[assetKey].emoji} ${ASSETS[assetKey].name}`)
+        .setTitle(`✅ اشتريت — ${ASSETS[assetKey].emoji} ${ASSETS[assetKey].name}`)
         .addFields(
             { name: '📦 الكمية', value: `\`${quantity}\` وحدة`, inline: true },
             { name: '💵 سعر الوحدة', value: `\`${price.toLocaleString()}\` ${config.currency}`, inline: true },
-            { name: '💸 الإجمالي', value: `\`${totalCost.toLocaleString()}\` ${config.currency}`, inline: true },
-            { name: '📊 إجمالي محفظتك', value: `\`${totalQty}\` وحدة @ متوسط \`${Math.floor(newAvg).toLocaleString()}\``, inline: false }
+            { name: '💸 المجموع', value: `\`${totalCost.toLocaleString()}\` ${config.currency}`, inline: true },
+            { name: '📊 بمحفظتك هسه', value: `\`${totalQty}\` وحدة @ متوسط \`${Math.floor(newAvg).toLocaleString()}\``, inline: false }
         )
         .setTimestamp();
 
@@ -308,7 +308,7 @@ async function buyAsset(message, assetKey, quantity) {
 
 async function sellAsset(message, assetKey, quantityInput) {
     if (!assetKey || !ASSETS[assetKey]) {
-        return message.reply(`❌ أصل غير صحيح!`);
+        return message.reply(`❌ اسم الأصل مو صحيح!`);
     }
 
     const userId = message.author.id;
@@ -317,7 +317,7 @@ async function sellAsset(message, assetKey, quantityInput) {
     const holding = portfolio[assetKey];
 
     if (!holding || holding.quantity <= 0) {
-        return message.reply(`❌ لا تملك أي ${ASSETS[assetKey].emoji} **${ASSETS[assetKey].name}** للبيع!`);
+        return message.reply(`❌ ما عندك ${ASSETS[assetKey].emoji} **${ASSETS[assetKey].name}** حتى تبيع!`);
     }
 
     const quantity = quantityInput === 'all' ? holding.quantity : Math.min(parseInt(quantityInput) || 1, holding.quantity);
@@ -341,11 +341,11 @@ async function sellAsset(message, assetKey, quantityInput) {
     const isProfit = profitLoss >= 0;
     const embed = new EmbedBuilder()
         .setColor(isProfit ? '#00FF88' : '#FF4444')
-        .setTitle(`${isProfit ? '✅' : '📉'} تم البيع — ${ASSETS[assetKey].emoji} ${ASSETS[assetKey].name}`)
+        .setTitle(`${isProfit ? '✅' : '📉'} بعت — ${ASSETS[assetKey].emoji} ${ASSETS[assetKey].name}`)
         .addFields(
             { name: '📦 الكمية المباعة', value: `\`${quantity}\` وحدة`, inline: true },
             { name: '💵 سعر البيع', value: `\`${price.toLocaleString()}\` ${config.currency}`, inline: true },
-            { name: '💰 الإيرادات', value: `\`${totalEarned.toLocaleString()}\` ${config.currency}`, inline: true },
+            { name: '💰 المبلغ اللي حصلته', value: `\`${totalEarned.toLocaleString()}\` ${config.currency}`, inline: true },
             { name: isProfit ? '📈 الربح' : '📉 الخسارة', value: `\`${isProfit ? '+' : ''}${profitLoss.toLocaleString()}\` ${config.currency}`, inline: false }
         )
         .setTimestamp();
@@ -369,8 +369,8 @@ async function showPortfolioForUser(message, userId, replyFn) {
     if (Object.keys(portfolio).length === 0) {
         const embed = new EmbedBuilder()
             .setColor('#95A5A6')
-            .setTitle('💼 محفظتك الاستثمارية')
-            .setDescription('> *محفظتك فارغة! ابدأ بشراء أصول من السوق.*\n> اكتب `سوق شراء [أصل] [كمية]`');
+            .setTitle('💼 محفظتك بالسوق')
+            .setDescription('> *محفظتك فارغة! تگدر تشتري أصول من السوق.*\n> اكتب `سوق شراء [أصل] [كمية]`');
         return replyFn(embed);
     }
 
@@ -394,10 +394,10 @@ async function showPortfolioForUser(message, userId, replyFn) {
             name: `${asset.emoji} ${asset.name}`,
             value: [
                 `> **الكمية:** \`${holding.quantity}\``,
-                `> **متوسط الشراء:** \`${holding.avgBuyPrice.toLocaleString()}\``,
-                `> **السعر الحالي:** \`${currentPrice.toLocaleString()}\``,
+                `> **معدل الشراء:** \`${holding.avgBuyPrice.toLocaleString()}\``,
+                `> **السعر هسه:** \`${currentPrice.toLocaleString()}\``,
                 `> **القيمة:** \`${currentValue.toLocaleString()}\``,
-                `> **P&L:** \`${pnl >= 0 ? '+' : ''}${pnl.toLocaleString()}\` (${pnl >= 0 ? '📈' : '📉'} ${pnlPct}%)`,
+                `> **الربح/الخسارة:** \`${pnl >= 0 ? '+' : ''}${pnl.toLocaleString()}\` (${pnl >= 0 ? '📈' : '📉'} ${pnlPct}%)`,
             ].join('\n'),
             inline: true
         });
@@ -406,7 +406,7 @@ async function showPortfolioForUser(message, userId, replyFn) {
     const totalPnL = totalValue - totalInvested;
     const embed = new EmbedBuilder()
         .setColor(totalPnL >= 0 ? '#00FF88' : '#FF4444')
-        .setTitle('💼 محفظتك الاستثمارية')
+        .setTitle('💼 محفظتك بالسوق')
         .setDescription([
             `> **إجمالي القيمة:** \`${totalValue.toLocaleString()} ${config.currency}\``,
             `> **إجمالي الاستثمار:** \`${totalInvested.toLocaleString()} ${config.currency}\``,
@@ -428,7 +428,7 @@ async function showChart(message, assetKey) {
     const asset = ASSETS[assetKey];
 
     if (!data || data.history.length < 2) {
-        return message.reply('❌ لا توجد بيانات كافية بعد. انتظر قليلاً!');
+        return message.reply('❌ ماكو بيانات كافية لحد هسه. انتظر شوي!');
     }
 
     const chart = drawPriceChart(data.history);
@@ -443,8 +443,8 @@ async function showChart(message, assetKey) {
             '```',
             chart,
             '```',
-            `**السعر الحالي:** \`${currentPrice.toLocaleString()} ${config.currency}\``,
-            `**التغيير الإجمالي:** \`${parseFloat(totalChange) >= 0 ? '+' : ''}${totalChange}%\``,
+            `**السعر هسه:** \`${currentPrice.toLocaleString()} ${config.currency}\``,
+            `**التغيير الكلي:** \`${parseFloat(totalChange) >= 0 ? '+' : ''}${totalChange}%\``,
         ].join('\n'))
         .setTimestamp();
 

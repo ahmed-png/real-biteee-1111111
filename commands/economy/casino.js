@@ -13,11 +13,11 @@ const db = require('../../utils/database');
 const config = require('../../config');
 const analytics = require('../../utils/analytics');
 
-// ─── الـ Jackpot التراكمي ─────────────────────────────────────────────────────
+// الـ Jackpot التراكمي
 let jackpotPool = 50000; // تجمع تدريجياً من كل رهان
 const JACKPOT_CONTRIBUTION = 0.02; // 2% من كل رهان يذهب للـ Jackpot
 
-// ─── رموز السلوتس المتقدمة ──────────────────────────────────────────────────
+// رموز السلوتس المتقدمة
 const SLOT_SYMBOLS = {
     '💎': { value: 100, name: 'ماسة',    weight: 1  },
     '7️⃣': { value: 50,  name: 'سبعة',   weight: 2  },
@@ -56,7 +56,7 @@ function getSlotResult(bet) {
         if (s1 === '💎') {
             isJackpot = true;
             multiplier = jackpotPool / bet;
-            label = '💎 JACKPOT!! 💎';
+            label = '💎 الجائزة الكبرى!! 💎';
         } else {
             multiplier = SLOT_SYMBOLS[s1].value;
             label = `✨ ثلاثة ${SLOT_SYMBOLS[s1].name}!`;
@@ -67,7 +67,7 @@ function getSlotResult(bet) {
         multiplier = Math.floor(SLOT_SYMBOLS[matched].value / 5);
         label = `🎯 زوج ${SLOT_SYMBOLS[matched].name}!`;
     } else {
-        label = '❌ لم تفز هذه المرة';
+        label = '❌ ما فزت هالمرة';
     }
 
     const payout = isJackpot ? jackpotPool : Math.floor(bet * multiplier);
@@ -76,7 +76,7 @@ function getSlotResult(bet) {
     return { reels, multiplier, payout, label, isJackpot };
 }
 
-// ─── لعبة الكراش ─────────────────────────────────────────────────────────────
+// لعبة الكراش
 const activeCrashGames = new Map(); // channelId -> CrashGame
 
 class CrashGame {
@@ -131,10 +131,10 @@ class CrashGame {
     }
 }
 
-// ─── الأمر الرئيسي ────────────────────────────────────────────────────────────
+// الأمر الرئيسي
 module.exports = {
     name: 'casino', aliases: ['كازينو', 'قمار', 'سلوتس', 'slots', 'crash', 'كراش', 'رولت', 'roulette'],
-    description: 'كازينو متطور مع ألعاب متعددة',
+    description: 'كازينو متطور بيه أكثر من لعبة',
     usage: 'كازينو [slots|crash|roulette] [مبلغ]',
 
     async execute(message, args) {
@@ -159,7 +159,7 @@ module.exports = {
     }
 };
 
-// ─── السلوتس المتطورة ────────────────────────────────────────────────────────
+// السلوتس المتطورة
 async function playSlots(message, betAmount) {
     const userId = message.author.id;
     const userData = db.getUserData(userId);
@@ -167,19 +167,19 @@ async function playSlots(message, betAmount) {
     betAmount = Math.max(10, Math.min(betAmount, 50000));
 
     if ((userData.balance || 0) < betAmount) {
-        return message.reply(`❌ رصيدك غير كافٍ! رصيدك: **${(userData.balance || 0).toLocaleString()} ${config.currency}**`);
+        return message.reply(`❌ رصيدك ما يكفي! عندك: **${(userData.balance || 0).toLocaleString()} ${config.currency}**`);
     }
 
     // خصم الرهان
     db.updateFields(userId, { balance: (userData.balance || 0) - betAmount });
 
-    // ─── مرحلة الدوران المتحركة ─────────────────────────────────────────
+    // مرحلة الدوران المتحركة
     const spinningEmbed = new EmbedBuilder()
         .setColor('#FFD700')
-        .setTitle('🎰 السلوتس يدور...')
+        .setTitle('🎰 السلوتس دا تلف...')
         .setDescription('```\n🔄  🔄  🔄\n```')
         .addFields({ name: '💵 الرهان', value: `\`${betAmount.toLocaleString()} ${config.currency}\``, inline: true })
-        .setFooter({ text: `💎 الجاكبوت الحالي: ${jackpotPool.toLocaleString()} ${config.currency}` });
+        .setFooter({ text: `💎 الجائزة الكبرى هسه: ${jackpotPool.toLocaleString()} ${config.currency}` });
 
     const spinMsg = await message.reply({ embeds: [spinningEmbed] });
 
@@ -209,36 +209,36 @@ async function playSlots(message, betAmount) {
         won = payout;
         newBalance += payout;
         db.updateFields(userId, { balance: newBalance });
-        db.addTransaction(userId, 'casino_win', payout, `Slots Win (x${result.multiplier})`);
+        db.addTransaction(userId, 'casino_win', payout, `فوز بالسلوتس (x${result.multiplier})`);
         analytics.trackEconomy('earn', payout, userId);
         if (isJackpot) jackpotPool = 50000; // reset jackpot
     } else {
-        db.addTransaction(userId, 'casino_loss', betAmount, 'Slots Loss');
+        db.addTransaction(userId, 'casino_loss', betAmount, 'خسارة بالسلوتس');
         analytics.trackEconomy('spend', betAmount, userId);
     }
 
     const color = payout > betAmount ? '#00FF88' : payout > 0 ? '#FFD700' : '#FF4444';
     const resultEmbed = new EmbedBuilder()
         .setColor(color)
-        .setTitle(isJackpot ? '💎 JACKPOT MEGA WIN!! 💎' : '🎰 نتيجة السلوتس')
+        .setTitle(isJackpot ? '💎 فوز بالجائزة الكبرى!! 💎' : '🎰 نتيجة السلوتس')
         .setDescription([
             '```',
             `${reels.join('  ')}`,
             '```',
             `**${label}**`,
-            isJackpot ? '🎊🎊🎊 **أنت فزت بالجاكبوت الكبير!!!** 🎊🎊🎊' : ''
+            isJackpot ? '🎊🎊🎊 **فزت بالجائزة الكبرى!!!** 🎊🎊🎊' : ''
         ].join('\n'))
         .addFields(
             { name: '💵 الرهان', value: `\`${betAmount.toLocaleString()}\` ${config.currency}`, inline: true },
             { name: payout > 0 ? '🏆 الربح' : '💸 الخسارة', value: `\`${payout > 0 ? '+' + payout.toLocaleString() : '-' + betAmount.toLocaleString()}\` ${config.currency}`, inline: true },
             { name: '💰 رصيدك الآن', value: `\`${newBalance.toLocaleString()}\` ${config.currency}`, inline: true },
         )
-        .setFooter({ text: `💎 جاكبوت: ${jackpotPool.toLocaleString()} ${config.currency} | العب مجدداً بكتابة كازينو` });
+        .setFooter({ text: `💎 الجائزة الكبرى: ${jackpotPool.toLocaleString()} ${config.currency} | العب مرة ثانية واكتب كازينو` });
 
     await spinMsg.edit({ embeds: [resultEmbed] }).catch(() => {});
 }
 
-// ─── لعبة الكراش ─────────────────────────────────────────────────────────────
+// لعبة الكراش
 async function playCrash(message, betAmount) {
     const userId = message.author.id;
     const userData = db.getUserData(userId);
@@ -246,7 +246,7 @@ async function playCrash(message, betAmount) {
     betAmount = Math.max(50, Math.min(betAmount, 100000));
 
     if ((userData.balance || 0) < betAmount) {
-        return message.reply(`❌ رصيدك غير كافٍ! تحتاج: **${betAmount.toLocaleString()} ${config.currency}**`);
+        return message.reply(`❌ رصيدك ما يكفي! تحتاج: **${betAmount.toLocaleString()} ${config.currency}**`);
     }
 
     db.updateFields(userId, { balance: (userData.balance || 0) - betAmount });
@@ -258,7 +258,7 @@ async function playCrash(message, betAmount) {
     const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId(`crash_cashout_${userId}`)
-            .setLabel('💰 CASH OUT!')
+            .setLabel('💰 اسحب أرباحك!')
             .setStyle(ButtonStyle.Success)
     );
 
@@ -266,14 +266,14 @@ async function playCrash(message, betAmount) {
         .setColor('#00FF88')
         .setTitle('🚀 لعبة الكراش')
         .setDescription([
-            '> الرقم يرتفع... اضغط **Cash Out** قبل أن ينهار!',
+            '> الرقم يصعد... اضغط **اسحب أرباحك** قبل لا ينهار!',
             '',
             '```',
             '🚀 1.00x',
             '```',
         ].join('\n'))
         .addFields({ name: '💵 رهانك', value: `\`${betAmount.toLocaleString()}\` ${config.currency}`, inline: true })
-        .setFooter({ text: '⚠️ إذا انهار قبل أن تضغط Cash Out — خسرت!' });
+        .setFooter({ text: '⚠️ إذا انهار قبل لا تسحب أرباحك — راحت عليك!' });
 
     const gameMsg = await message.reply({ embeds: [embed], components: [row] });
 
@@ -282,7 +282,7 @@ async function playCrash(message, betAmount) {
         const mult = game.tick();
 
         embed.setDescription([
-            `> 🚀 يرتفع... اضغط **Cash Out** الآن!`,
+            `> 🚀 دا يصعد... اضغط **اسحب أرباحك** هسه!`,
             '',
             '```',
             `🚀 ${mult.toFixed(2)}x`,
@@ -302,18 +302,18 @@ async function playCrash(message, betAmount) {
             const newBal = db.getUserData(userId).balance;
 
             if (myResult.won > 0) {
-                db.addTransaction(userId, 'crash_win', myResult.won, `Crash Cashout x${myResult.cashoutAt}`);
+                db.addTransaction(userId, 'crash_win', myResult.won, `سحب بالكراش x${myResult.cashoutAt}`);
             } else {
-                db.addTransaction(userId, 'crash_loss', betAmount, 'Crash Loss');
+                db.addTransaction(userId, 'crash_loss', betAmount, 'خسارة بالكراش');
             }
 
             const crashEmbed = new EmbedBuilder()
                 .setColor(myResult.won > 0 ? '#00FF88' : '#FF4444')
-                .setTitle(`💥 انهار عند ${mult.toFixed(2)}x!`)
+                .setTitle(`💥 طاح عند ${mult.toFixed(2)}x!`)
                 .setDescription([
                     myResult.cashedOut
-                        ? `✅ **سحبت في الوقت المناسب عند ${myResult.cashoutAt}x!**`
-                        : `❌ **لم تسحب في الوقت! خسرت رهانك**`,
+                        ? `✅ **سحبت بوقتها على ${myResult.cashoutAt}x!**`
+                        : `❌ **ما سحبت بوقتها، وخسرت رهانك**`,
                 ].join('\n'))
                 .addFields(
                     { name: '💵 الرهان', value: `\`${betAmount.toLocaleString()}\``, inline: true },
@@ -337,7 +337,7 @@ async function playCrash(message, betAmount) {
                     flags: MessageFlags.Ephemeral
                 });
             } else {
-                await i.reply({ content: '❌ لم تعد قادراً على السحب!', flags: MessageFlags.Ephemeral });
+                await i.reply({ content: '❌ ما تگدر تسحب هسه!', flags: MessageFlags.Ephemeral });
             }
         }
     });
@@ -349,7 +349,7 @@ async function playCrash(message, betAmount) {
     }, 120000);
 }
 
-// ─── الرولت ──────────────────────────────────────────────────────────────────
+// الرولت
 async function playRoulette(message, args) {
     const userId = message.author.id;
     const userData = db.getUserData(userId);
@@ -358,16 +358,16 @@ async function playRoulette(message, args) {
     const betAmount = args[1] === undefined ? 100 : Number(args[1]);
 
     if (!Number.isSafeInteger(betAmount) || betAmount <= 0) {
-        return message.reply('❌ يجب أن يكون مبلغ الرهان عدداً صحيحاً موجباً.');
+        return message.reply('❌ مبلغ الرهان لازم يكون عدد صحيح وموجب.');
     }
 
     if ((userData.balance || 0) < betAmount) {
-        return message.reply(`❌ رصيدك غير كافٍ!`);
+        return message.reply(`❌ رصيدك ما يكفي!`);
     }
 
     const validBets = ['red', 'black', 'green', 'odd', 'even', 'احمر', 'اسود', 'فردي', 'زوجي'];
     if (!validBets.includes(betType)) {
-        return message.reply(`❌ أنواع الرهان المتاحة: \`red\` \`black\` \`green\` \`odd\` \`even\``);
+        return message.reply('❌ تگدر تراهن على: `red` `black` `green` `odd` `even`.');
     }
 
     db.updateFields(userId, { balance: (userData.balance || 0) - betAmount });
@@ -391,9 +391,9 @@ async function playRoulette(message, args) {
     const newBal = (db.getUserData(userId).balance || 0) + payout;
     if (won) {
         db.addMoney(userId, payout);
-        db.addTransaction(userId, 'roulette_win', payout, `Roulette Win (${betType})`);
+        db.addTransaction(userId, 'roulette_win', payout, `فوز بالروليت (${betType})`);
     } else {
-        db.addTransaction(userId, 'roulette_loss', betAmount, `Roulette Loss (${betType})`);
+        db.addTransaction(userId, 'roulette_loss', betAmount, `خسارة بالروليت (${betType})`);
     }
 
     const numberColor = isGreen ? '🟢' : isRed ? '🔴' : '⚫';
@@ -404,7 +404,7 @@ async function playRoulette(message, args) {
         .setDescription([
             `> الكرة توقفت عند: **${numberColor} ${number}**`,
             '',
-            won ? `✅ **فزت! (x${multiplier})**` : '❌ **لم تفز هذه المرة**'
+            won ? `✅ **فزت! (x${multiplier})**` : '❌ **ما فزت هالمرة**'
         ].join('\n'))
         .addFields(
             { name: '🎯 رهانك', value: `\`${betType}\` — \`${betAmount.toLocaleString()}\` ${config.currency}`, inline: true },
@@ -418,13 +418,13 @@ async function playRoulette(message, args) {
 async function showJackpot(message) {
     const embed = new EmbedBuilder()
         .setColor('#FFD700')
-        .setTitle('💎 الجاكبوت التراكمي')
+        .setTitle('💎 الجائزة الكبرى المتراكمة')
         .setDescription([
-            `> الجاكبوت الحالي يساوي:`,
+            `> قيمة الجائزة الكبرى هسه:`,
             `# 💰 ${jackpotPool.toLocaleString()} ${config.currency}`,
             '',
-            '> *يتراكم من 2% من كل رهان سلوتس*',
-            '> *للفوز به: احصل على 3 ماسات في السلوتس!*'
+            '> *تزيد بنسبة 2% من كل رهان سلوتس*',
+            '> *حتى تفوز بيها: طلعلك 3 ماسات بالسلوتس!*'
         ].join('\n'))
         .setTimestamp();
 

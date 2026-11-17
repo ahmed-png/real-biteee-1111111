@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../utils/app-logger');
 
 /**
  * ════════════════════════════════════════════════════════════════
@@ -17,12 +18,12 @@
 
 const { Server } = require('socket.io');
 
-// ── Constants ────────────────────────────────────────────────────
+// Constants
 const MAX_PLAYERS_PER_ROOM = 4;
 const ROOM_TIMEOUT_MS = 30 * 60 * 1000; // 30 min idle wipe
 const COLORS = ['#00ffaa','#ff3366','#ffdd00','#00aaff','#ff8844','#aa55ff','#ff55aa','#55ffaa'];
 
-// ── In-Memory Room Store ─────────────────────────────────────────
+// In-Memory Room Store
 const rooms = new Map(); // roomId → RoomState
 
 function generateRoomId() {
@@ -32,9 +33,7 @@ function generateRoomId() {
     return id;
 }
 
-// ════════════════════════════════════════════════════════════════
-// 1. ⚔️ BATTLE ARENA ENGINE
-// ════════════════════════════════════════════════════════════════
+// 1.  BATTLE ARENA ENGINE
 const ARENA = {
     W: 1280, H: 720,
     GRAVITY: 0.55,
@@ -413,10 +412,7 @@ function buildBattleSnapshot(room) {
     };
 }
 
-
-// ════════════════════════════════════════════════════════════════
-// 2. 🛡️ TANK CLASH ENGINE
-// ════════════════════════════════════════════════════════════════
+// 2.  TANK CLASH ENGINE
 const TANK_ARENA = {
     W: 800, H: 520,
     WALLS: [
@@ -679,10 +675,7 @@ function fireTankBullet(tank, room) {
     }
 }
 
-
-// ════════════════════════════════════════════════════════════════
-// 3. 🐍 SNAKE 2.0 ENGINE
-// ════════════════════════════════════════════════════════════════
+// 3.  SNAKE 2.0 ENGINE
 const SNAKE_GRID = { COLS: 25, ROWS: 25 };
 const SNAKE_SPAWNS = [
     { head: { x: 5, y: 12 },  dir: { x: 1, y: 0 } },
@@ -810,10 +803,7 @@ function startSnakeTick(room, io) {
     }, 1000 / 10);
 }
 
-
-// ════════════════════════════════════════════════════════════════
-// 4. 🚀 SPACE DEFENDER (CO-OP) ENGINE
-// ════════════════════════════════════════════════════════════════
+// 4.  SPACE DEFENDER (CO-OP) ENGINE
 function createSpaceRoom(mode, hostId, hostName) {
     const id = generateRoomId();
     const room = {
@@ -861,10 +851,7 @@ function startSpaceTick(room, io) {
     }, 1000 / 60);
 }
 
-
-// ════════════════════════════════════════════════════════════════
-// 5. 🃏 MEMORY MATCH ENGINE
-// ════════════════════════════════════════════════════════════════
+// 5.  MEMORY MATCH ENGINE
 const MEMORY_ICONS = ['🎮', '⚡', '🛡️', '🚀', '💎', '👑', '👾', '🔮'];
 
 function createMemoryRoom(mode, hostId, hostName) {
@@ -889,10 +876,7 @@ function createMemoryRoom(mode, hostId, hostName) {
     return room;
 }
 
-
-// ════════════════════════════════════════════════════════════════
-// 6. 🌩️ CYBER JUMP ENGINE
-// ════════════════════════════════════════════════════════════════
+// 6.  CYBER JUMP ENGINE
 function createCyberRoom(mode, hostId, hostName) {
     const id = generateRoomId();
     const room = {
@@ -907,10 +891,7 @@ function createCyberRoom(mode, hostId, hostName) {
     return room;
 }
 
-
-// ════════════════════════════════════════════════════════════════
 // GENERAL HELPERS
-// ════════════════════════════════════════════════════════════════
 function stopRoomTick(room) {
     if (room.tickInterval) {
         clearInterval(room.tickInterval);
@@ -931,10 +912,7 @@ function getPlayerList(room) {
     return [];
 }
 
-
-// ════════════════════════════════════════════════════════════════
 // SOCKET.IO SERVER MOUNT
-// ════════════════════════════════════════════════════════════════
 function mountGameServer(httpServer) {
     const io = new Server(httpServer, {
         cors: { origin: '*', methods: ['GET', 'POST'] },
@@ -944,7 +922,7 @@ function mountGameServer(httpServer) {
     io.on('connection', socket => {
         let currentRoomId = null;
 
-        // ── Create Room ───────────────────────────────────────────
+        // Create Room
         socket.on('createRoom', ({ gameType, mode, username, avatar }) => {
             let room;
             const name = (username || 'Player').substring(0, 20);
@@ -994,7 +972,7 @@ function mountGameServer(httpServer) {
             }
         });
 
-        // ── Join Room ─────────────────────────────────────────────
+        // Join Room
         socket.on('joinRoom', ({ roomId, username, avatar }) => {
             const room = rooms.get(roomId?.toUpperCase());
             if (!room) return socket.emit('error', { msg: '❌ الغرفة غير موجودة!' });
@@ -1053,7 +1031,7 @@ function mountGameServer(httpServer) {
             });
         });
 
-        // ── Start Game (host only) ────────────────────────────────
+        // Start Game (host only)
         socket.on('startGame', ({ roomId }) => {
             const room = rooms.get(roomId);
             if (!room || room.hostId !== socket.id) return;
@@ -1068,7 +1046,7 @@ function mountGameServer(httpServer) {
             else if (room.gameType === 'space') startSpaceTick(room, io);
         });
 
-        // ── Player Input ──────────────────────────────────────────
+        // Player Input
         socket.on('input', ({ roomId, keys }) => {
             const room = rooms.get(roomId);
             if (!room || room.state !== 'playing' || !keys) return;
@@ -1100,7 +1078,7 @@ function mountGameServer(httpServer) {
             }
         });
 
-        // ── Memory Match Card Flip ────────────────────────────────
+        // Memory Match Card Flip
         socket.on('flipCard', ({ roomId, cardId }) => {
             const room = rooms.get(roomId);
             if (!room || room.gameType !== 'memory' || room.state !== 'playing') return;
@@ -1143,7 +1121,7 @@ function mountGameServer(httpServer) {
             }
         });
 
-        // ── Chat ──────────────────────────────────────────────────
+        // Chat
         socket.on('chat', ({ roomId, message }) => {
             const room = rooms.get(roomId);
             if (!room) return;
@@ -1154,7 +1132,7 @@ function mountGameServer(httpServer) {
             io.to(roomId).emit('chat', { name: player.username, color: player.color, msg, ts: Date.now() });
         });
 
-        // ── Disconnect ────────────────────────────────────────────
+        // Disconnect
         socket.on('disconnect', () => {
             if (!currentRoomId) return;
             const room = rooms.get(currentRoomId);
@@ -1179,7 +1157,7 @@ function mountGameServer(httpServer) {
         });
     });
 
-    console.log('[GameServer] 🎮 Socket.io game server active on /game-ws');
+    appLogger.info('[GameServer] Socket.io game server active on /game-ws');
     return io;
 }
 

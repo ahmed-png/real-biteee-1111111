@@ -8,8 +8,8 @@ export default function LoginPage({ onLogin }) {
   const [error, setError] = useState(() => {
     const saved = localStorage.getItem('authError')
     if (saved) localStorage.removeItem('authError')
-    if (saved === 'discord_denied') return 'تم إلغاء تسجيل الدخول أو رفض الصلاحيات من الديسكورد.'
-    return saved ? `خطأ في تسجيل الدخول: ${saved}` : ''
+    if (saved === 'discord_denied') return 'انلغى تسجيل الدخول أو انرفضت الصلاحيات من Discord.'
+    return saved ? `صار خلل بتسجيل الدخول: ${saved}` : ''
   })
 
   const handleKeyLogin = async (e) => {
@@ -29,7 +29,7 @@ export default function LoginPage({ onLogin }) {
         setError(data?.error || 'مفتاح خاطئ')
       }
     } catch {
-      setError('خطأ في الاتصال بالسيرفر')
+      setError('ما گدرت أتصل بالسيرفر.')
     } finally {
       setLoading(false)
     }
@@ -44,14 +44,14 @@ export default function LoginPage({ onLogin }) {
       <div className="login-box">
         <div className="login-logo"><RadarLogo /></div>
         <h2 className="login-title">لوحة تحكم البوت</h2>
-        <p className="login-subtitle">سجّل الدخول للوصول إلى لوحة التحكم</p>
+        <p className="login-subtitle">سجّل دخولك حتى تفتح لوحة التحكم.</p>
 
         {error && <div className="error-msg">{error}</div>}
 
         {/* ─── Bot Owner ─────────────────────────────────── */}
         <div style={{ marginBottom: '8px' }}>
           <label className="form-label">
-            👑 Bot Owner — مفتاح الدخول
+            👑 مالك البوت — مفتاح الدخول
           </label>
         </div>
         <form onSubmit={handleKeyLogin}>
@@ -59,15 +59,15 @@ export default function LoginPage({ onLogin }) {
             <input
               type="password"
               className="form-input"
-              placeholder="أدخل مفتاح الداشبورد..."
+              placeholder="اكتب مفتاح لوحة التحكم..."
               value={key}
               onChange={e => setKey(e.target.value)}
               required
             />
-            <div className="form-hint">المفتاح محدد في إعدادات البوت (dashboardKey)</div>
+            <div className="form-hint">تلكى المفتاح بإعدادات البوت (dashboardKey).</div>
           </div>
           <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }} disabled={loading}>
-            {loading ? '⏳ جاري التحقق...' : '🔑 دخول كـ Bot Owner'}
+            {loading ? '⏳ دا أتحقق...' : '🔑 دخول كمالك البوت'}
           </button>
         </form>
 
@@ -77,10 +77,10 @@ export default function LoginPage({ onLogin }) {
         {/* ─── Server Owner ──────────────────────────────── */}
         <div style={{ marginBottom: '12px' }}>
           <label className="form-label">
-            🔑 Server Owner — عبر Discord
+            🔑 مالك السيرفر — عبر Discord
           </label>
           <div className="form-hint" style={{ marginBottom: '10px' }}>
-            سجّل دخولك بحساب Discord الذي تملك فيه السيرفر
+            سجّل دخولك بحساب Discord المالك للسيرفر.
           </div>
         </div>
         <button className="discord-btn" onClick={handleDiscordLogin}>
@@ -92,8 +92,8 @@ export default function LoginPage({ onLogin }) {
 
         <div style={{ marginTop: '20px', padding: '14px', background: 'rgba(88,101,242,0.08)', borderRadius: '10px', border: '1px solid var(--border)' }}>
           <div style={{ fontSize: '12px', color: 'var(--muted)', lineHeight: '1.7' }}>
-            <div>👑 <strong style={{ color: 'var(--gold)' }}>Bot Owner:</strong> يتحكم في إعدادات البوت العامة</div>
-            <div>🔑 <strong style={{ color: 'var(--cyan)' }}>Server Owner:</strong> يتحكم في إعدادات سيرفره فقط</div>
+            <div>👑 <strong style={{ color: 'var(--gold)' }}>مالك البوت:</strong> يدير إعدادات البوت العامة.</div>
+            <div>🔑 <strong style={{ color: 'var(--cyan)' }}>مالك السيرفر:</strong> يدير إعدادات سيرفره بس.</div>
           </div>
         </div>
       </div>

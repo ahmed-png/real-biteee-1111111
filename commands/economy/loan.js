@@ -8,7 +8,7 @@ const { PremiumEmbedBuilder } = require('../../utils/embed-builder');
 module.exports = {
     name: 'loan',
     aliases: ['قرض', 'تسلف', 'سلفة'],
-    description: 'نظام القروض البنكية',
+    description: 'خذ قرض من البنك وسدده بوقته',
     usage: 'قرض [معلومات/اقتراض <مبلغ>/سداد <مبلغ|كل>]',
 
     async execute(message, args) {
@@ -16,19 +16,19 @@ module.exports = {
         const userData = db.getUserData(message.author.id);
         const maxLoan = config.maxLoan || 50000;
 
-        // ── عرض المعلومات
+        // عرض المعلومات
         if (!action || action === 'info' || action === 'معلومات') {
             const loanInfo = userData.loan;
 
             if (!loanInfo || !loanInfo.amount || loanInfo.amount <= 0) {
                 const embed = PremiumEmbedBuilder.info(
                     '💳 نظام القروض',
-                    'احصل على سيولة نقدية من البنك بضمان مستقبلك!',
+                    'خذ فلوس من البنك، بس لا تنسى ترجعها!',
                     [
-                        { name: '📊 الحد الأقصى', value: `${maxLoan.toLocaleString()} ${config.currency}`, inline: true },
-                        { name: '📈 الفائدة السنوية', value: '5% على المبلغ (ثابتة)', inline: true },
-                        { name: '⏰ المهلة القصوى', value: '30 يوم', inline: true },
-                        { name: '⚠️ عقوبة التأخير', value: 'غرامة تلقائية يومية 2%', inline: true },
+                        { name: '📊 الحد الأعلى', value: `${maxLoan.toLocaleString()} ${config.currency}`, inline: true },
+                        { name: '📈 الفائدة', value: '5% على المبلغ (ثابتة)', inline: true },
+                        { name: '⏰ آخر مهلة', value: '30 يوم', inline: true },
+                        { name: '⚠️ غرامة التأخير', value: 'غرامة تلقائية 2% باليوم', inline: true },
                     ]
                 );
 
@@ -40,7 +40,7 @@ module.exports = {
                 return message.reply({ embeds: [embed] });
             }
 
-            // ── إذا كان هناك قرض نشط
+            // إذا كان هناك قرض نشط
             const now = Date.now();
             const daysElapsed = Math.floor((now - (loanInfo.takenAt || now)) / 86400000);
             const daysLeft = Math.max(0, Math.ceil((loanInfo.dueDate - now) / 86400000));
@@ -51,46 +51,46 @@ module.exports = {
             const remaining = Math.max(0, loanInfo.amount);
 
             const embed = daysLeft <= 3
-                ? PremiumEmbedBuilder.error('⚠️ تحذير: القرض على وشك الانتهاء!', null, [])
-                : PremiumEmbedBuilder.warning('💳 التزاماتك الحالية', null, []);
+                ? PremiumEmbedBuilder.error('⚠️ تنبيه: باقي شوي وينتهي القرض!', null, [])
+                : PremiumEmbedBuilder.warning('💳 قرضك الحالي', null, []);
 
             embed.addFields(
                 { name: '💵 القرض الأصلي', value: `${loanInfo.originalAmount.toLocaleString()} ${config.currency}`, inline: true },
                 { name: '📈 الفائدة (5%)', value: `${interest.toLocaleString()} ${config.currency}`, inline: true },
-                { name: '💰 المبلغ المتبقي', value: `${remaining.toLocaleString()} ${config.currency}`, inline: true },
-                { name: '📅 الأيام المنقضية', value: `${daysElapsed} يوم`, inline: true },
-                { name: '⏰ الأيام المتبقية', value: daysLeft > 0 ? `${daysLeft} يوم` : '🔴 **انتهت المهلة!**', inline: true },
-                { name: '⚖️ إجمالي الدين', value: `${totalDue.toLocaleString()} ${config.currency}`, inline: true }
+                { name: '💰 الباقي عليك', value: `${remaining.toLocaleString()} ${config.currency}`, inline: true },
+                { name: '📅 الأيام اللي مرّت', value: `${daysElapsed} يوم`, inline: true },
+                { name: '⏰ الأيام الباقية', value: daysLeft > 0 ? `${daysLeft} يوم` : '🔴 **خلصت المهلة!**', inline: true },
+                { name: '⚖️ كل الدين', value: `${totalDue.toLocaleString()} ${config.currency}`, inline: true }
             );
 
             return message.reply({ embeds: [embed] });
         }
 
-        // ── اقتراض
+        // اقتراض
         if (action === 'borrow' || action === 'اقتراض' || action === 'اخذ') {
             // فحص: هل هناك قرض نشط
             if (userData.loan && userData.loan.amount > 0) {
-                return message.reply('❌ لديك قرض نشط بالفعل! سدده أولاً قبل الاقتراض مرة أخرى.\n✏️ اكتب `قرض معلومات` لعرض تفاصيل قرضك.');
+                return message.reply('❌ عندك قرض بعده مفتوح! سدده قبل لا تاخذ قرض ثاني.\n✏️ اكتب `قرض معلومات` حتى تشوف تفاصيل قرضك.');
             }
 
             const amount = parseInt(args[1]?.replace(/,/g, ''));
 
             if (!amount || isNaN(amount) || amount <= 0) {
-                return message.reply(`❌ يجب تحديد مبلغ صحيح!\nمثال: \`قرض اقتراض 10000\``);
+                return message.reply(`❌ لازم تحدد مبلغ صحيح.\nمثال: \`قرض اقتراض 10000\``);
             }
 
             if (amount < 100) {
-                return message.reply(`❌ الحد الأدنى للقرض هو **100** ${config.currency}!`);
+                return message.reply(`❌ أقل مبلغ للقرض هو **100** ${config.currency}.`);
             }
 
             if (amount > maxLoan) {
-                return message.reply(`❌ الحد الأقصى للقرض هو **${maxLoan.toLocaleString()}** ${config.currency}!`);
+                return message.reply(`❌ أعلى مبلغ للقرض هو **${maxLoan.toLocaleString()}** ${config.currency}.`);
             }
 
             // فحص: لا يمكن اقتراض أكثر من 3 أضعاف رصيده الحالي (منع الاستغلال)
             const currentWealth = (userData.balance || 0) + (userData.bank || 0);
             if (currentWealth === 0 && amount > 5000) {
-                return message.reply(`❌ لا يمكنك اقتراض أكثر من **5,000** ${config.currency} وأنت في بداية رحلتك!`);
+                return message.reply(`❌ ما تگدر تاخذ أكثر من **5,000** ${config.currency} ببداية مشوارك.`);
             }
 
             const interest = Math.floor(amount * 0.05);
@@ -105,27 +105,27 @@ module.exports = {
                     takenAt: Date.now()
                 }
             });
-            db.addTransaction(message.author.id, 'loan_borrow', amount, `Loan: ${amount} + ${interest} interest`);
+            db.addTransaction(message.author.id, 'loan_borrow', amount, `قرض: ${amount} + ${interest} فائدة`);
 
             const embed = PremiumEmbedBuilder.success(
-                '💸 تم صرف القرض!',
-                `تمت إضافة **${amount.toLocaleString()} ${config.currency}** إلى محفظتك.`,
+                '💸 نزل القرض!',
+                `انضاف **${amount.toLocaleString()} ${config.currency}** لمحفظتك.`,
                 [
                     { name: '💵 القرض', value: `${amount.toLocaleString()} ${config.currency}`, inline: true },
                     { name: '📈 الفائدة (5%)', value: `${interest.toLocaleString()} ${config.currency}`, inline: true },
-                    { name: '⚖️ إجمالي ما ستسدده', value: `${totalDue.toLocaleString()} ${config.currency}`, inline: true },
-                    { name: '📅 الموعد النهائي', value: 'خلال 30 يوماً', inline: true },
-                    { name: '⚠️ تنبيه', value: 'التأخير يكلفك 2% يومياً إضافية!', inline: false }
+                    { name: '⚖️ المبلغ الكلي للسداد', value: `${totalDue.toLocaleString()} ${config.currency}`, inline: true },
+                    { name: '📅 موعد السداد', value: 'خلال 30 يوم', inline: true },
+                    { name: '⚠️ تنبيه', value: 'التأخير يضيف عليك 2% باليوم!', inline: false }
                 ]
             );
 
             return message.reply({ embeds: [embed] });
         }
 
-        // ── سداد
+        // سداد
         if (action === 'pay' || action === 'سداد' || action === 'رجع' || action === 'ادفع') {
             if (!userData.loan || !userData.loan.amount || userData.loan.amount <= 0) {
-                return message.reply('✅ ليس عليك أي قروض!');
+                return message.reply('✅ ما عليك قروض!');
             }
 
             const payAll = ['all', 'كل', 'كامل', 'الكل'].includes(args[1]?.toLowerCase());
@@ -134,11 +134,11 @@ module.exports = {
                 : parseInt(args[1]?.replace(/,/g, ''));
 
             if (!payAll && (isNaN(payAmount) || payAmount <= 0)) {
-                return message.reply('❌ يجب تحديد مبلغ سداد صحيح!\nمثال: `قرض سداد 5000` أو `قرض سداد كل`');
+                return message.reply('❌ لازم تحدد مبلغ سداد صحيح.\nمثال: `قرض سداد 5000` أو `قرض سداد كل`');
             }
 
             if ((userData.balance || 0) < payAmount) {
-                return message.reply(`❌ رصيدك **${(userData.balance || 0).toLocaleString()}** لا يكفي لسداد **${payAmount.toLocaleString()}** ${config.currency}!`);
+                return message.reply(`❌ رصيدك **${(userData.balance || 0).toLocaleString()}** ما يكفي تسدد **${payAmount.toLocaleString()}** ${config.currency}!`);
             }
 
             const remaining = userData.loan.amount - payAmount;
@@ -149,17 +149,17 @@ module.exports = {
             if (remaining <= 0) {
                 updates.loan = null;
                 db.updateFields(message.author.id, updates);
-                db.addTransaction(message.author.id, 'loan_pay', payAmount, 'Loan fully paid');
-                return message.reply(`✅ **تم تصفية القرض بالكامل!** 🎉\nشكراً على وفائك — رصيدك الآن: **${updates.balance.toLocaleString()}** ${config.currency}`);
+                db.addTransaction(message.author.id, 'loan_pay', payAmount, 'سداد القرض بالكامل');
+                return message.reply(`✅ **سددت القرض كله!** 🎉\nرصيدك هسه: **${updates.balance.toLocaleString()}** ${config.currency}`);
             }
 
             updates.loan = { ...userData.loan, amount: remaining };
             db.updateFields(message.author.id, updates);
-            db.addTransaction(message.author.id, 'loan_pay', payAmount, `Loan partial: ${remaining} remaining`);
-            return message.reply(`✅ تم سداد **${payAmount.toLocaleString()}** ${config.currency}.\n💳 المتبقي عليك: **${remaining.toLocaleString()}** ${config.currency}`);
+            db.addTransaction(message.author.id, 'loan_pay', payAmount, `سداد جزئي للقرض: باقي ${remaining}`);
+            return message.reply(`✅ سددت **${payAmount.toLocaleString()}** ${config.currency}.\n💳 باقي عليك: **${remaining.toLocaleString()}** ${config.currency}`);
         }
 
-        // ── أمر غير معروف
-        return message.reply('❓ الأوامر المتاحة:\n`قرض معلومات` | `قرض اقتراض <مبلغ>` | `قرض سداد <مبلغ/كل>`');
+        // أمر غير معروف
+        return message.reply('❓ تگدر تستخدم هالأوامر:\n`قرض معلومات` | `قرض اقتراض <مبلغ>` | `قرض سداد <مبلغ/كل>`');
     }
 };

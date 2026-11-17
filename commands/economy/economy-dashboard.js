@@ -19,14 +19,14 @@ async function economyDashboard(message, targetUser) {
     // إنشاء Embed احترافي
     const embed = PremiumEmbedBuilder.custom({
         color: health.color,
-        title: `💎 لوحة التحكم المالية - ${user.username}`,
-        description: `صافي الثروة: **${netWorth.toLocaleString()}** ${config.currency}\nالصحة المالية: **${health.score}%** (${health.label})`,
+        title: `💎 لوحتك المالية — ${user.username}`,
+        description: `صافي فلوسك: **${netWorth.toLocaleString()}** ${config.currency}\nوضعك المالي: **${health.score}%** (${health.label})`,
         thumbnail: user.displayAvatarURL({ size: 256 })
     });
 
     // القسم 1: السيولة النقدية (الرصيد والبنك)
     embed.addFields({
-        name: `💳 السيولة النقدية`,
+        name: `💳 فلوسك المتوفرة`,
         value:
             `**المحفظة**: ${(userData.balance || 0).toLocaleString()} ${config.currency}\n` +
             `**البنك**: ${(userData.bank || 0).toLocaleString()} ${config.currency}`,
@@ -35,11 +35,11 @@ async function economyDashboard(message, targetUser) {
 
     // القسم 2: الملخص المالي
     embed.addFields({
-        name: `📈 الملخص المالي`,
+        name: `📈 ملخص فلوسك`,
         value:
-            `**الترتيب العالي**: #${wealthRank}\n` +
-            `**الدخل اليومي**: +${dailyIncome.toLocaleString()} ${config.currency}\n` +
-            `**الربح الأسبوعي**: ${weeklyProfit >= 0 ? '+' : ''}${weeklyProfit.toLocaleString()} ${config.currency}`,
+            `**ترتيبك بالثروة**: #${wealthRank}\n` +
+            `**دخلك اليومي**: +${dailyIncome.toLocaleString()} ${config.currency}\n` +
+            `**ربحك الأسبوعي**: ${weeklyProfit >= 0 ? '+' : ''}${weeklyProfit.toLocaleString()} ${config.currency}`,
         inline: true
     });
 
@@ -55,7 +55,7 @@ async function economyDashboard(message, targetUser) {
 
     if (assetsSummary) {
         embed.addFields({
-            name: `🏛️ الأصول والممتلكات`,
+            name: `🏛️ أصولك وممتلكاتك`,
             value: assetsSummary,
             inline: false
         });
@@ -65,7 +65,7 @@ async function economyDashboard(message, targetUser) {
     const loanInfo = getLoanSummary(userData);
     if (loanInfo.hasLoans) {
         embed.addFields({
-            name: `${ICONS.WARNING} الالتزامات المالية (الديون)`,
+            name: `${ICONS.WARNING} ديونك والتزاماتك`,
             value: loanInfo.summary,
             inline: false
         });
@@ -74,7 +74,7 @@ async function economyDashboard(message, targetUser) {
     // Footer
     const wealthTier = getWealthTier(netWorth);
     embed.setFooter({
-        text: `الفئة: ${wealthTier.name} ${wealthTier.emoji} | نظام مالي احترافي`,
+        text: `فئتك: ${wealthTier.name} ${wealthTier.emoji} | وضع مالي مرتب`,
         iconURL: user.displayAvatarURL()
     });
 
@@ -83,12 +83,12 @@ async function economyDashboard(message, targetUser) {
         .addComponents(
             new ButtonBuilder()
                 .setCustomId('econ_dashboard_refresh')
-                .setLabel('تحديث')
+                .setLabel('حدّث')
                 .setEmoji('🔄')
                 .setStyle(ButtonStyle.Primary),
             new ButtonBuilder()
                 .setCustomId('econ_dashboard_history')
-                .setLabel('سجل العمليات')
+                .setLabel('سجل الحركات')
                 .setEmoji('📜')
                 .setStyle(ButtonStyle.Secondary)
         );
@@ -210,7 +210,7 @@ function getWealthRank(userId) {
 // ملخص الاستثمارات
 function getInvestmentSummary(userData) {
     if (!userData.investments || !userData.investments.total) {
-        return { total: 0, summary: 'لا يوجد' };
+        return { total: 0, summary: 'ماكو' };
     }
 
     const total = userData.investments.total;
@@ -223,15 +223,15 @@ function getInvestmentSummary(userData) {
         summary:
             `**رأس المال**: ${total.toLocaleString()} ${config.currency}\n` +
             `**الأرباح**: ${profit.toLocaleString()} ${config.currency}\n` +
-            `**الفائدة**: ${rate.toFixed(1)}% يومياً\n` +
-            `**الربح اليومي**: +${dailyProfit.toLocaleString()} ${config.currency}`
+            `**الفايدة**: ${rate.toFixed(1)}% باليوم\n` +
+            `**ربحك اليومي**: +${dailyProfit.toLocaleString()} ${config.currency}`
     };
 }
 
 // ملخص العقارات
 function getPropertySummary(userData) {
     if (!userData.properties) {
-        return { count: 0, summary: 'لا يوجد' };
+        return { count: 0, summary: 'ماكو' };
     }
 
     const propertyCounts = {};
@@ -256,14 +256,14 @@ function getPropertySummary(userData) {
         });
     }
 
-    if (count === 0) return { count: 0, summary: 'لا يوجد' };
+    if (count === 0) return { count: 0, summary: 'ماكو' };
 
     let summary = '';
     Object.keys(propertyCounts).forEach(type => {
         summary += `**${type}**: ${propertyCounts[type]}\n`;
     });
     summary += `**القيمة الكلية**: ${totalValue.toLocaleString()} ${config.currency}\n`;
-    summary += `**الدخل اليومي**: +${totalIncome.toLocaleString()} ${config.currency}`;
+    summary += `**دخلك اليومي**: +${totalIncome.toLocaleString()} ${config.currency}`;
 
     return {
         count,
@@ -274,7 +274,7 @@ function getPropertySummary(userData) {
 // ملخص المحفظة المالية
 function getPortfolioSummary(userData) {
     if (!userData.stocks || Object.keys(userData.stocks).length === 0) {
-        return { value: 0, summary: 'لا يوجد' };
+        return { value: 0, summary: 'ماكو' };
     }
 
     let totalValue = 0;
@@ -295,7 +295,7 @@ function getPortfolioSummary(userData) {
         value: totalValue,
         summary:
             `**الأسهم**: ${stocks.length} شركة\n` +
-            `**القيمة الحالية**: ${totalValue.toLocaleString()} ${config.currency}\n` +
+            `**قيمتها هسه**: ${totalValue.toLocaleString()} ${config.currency}\n` +
             `**الربح/الخسارة**: ${profitLoss >= 0 ? '+' : ''}${profitLoss.toLocaleString()} (${profitPercent}%)`
     };
 }
@@ -320,9 +320,9 @@ function getLoanSummary(userData) {
         hasLoans: true,
         summary:
             `**عدد القروض**: ${userData.loans.length}\n` +
-            `**إجمالي الديون**: ${totalDebt.toLocaleString()} ${config.currency}\n` +
-            `**الفوائد المتراكمة**: ${totalInterest.toLocaleString()} ${config.currency}\n` +
-            `⚠️ سدد قروضك لتجنب الفوائد!`
+            `**كل الديون**: ${totalDebt.toLocaleString()} ${config.currency}\n` +
+            `**الفوايد المتراكمة**: ${totalInterest.toLocaleString()} ${config.currency}\n` +
+            `⚠️ سدّد قروضك حتى ما تزيد الفوايد عليك!`
     };
 }
 
@@ -379,10 +379,10 @@ function calculateFinancialHealth(userData, netWorth) {
 }
 
 module.exports = {
-    // ─── واجهة الأمر المطلوبة من commandHandler ──────────────────
+    // واجهة الأمر المطلوبة من commandHandler
     name: 'economy-dashboard',
     aliases: ['لوحة-الاقتصاد'],
-    description: 'لوحة التحكم المالية الشاملة',
+    description: 'لوحة كاملة تتابع بيها فلوسك',
     usage: 'economy-dashboard [@user]',
 
     async execute(message, args) {
@@ -390,7 +390,7 @@ module.exports = {
         await economyDashboard(message, targetUser);
     },
 
-    // ─── export الدوال للاستخدام من ملفات أخرى ──────────────────
+    // export الدوال للاستخدام من ملفات أخرى
     economyDashboard,
     calculateNetWorth,
     calculateDailyIncome,

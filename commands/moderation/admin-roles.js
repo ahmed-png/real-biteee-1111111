@@ -1,46 +1,47 @@
+const appLogger = require('../../utils/app-logger');
 const { PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const config = require('../../config');
 
 // رسائل ساخرة للأونر
 const ownerMessages = [
-    "أوه، انظروا من أصبح الملك! 👑 حاول ألا تدمر السيرفر في أول 5 دقائق، حسناً؟",
-    "مبروك يا صاحب الجلالة! 🙄 الآن لديك صلاحية الطرد والحظر، لا تتحمس كثيراً.",
-    "تم منحك رتبة أونر. نعم، أنت الآن \"مهم\" جداً. (لا تصدق ذلك)",
-    "أنت الآن الأونر. هل تتوقع تصفيقاً حاراً؟ اعطني راتباً أولاً.",
-    "عظيم، أونر جديد... كما لو أننا بحاجة للمزيد من الأوامر."
+    "ها، منو صار الملك هالمرة؟ 👑 حاول لا تخرب السيرفر بأول خمس دقايق، اتفقنا؟",
+    "مبروك يا صاحب الجلالة! 🙄 هسه عندك صلاحية الطرد والحظر، لا تتحمس هواية.",
+    "صارت عندك رتبة أونر. إي، هسه صرت \"مهم\" هواية... لا تصدّگ نفسك 😏",
+    "هسه صرت الأونر. تتوقع تصفيق؟ خلّصنا شغل وبعدين نحچي بالراتب 💸",
+    "عاشت إيدنا، أونر جديد... كأن ما عدنا أوامر كفاية 🤷"
 ];
 
 // رسائل ساخرة للأدمن
 const adminMessages = [
-    "أهلاً بك في فريق الإدارة! 🎉 جهز نفسك للصداع ومشاكل الأعضاء التي لا تنتهي.",
-    "مبروك رتبة الأدمن! الآن يمكنك الاستمتاع بقراءة شات العقوبات طوال اليوم.",
-    "تم ترقيتك لأدمن. تذكر: القوة العظيمة تأتي مع... رغبة كبيرة في حظر الجميع.",
-    "أصبحت أدمن؟ رائع. الآن اذهب ونظف الشات، إنه فوضوي.",
-    "مبروك! لقد فزت بلقب \"جليس الأطفال\" الرسمي للسيرفر."
+    "هلا بيك بفريق الإدارة! 🎉 جهّز نفسك للصداع ومشاكل الأعضاء اللي ما تخلص.",
+    "مبروك رتبة الأدمن! هسه تگدر تقرا سجل العقوبات طول اليوم 😅",
+    "صرت أدمن. تذكّر: الصلاحيات تجيب وياها رغبة تحظر الكل... قاومها 😏",
+    "صرت أدمن؟ عاشت إيدك. روح رتّب الشات، شكله محتاج شوية اهتمام 🧹",
+    "مبروك! فزت بلقب \"مراقب الأطفال\" الرسمي للسيرفر 👶"
 ];
 
 async function giveOwner(message, args) {
     // التحقق من أن المستخدم هو مالك البوت (config.ownerId)
     if (message.author.id !== config.ownerId) {
-        return message.reply('❌ هاها، محاولة جيدة! هذا الأمر لمالك البوت فقط.');
+        return message.reply('❌ محاولة حلوة 😏 بس هالأمر لمالك البوت بس.');
     }
 
     const target = message.mentions.members.first();
     if (!target) {
-        return message.reply('❌ منشن الشخص الذي تريد توريطه برتبة الأونر!');
+        return message.reply('❌ منشن العضو اللي تريد تعيّنه أونر.');
     }
 
     const ownerRole = message.guild.roles.cache.find(r => r.name === '👑 Owner' || r.name.toLowerCase() === 'owner');
     if (!ownerRole) {
-        return message.reply('❌ رتبة **👑 Owner** غير موجودة! تأكد من وجود رتبة بهذا الاسم بالضبط.');
+        return message.reply('❌ رتبة **👑 Owner** مو موجودة. تأكد إن اسمها مطابق بالضبط.');
     }
 
     try {
         await target.roles.add(ownerRole);
-        message.reply(`✅ تم تعيين ${target} كـ **👑 Owner**! الله يستر.`);
+        message.reply(`✅ تعيّن ${target} **👑 Owner**! الله يستر 😏`);
     } catch (error) {
-        console.error('Error adding Owner role:', error);
-        return message.reply('❌ فشل إعطاء الرتبة! تأكد أن رتبة البوت أعلى من رتبة **👑 Owner**.');
+        appLogger.error('Error adding Owner role:', error);
+        return message.reply('❌ ما كدرت أعطيه الرتبة. تأكد إن رتبة البوت أعلى من **👑 Owner**.');
     }
 
     // إرسال رسالة خاصة ساخرة
@@ -48,39 +49,39 @@ async function giveOwner(message, args) {
     try {
         const dmEmbed = new EmbedBuilder()
             .setColor('#FFD700')
-            .setTitle('👑 مبروك... أعتقد؟')
+            .setTitle('👑 مبروك... يمكن؟')
             .setDescription(randomMsg)
-            .addFields({ name: 'الصلاحيات', value: 'كل شيء تقريباً. (Administrator)' })
-            .setFooter({ text: 'رسالة تلقائية من بوتك الساخر المفضل' });
+            .addFields({ name: 'الصلاحيات', value: 'تقريباً كلشي (Administrator)' })
+            .setFooter({ text: 'رسالة تلقائية من البوت اللي يمزح وياك' });
 
         await target.send({ embeds: [dmEmbed] });
     } catch (e) {
-        message.channel.send(`⚠️ لم أستطع إرسال رسالة خاصة لـ ${target} (ربما الخاص مغلق)، لكنه حصل على الرتبة.`);
+        message.channel.send(`⚠️ ما كدرت أرسل رسالة خاصة لـ ${target} (يمكن الخاص مغلق)، بس الرتبة وصلت.`);
     }
 }
 
 async function giveAdmin(message, args) {
     // التحقق من أن المستخدم هو مالك البوت
     if (message.author.id !== config.ownerId) {
-        return message.reply('❌ من تظن نفسك؟ هذا الأمر لمالك البوت فقط.');
+        return message.reply('❌ هالأمر لمالك البوت بس.');
     }
 
     const target = message.mentions.members.first();
     if (!target) {
-        return message.reply('❌ منشن الضحية... أقصد العضو الجديد للإدارة!');
+        return message.reply('❌ منشن العضو الجديد بالإدارة... مو الضحية طبعاً 😅');
     }
 
     const adminRole = message.guild.roles.cache.find(r => r.name === '👮 Admin' || r.name.toLowerCase() === 'admin');
     if (!adminRole) {
-        return message.reply('❌ رتبة **👮 Admin** غير موجودة! تأكد من وجود رتبة بهذا الاسم بالضبط.');
+        return message.reply('❌ رتبة **👮 Admin** مو موجودة. تأكد إن اسمها مطابق بالضبط.');
     }
 
     try {
         await target.roles.add(adminRole);
-        message.reply(`✅ تم تعيين ${target} كـ **👮 Admin**! جهزوا الأسبرين.`);
+        message.reply(`✅ تعيّن ${target} **👮 Admin**! جهّزوا المسكّنات 😅`);
     } catch (error) {
-        console.error('Error adding Admin role:', error);
-        return message.reply('❌ فشل إعطاء الرتبة! تأكد أن رتبة البوت أعلى من رتبة **👮 Admin**.');
+        appLogger.error('Error adding Admin role:', error);
+        return message.reply('❌ ما كدرت أعطيه الرتبة. تأكد إن رتبة البوت أعلى من **👮 Admin**.');
     }
 
     // إرسال رسالة خاصة ساخرة
@@ -90,30 +91,30 @@ async function giveAdmin(message, args) {
             .setColor('#E74C3C')
             .setTitle('👮 ترقية إدارية')
             .setDescription(randomMsg)
-            .addFields({ name: 'الصلاحيات', value: 'طرد، حظر، إدارة رومات، والمزيد...' })
-            .setFooter({ text: 'حظاً موفقاً، ستحتاجه.' });
+            .addFields({ name: 'الصلاحيات', value: 'طرد، حظر، وإدارة قنوات... والباقي بعدين 😏' })
+            .setFooter({ text: 'بالتوفيق، راح تحتاجه 😅' });
 
         await target.send({ embeds: [dmEmbed] });
     } catch (e) {
-        message.channel.send(`⚠️ لم أستطع إرسال رسالة خاصة لـ ${target}، لكنه أصبح أدمن.`);
+        message.channel.send(`⚠️ ما كدرت أرسل رسالة خاصة لـ ${target}، بس صار أدمن.`);
     }
 }
 
 module.exports = {
-    // ─── واجهة الأمر المطلوبة من commandHandler ──────────────────
+    // واجهة الأمر المطلوبة من commandHandler
     name: 'admin-roles',
     aliases: ['رول-ادمن', 'رول-اونر'],
-    description: 'إعطاء رتبة Owner أو Admin لشخص (مالك البوت فقط)',
+    description: 'يعطي رتبة Owner أو Admin لعضو (مالك البوت بس)',
     usage: 'admin-roles [owner/admin] @user',
 
     async execute(message, args) {
         const sub = args[0]?.toLowerCase();
         if (sub === 'owner' || sub === 'اونر') return giveOwner(message, args.slice(1));
         if (sub === 'admin' || sub === 'ادمن') return giveAdmin(message, args.slice(1));
-        return message.reply('❌ استخدام: `admin-roles owner @user` أو `admin-roles admin @user`');
+        return message.reply('❌ الاستخدام: `admin-roles owner @user` أو `admin-roles admin @user`');
     },
 
-    // ─── export الدوال للاستخدام المباشر ────────────────────────
+    // export الدوال للاستخدام المباشر
     giveOwner,
     giveAdmin,
 };

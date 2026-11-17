@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../../utils/app-logger');
 
 class Pipeline {
     constructor() {
@@ -19,7 +20,7 @@ class Pipeline {
                     break;
                 }
             } catch (err) {
-                console.error('[Pipeline Error]', err);
+                appLogger.error('[Pipeline Error]', err);
                 break; // Stop on error to prevent cascading failures
             }
         }

@@ -1,10 +1,11 @@
+const appLogger = require('../utils/app-logger');
 const { Events, ActivityType } = require('discord.js');
 const autoTasks = require('../utils/auto-tasks');
 const ghostPing = require('../utils/ghost-ping');
 const logger = require('../utils/logger');
 const autoRole = require('../utils/auto-role');
 
-// ── الأنظمة الاختيارية ─────────────────────────────────────────────────────
+// الأنظمة الاختيارية
 let analytics = null;
 let botEvents = null;
 try { analytics = require('../utils/analytics'); } catch {}
@@ -15,31 +16,31 @@ module.exports = {
     once: true,
 
     async execute(client) {
-        // ─── تسجيل معرف البوت في Logger و Security Monitor (لمنع تسجيل أفعاله كمخالفات) ─
+        // تسجيل معرف البوت في Logger و Security Monitor (لمنع تسجيل أفعاله كمخالفات)
         try { 
             logger.setBotId(client.user.id); 
             const securityMonitor = require('../utils/security-monitor');
             securityMonitor.setBotId(client.user.id);
         } catch (e) {
-            console.error('[Ready] Failed to set bot ID:', e);
+            appLogger.error('[Ready] Failed to set bot ID:', e);
         }
 
         const guildCount   = client.guilds.cache.size;
         const userCount    = client.users.cache.size;
         const commandCount = client.commands?.size ?? '?';
 
-        // ─── رسالة الترحيب في الـ console ────────────────────────────
+        // رسالة الترحيب في الـ console
         const LINE = '═'.repeat(48);
-        console.log(`\n╔${LINE}╗`);
-        console.log(`║  🤖  ${client.user.tag.padEnd(42)}║`);
-        console.log(`╠${LINE}╣`);
-        console.log(`║  🌐  السيرفرات : ${String(guildCount).padEnd(29)}║`);
-        console.log(`║  👥  المستخدمون: ${String(userCount).padEnd(29)}║`);
-        console.log(`║  ⚡  الأوامر   : ${String(commandCount).padEnd(29)}║`);
-        console.log(`║  ✅  الحالة    : Online & Ready!               ║`);
-        console.log(`╚${LINE}╝\n`);
+        appLogger.info(`\n╔${LINE}╗`);
+        appLogger.info(`║    ${client.user.tag.padEnd(42)}║`);
+        appLogger.info(`╠${LINE}╣`);
+        appLogger.info(`║    السيرفرات : ${String(guildCount).padEnd(29)}║`);
+        appLogger.info(`║    المستخدمون: ${String(userCount).padEnd(29)}║`);
+        appLogger.info(`║    الأوامر   : ${String(commandCount).padEnd(29)}║`);
+        appLogger.info(`║    الحالة    : Online & Ready!               ║`);
+        appLogger.info(`╚${LINE}╝\n`);
 
-        // ─── تحميل الحالة المحفوظة (من MongoDB عبر bot-settings) ─────────────
+        // تحميل الحالة المحفوظة (من MongoDB عبر bot-settings)
         try {
             const botSettings = require('../utils/bot-settings');
             const savedStatus = botSettings.get('botStatus'); // { type, text, status }
@@ -57,7 +58,7 @@ module.exports = {
                     activities: [{ name: savedStatus.text, type: actType }],
                     status: savedStatus.status || 'online',
                 });
-                console.log(`✅ [Status] ${savedStatus.type}: ${savedStatus.text}`);
+                appLogger.info(`[Status] ${savedStatus.type}: ${savedStatus.text}`);
             } else {
                 client.user.setPresence({
                     activities: [{ name: '!help • اكتب help', type: ActivityType.Watching }],
@@ -65,52 +66,52 @@ module.exports = {
                 });
             }
         } catch (e) {
-            console.error('[Ready] خطأ في تحميل الحالة:', e.message);
+            appLogger.error('[Ready] خطأ في تحميل الحالة:', e.message);
             client.user.setPresence({
                 activities: [{ name: 'help • للمساعدة', type: ActivityType.Watching }],
                 status: 'online',
             });
         }
 
-        // ─── المهام التلقائية ────────────────────────────────────────
+        // المهام التلقائية
         try {
             autoTasks.initializeAutoTasks(client);
-            console.log('🤖 [AutoTasks] المهام التلقائية مفعّلة');
+            appLogger.info('[AutoTasks] المهام التلقائية مفعّلة');
         } catch (err) {
-            console.error('[AutoTasks] خطأ:', err.message);
+            appLogger.error('[AutoTasks] خطأ:', err.message);
         }
 
         try {
             const resumedBackfills = autoRole.resumeInterruptedBackfills(client);
             if (resumedBackfills > 0) {
-                console.log(`[AutoRole] استئناف فحص الأعضاء في ${resumedBackfills} سيرفر`);
+                appLogger.info(`[AutoRole] استئناف فحص الأعضاء في ${resumedBackfills} سيرفر`);
             }
         } catch (err) {
-            console.error('[AutoRole] تعذر استئناف فحص الأعضاء:', err);
+            appLogger.error('[AutoRole] تعذر استئناف فحص الأعضاء:', err);
         }
 
-        // ─── المنشن الوهمي ──────────────────────────────────────────
+        // المنشن الوهمي
         try {
             ghostPing.initialize(client);
-            console.log('👻 [GhostPing] مفعّل');
+            appLogger.info('[GhostPing] مفعّل');
         } catch (e) {
-            console.warn('[GhostPing] خطأ:', e.message);
+            appLogger.warn('[GhostPing] خطأ:', e.message);
         }
 
-        // ─── تحديث قنوات الشركات (بعد 3 ثوانٍ) ────────────────────
+        // تحديث قنوات الشركات (بعد 3 ثوانٍ)
         setTimeout(async () => {
             try {
                 const companyModule = require('../commands/economy/company');
                 for (const guild of client.guilds.cache.values()) {
                     await companyModule.refreshCompaniesChannel(guild).catch(() => {});
                 }
-                console.log('🏢 [Companies] قنوات الشركات محدَّثة');
+                appLogger.info('[Companies] قنوات الشركات محدَّثة');
             } catch (err) {
-                console.warn('[Companies] خطأ:', err.message);
+                appLogger.warn('[Companies] خطأ:', err.message);
             }
         }, 3_000);
 
-        // ─── استعادة Color Channels (بعد 7 ثوانٍ — بدون إعادة إرسال إذا موجودة) ─
+        // استعادة Color Channels (بعد 7 ثوانٍ — بدون إعادة إرسال إذا موجودة)
         setTimeout(async () => {
             try {
                 const colorSystem = require('../utils/color-system');
@@ -119,35 +120,35 @@ module.exports = {
                     await colorSystem.checkAndRestoreColorChannel(guild).catch(() => {});
                     restored++;
                 }
-                console.log(`🎨 [ColorSystem] فحص ${restored} سيرفر — استعادة إذا لزم`);
+                appLogger.info(`[ColorSystem] فحص ${restored} سيرفر — استعادة إذا لزم`);
             } catch (err) {
-                console.warn('[ColorSystem] خطأ في الاستعادة:', err.message);
+                appLogger.warn('[ColorSystem] خطأ في الاستعادة:', err.message);
             }
         }, 7_000);
 
-        // ─── إشعار المالك عبر DM (بعد 5 ثوانٍ) ────────────────────
+        // إشعار المالك عبر DM (بعد 5 ثوانٍ)
         setTimeout(async () => {
             try {
                 const ownerDashboard = require('../commands/main/owner-dashboard');
                 await ownerDashboard.notifyOwnerOnStartup(client);
-                console.log('👑 [Owner] تم إرسال إشعار البدء');
+                appLogger.info('[Owner] تم إرسال إشعار البدء');
             } catch (e) {
-                console.warn('[Owner] لم يتم إرسال إشعار البدء:', e.message);
+                appLogger.warn('[Owner] لم يتم إرسال إشعار البدء:', e.message);
             }
         }, 5_000);
 
-        // ─── تحديث المتصدرين تلقائياً (بعد 10 ثوانٍ) ──────────────
+        // تحديث المتصدرين تلقائياً (بعد 10 ثوانٍ)
         setTimeout(async () => {
             try {
                 const leaderboard = require('../commands/main/leaderboard');
                 leaderboard.startAutoUpdate(client, 30); // كل 30 دقيقة
-                console.log('🏆 [Leaderboard] التحديث التلقائي كل 30 دقيقة');
+                appLogger.info('[Leaderboard] التحديث التلقائي كل 30 دقيقة');
             } catch (e) {
-                console.warn('[Leaderboard] خطأ:', e.message);
+                appLogger.warn('[Leaderboard] خطأ:', e.message);
             }
         }, 10_000);
 
-        // ─── تهيئة الأنظمة المتقدمة (بعد 15 ثانية) ────────────────
+        // تهيئة الأنظمة المتقدمة (بعد 15 ثانية)
         setTimeout(() => {
             try {
                 analytics?.trackEvent?.('bot_start', {
@@ -159,12 +160,12 @@ module.exports = {
 
                 botEvents?.fire?.('bot:ready', { client });
 
-                console.log('🚀 [Systems] الأنظمة المتقدمة:');
-                console.log('   📊 Analytics Engine  ✔️');
-                console.log('   🛡️ Advanced Security ✔️');
-                console.log('   🎛️ Event System      ✔️');
+                appLogger.info('[Systems] الأنظمة المتقدمة:');
+                appLogger.info('Analytics Engine  ');
+                appLogger.info('Advanced Security ');
+                appLogger.info('Event System      ');
             } catch (e) {
-                console.warn('[Systems] خطأ:', e.message);
+                appLogger.warn('[Systems] خطأ:', e.message);
             }
         }, 15_000);
     },

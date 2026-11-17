@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../utils/app-logger');
 
 /**
  * handlers/slashHandler.js
@@ -55,20 +56,20 @@ function collectSlashData(commandsMap) {
 async function deploySlashCommands(client, commandsMap, guildId) {
     const token = process.env.TOKEN || config.token;
     if (!token) {
-        console.error('[SlashHandler] No token found - cannot deploy slash commands');
+        appLogger.error('[SlashHandler] No token found - cannot deploy slash commands');
         return;
     }
 
     const slashData = collectSlashData(commandsMap);
     if (!slashData.length) {
-        console.warn('[SlashHandler] No slash commands found to deploy');
+        appLogger.warn('[SlashHandler] No slash commands found to deploy');
         return;
     }
 
     const rest = new REST({ version: '10' }).setToken(token);
 
     try {
-        console.log(`[SlashHandler] Deploying ${slashData.length} slash commands...`);
+        appLogger.info(`[SlashHandler] Deploying ${slashData.length} slash commands...`);
 
         const route = guildId
             ? Routes.applicationGuildCommands(client.user.id, guildId)
@@ -77,12 +78,12 @@ async function deploySlashCommands(client, commandsMap, guildId) {
         await rest.put(route, { body: slashData });
 
         if (guildId) {
-            console.log(`[SlashHandler] Deployed ${slashData.length} guild commands to ${guildId}`);
+            appLogger.info(`[SlashHandler] Deployed ${slashData.length} guild commands to ${guildId}`);
         } else {
-            console.log(`[SlashHandler] Deployed ${slashData.length} global commands (up to 1hr to appear)`);
+            appLogger.info(`[SlashHandler] Deployed ${slashData.length} global commands (up to 1hr to appear)`);
         }
     } catch (err) {
-        console.error('[SlashHandler] Deploy error:', err.message);
+        appLogger.error('[SlashHandler] Deploy error:', err.message);
         throw err;
     }
 }
@@ -127,7 +128,7 @@ async function handleSlashCommand(interaction, commandsMap) {
             await interaction.reply({ content: 'This command has no executor.', ephemeral: true });
         }
     } catch (err) {
-        console.error(`[SlashHandler] Error executing /${commandName}:`, err.message);
+        appLogger.error(`[SlashHandler] Error executing /${commandName}:`, err.message);
         const errMsg = { content: 'An error occurred while executing this command.', ephemeral: true };
         if (interaction.deferred || interaction.replied) {
             await interaction.followUp(errMsg).catch(() => {});

@@ -1,3 +1,4 @@
+const appLogger = require('../../utils/app-logger');
 /**
  * ═══════════════════════════════════════════════════════
  * 💥 إلغاء الكلانات — Nuke Clans
@@ -27,13 +28,13 @@ module.exports = {
         'nuke_clans',
         'reset-clans',
     ],
-    description: 'يحذف جميع الكلانات مع رولاتها وقنواتها (مالك البوت فقط)',
+    description: 'يحذف كل الكلانات ورتبها وقنواتها (لمالك البوت بس)',
     usage: 'حذف كلانات',
 
     async execute(message) {
-        // ──── فقط مالك البوت ───────────────────────────────
+        // فقط مالك البوت
         if (message.author.id !== config.ownerId) {
-            return message.reply('❌ هذا الأمر لمالك البوت فقط.');
+            return message.reply('❌ هالأمر لمالك البوت بس.');
         }
 
         const guildId = message.guild.id;
@@ -41,32 +42,32 @@ module.exports = {
 
         // Always allow proceeding even if JSON says no clans, so the user can sweep orphaned roles.
         if (allClans.length === 0) {
-            message.reply('⚠️ لا يوجد كلانات مسجلة في قاعدة البيانات، ولكن سيتم فحص ومسح أي قنوات أو رتب قديمة عالقة.');
+            message.reply('⚠️ ماكو كلانات مسجلة بقاعدة البيانات، بس راح نفتش ونمسح أي قنوات أو رتب قديمة باقية.');
         }
 
-        // ──── رسالة تأكيد ─────────────────────────────────
+        // رسالة تأكيد
         const confirmEmbed = new EmbedBuilder()
             .setColor('#FF0000')
-            .setTitle('⚠️ تحذير نهائي — Nuke Clans')
+            .setTitle('⚠️ آخر تحذير — حذف الكلانات')
             .setDescription([
-                `سيتم حذف **${allClans.length}** كلان مع كل ما يتعلق بها:`,
+                `راح نحذف **${allClans.length}** كلان وكلشي يخصها:`,
                 '',
                 allClans.map(c => `• **${c.name}** (${c.stats?.totalMembers || 0} عضو)`).join('\n'),
                 '',
-                '**ما سيُحذف:**',
-                '🗑️ جميع الرولات (قائد، نائب، ضابط، جندي)',
-                '🗑️ جميع القنوات والكاتيقوري',
+                '**شنو راح ينحذف:**',
+                '🗑️ كل الرتب (قائد، نائب، ضابط، جندي)',
+                '🗑️ كل القنوات والتصنيفات',
                 '🗑️ كل بيانات الكلانات من قاعدة البيانات',
                 '',
-                '> **هذا الإجراء لا يمكن التراجع عنه!**'
+                '> **ما تگدر ترجع عن هالقرار!**'
             ].join('\n'))
-            .setFooter({ text: 'لديك 30 ثانية للتأكيد' })
+            .setFooter({ text: 'عندك 30 ثانية تأكد بيها' })
             .setTimestamp();
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId('nuke_clans_confirm')
-                .setLabel('✅ تأكيد الحذف الكامل')
+                .setLabel('✅ إي، احذف الكل')
                 .setStyle(ButtonStyle.Danger),
             new ButtonBuilder()
                 .setCustomId('nuke_clans_cancel')
@@ -85,17 +86,17 @@ module.exports = {
         collector.on('collect', async (i) => {
             if (i.customId === 'nuke_clans_cancel') {
                 return i.update({
-                    embeds: [new EmbedBuilder().setColor('#95A5A6').setDescription('❌ تم إلغاء العملية.')],
+                    embeds: [new EmbedBuilder().setColor('#95A5A6').setDescription('❌ انلغت العملية.')],
                     components: []
                 });
             }
 
-            // ──── بدء الحذف ───────────────────────────────
+            // بدء الحذف
             await i.update({
                 embeds: [new EmbedBuilder()
                     .setColor('#E74C3C')
-                    .setTitle('⏳ جاري حذف الكلانات...')
-                    .setDescription('يرجى الانتظار، يتم حذف الرولات والقنوات...')
+                    .setTitle('⏳ دا نحذف الكلانات...')
+                    .setDescription('لحظة، دا نحذف الرتب والقنوات...')
                 ],
                 components: []
             });
@@ -104,7 +105,7 @@ module.exports = {
             let failed = 0;
             const details = [];
 
-            // ──── مرّ على كل كلان واحذف أصوله ─────────
+            // مرّ على كل كلان واحذف أصوله
             for (const clan of allClans) {
                 try {
                     await clanAssets.deleteClanAssets(message.guild, clan);
@@ -116,7 +117,7 @@ module.exports = {
                 }
             }
 
-            // ──── مسح الرتب والقنوات القديمة العالقة (Orphaned) ─────────
+            // مسح الرتب والقنوات القديمة العالقة (Orphaned)
             let orphanedRoles = 0;
             let orphanedChannels = 0;
             
@@ -147,27 +148,27 @@ module.exports = {
                     }
                 }
             } catch (e) {
-                console.error('Error sweeping orphaned assets:', e);
+                appLogger.error('Error sweeping orphaned assets:', e);
             }
 
-            // ──── امسح كل البيانات من JSON ────────────
+            // امسح كل البيانات من JSON
             clanManager.clearGuild(guildId);
 
-            // ──── رسالة النتيجة ───────────────────────
+            // رسالة النتيجة
             const resultEmbed = new EmbedBuilder()
                 .setColor(failed === 0 ? '#2ECC71' : '#E67E22')
-                .setTitle('💥 Nuke Clans — اكتمل!')
+                .setTitle('💥 خلص حذف الكلانات!')
                 .setDescription([
-                    `✅ **تم حذف:** ${deleted} كلان مسجل`,
-                    failed > 0 ? `❌ **فشل:** ${failed} كلان مسجل` : '',
+                    `✅ **انحذف:** ${deleted} كلان مسجل`,
+                    failed > 0 ? `❌ **ما انحذف:** ${failed} كلان مسجل` : '',
                     '',
-                    `🧹 **مسح إضافي:** تم حذف **${orphanedRoles}** رتبة قديمة و **${orphanedChannels}** قناة عالقة!`,
+                    `🧹 **تنظيف زيادة:** انحذفت **${orphanedRoles}** رتبة قديمة و **${orphanedChannels}** قناة باقية!`,
                     '',
                     '**التفاصيل:**',
                     details.join('\n'),
                     '',
-                    '🗃️ تم تصفير بيانات الكلانات بالكامل.',
-                    'السيرفر الآن خالٍ من الكلانات كأنه لم يكن فيه شيء! 🧹'
+                    '🗃️ تصفّرت بيانات الكلانات كلها.',
+                    'السيرفر هسه نظيف من الكلانات، كأنها ما مرّت من هنا! 🧹'
                 ].filter(Boolean).join('\n'))
                 .setTimestamp();
 
@@ -177,7 +178,7 @@ module.exports = {
         collector.on('end', (collected) => {
             if (collected.size === 0) {
                 reply.edit({
-                    embeds: [new EmbedBuilder().setColor('#95A5A6').setDescription('⏰ انتهى الوقت، تم إلغاء العملية.')],
+                    embeds: [new EmbedBuilder().setColor('#95A5A6').setDescription('⏰ خلص الوقت، انلغت العملية.')],
                     components: []
                 }).catch(() => { });
             }

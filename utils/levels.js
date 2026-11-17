@@ -4,12 +4,12 @@ const db = require('./database');
 const config = require('../config');
 const { EmbedBuilder } = require('discord.js');
 
-// ─── حساب XP المطلوب للمستوى التالي (منحنى تدريجي) ─────────────────────────
+// حساب XP المطلوب للمستوى التالي (منحنى تدريجي)
 function getXPForLevel(level) {
     return Math.floor(100 * Math.pow(1.5, level - 1));
 }
 
-// ─── حساب المستوى من XP الكلي ────────────────────────────────────────────────
+// حساب المستوى من XP الكلي
 function getLevelFromXP(totalXP) {
     let level = 1;
     let accumulated = 0;
@@ -22,7 +22,7 @@ function getLevelFromXP(totalXP) {
     return level;
 }
 
-// ─── إضافة XP للمستخدم ──────────────────────────────────────────────────────
+// إضافة XP للمستخدم
 // إصلاح: يستخدم updateFields بدل updateUserData لتجنب الكتابة الزائدة
 function addXP(userId, amount, message = null) {
     const userData = db.getUserData(userId);
@@ -80,7 +80,7 @@ function addXP(userId, amount, message = null) {
     };
 }
 
-// ─── الحصول على تقدم المستوى ──────────────────────────────────────────────────
+// الحصول على تقدم المستوى
 function getLevelProgress(userId) {
     const userData = db.getUserData(userId);
     const currentLevel = userData.level || 1;
@@ -107,14 +107,14 @@ function getLevelProgress(userId) {
     };
 }
 
-// ─── شريط التقدم النصي ───────────────────────────────────────────────────────
+// شريط التقدم النصي
 function createProgressBar(percentage, length = 10) {
     const filled = Math.max(0, Math.round((percentage / 100) * length));
     const empty = Math.max(0, length - filled);
     return '█'.repeat(filled) + '░'.repeat(empty);
 }
 
-// ─── رتبة المستخدم عالمياً ────────────────────────────────────────────────────
+// رتبة المستخدم عالمياً
 async function getUserRank(userId) {
     const allUsers = db.loadDatabase().users;
     const sorted = Object.entries(allUsers)

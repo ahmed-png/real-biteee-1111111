@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('./app-logger');
 
 /**
  * ╔══════════════════════════════════════════════════════════════════════════╗
@@ -66,7 +67,7 @@ function _flush() {
         fs.writeFileSync(ANALYTICS_FILE, JSON.stringify(_data, null, 2), 'utf8');
         _dirty = false;
     } catch (e) {
-        console.error('[Analytics] خطأ في الحفظ:', e.message);
+        appLogger.error('[Analytics] خطأ في الحفظ:', e.message);
     }
 }
 
@@ -74,7 +75,7 @@ setInterval(_flush, 3 * 60 * 1000).unref?.();
 process.on('SIGINT', () => _flush());
 process.on('SIGTERM', () => _flush());
 
-// ─── API العامة ──────────────────────────────────────────────────────────────
+// API العامة
 
 function trackCommand(commandName, userId, guildId) {
     const d = _load();
@@ -166,7 +167,7 @@ function trackError(error, context = '') {
     _dirty = true;
 }
 
-// ─── التقارير ─────────────────────────────────────────────────────────────────
+// التقارير
 
 function getHourlyChart(hours = 24) {
     const d = _load();

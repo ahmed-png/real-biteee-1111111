@@ -16,9 +16,9 @@ function Overview({ info }) {
     <div className="animate-fade-up">
       <div className="cards-grid" style={{ marginBottom: 24 }}>
         <StatCard icon="👥" value={(guild.memberCount || 0).toLocaleString()} label="الأعضاء" color="green" />
-        <StatCard icon="🚀" value={`Tier ${guild.boostLevel || 0}`} label="Boost Level" color="gold" />
-        <StatCard icon="💎" value={guild.boostCount || 0} label="Boosts" color="cyan" />
-        <StatCard icon="🛡️" value={botStatus.isAdmin ? 'Admin ✅' : 'لا صلاحية ⚠️'} label="صلاحيات البوت" color={botStatus.isAdmin ? 'green' : 'red'} />
+        <StatCard icon="🚀" value={`المستوى ${guild.boostLevel || 0}`} label="مستوى تعزيز السيرفر" color="gold" />
+        <StatCard icon="💎" value={guild.boostCount || 0} label="التعزيزات" color="cyan" />
+        <StatCard icon="🛡️" value={botStatus.isAdmin ? 'صلاحيات إدارية ✅' : 'صلاحيات محدودة ⚠️'} label="صلاحيات البوت" color={botStatus.isAdmin ? 'green' : 'red'} />
       </div>
 
       <div className="cards-grid-2">
@@ -37,15 +37,15 @@ function Overview({ info }) {
             }
             <div>
               <div style={{ fontSize: 20, fontWeight: 900 }}>{guild.name}</div>
-              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>ID: {guild.id}</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3 }}>معرّف السيرفر: {guild.id}</div>
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {[
-              { icon: '📅', label: 'تاريخ الإنشاء', value: new Date(guild.createdAt).toLocaleDateString('ar-SA') },
-              { icon: '👑', label: 'نوع المستخدم', value: 'Server Owner' },
-              { icon: '✅', label: 'صلاحيات البوت', value: botStatus.isAdmin ? 'Administrator' : 'محدودة' },
-              { icon: '🔑', label: 'Intents', value: 'Members ✅' },
+              { icon: '📅', label: 'تاريخ إنشاء السيرفر', value: new Date(guild.createdAt).toLocaleDateString('ar-IQ') },
+              { icon: '👑', label: 'صلاحيتك', value: 'مالك السيرفر' },
+              { icon: '✅', label: 'صلاحيات البوت', value: botStatus.isAdmin ? 'إدارية' : 'محدودة' },
+              { icon: '🔑', label: 'الوصول للأعضاء', value: 'مفعّل ✅' },
             ].map(({ icon, label, value }) => (
               <div key={label} style={{ background: 'var(--card2)', borderRadius: 8, padding: '10px 12px', border: '1px solid var(--border2)' }}>
                 <div style={{ fontSize: 10, color: 'var(--muted)', marginBottom: 3 }}>{icon} {label}</div>
@@ -62,10 +62,10 @@ function Overview({ info }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {[
-              { label: 'قناة الألوان', value: settings.colorChannelName ? `#${settings.colorChannelName}` : 'غير محددة', active: !!settings.colorChannelName, icon: '🎨' },
-              { label: 'قناة السجلات', value: settings.logChannelName ? `#${settings.logChannelName}` : 'غير محددة', active: !!settings.logChannelName, icon: '📋' },
+              { label: 'قناة الألوان', value: settings.colorChannelName ? `#${settings.colorChannelName}` : 'مو محددة', active: !!settings.colorChannelName, icon: '🎨' },
+              { label: 'قناة السجلات', value: settings.logChannelName ? `#${settings.logChannelName}` : 'مو محددة', active: !!settings.logChannelName, icon: '📋' },
               { label: 'البادئة', value: settings.prefix || '!', active: true, icon: '💬' },
-              { label: 'الترحيب', value: settings.welcomeEnabled ? 'مفعّل ✅' : 'معطّل', active: settings.welcomeEnabled, icon: '👋' },
+              { label: 'الترحيب', value: settings.welcomeEnabled ? 'شغّال ✅' : 'مطفي', active: settings.welcomeEnabled, icon: '👋' },
             ].map(({ label, value, active, icon }) => (
               <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--card2)', borderRadius: 8, border: '1px solid var(--border2)' }}>
                 <span style={{ fontSize: 18 }}>{icon}</span>
@@ -73,7 +73,7 @@ function Overview({ info }) {
                   <div style={{ fontSize: 11, color: 'var(--muted)' }}>{label}</div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: active ? 'var(--text)' : 'var(--muted)' }}>{value}</div>
                 </div>
-                <span className={`badge ${active ? 'badge-green' : 'badge-red'}`}>{active ? 'نشط' : 'معطّل'}</span>
+                <span className={`badge ${active ? 'badge-green' : 'badge-red'}`}>{active ? 'شغّال' : 'مطفي'}</span>
               </div>
             ))}
           </div>
@@ -89,12 +89,12 @@ function ColorsSection({ guildId, info, channels, toast, onRefresh }) {
   const [loading, setLoading] = useState(false)
 
   const save = async () => {
-    if (!selectedChannel) return toast('اختر قناة أولاً', 'error')
+    if (!selectedChannel) return toast('اختار قناة أولاً.', 'error')
     setLoading(true)
     const res = await apiFetch(`/server/${guildId}/color-channel`, { method: 'POST', body: JSON.stringify({ channelId: selectedChannel }) })
     setLoading(false)
-    if (res?.success) { toast(res.message || 'تم تعيين قناة الألوان ✅', 'success'); onRefresh() }
-    else toast(res?.error || 'خطأ', 'error')
+    if (res?.success) { toast(res.message || 'تعيّنت قناة الألوان ✅', 'success'); onRefresh() }
+    else toast(res?.error || 'صار خلل.', 'error')
   }
 
   return (
@@ -105,18 +105,18 @@ function ColorsSection({ guildId, info, channels, toast, onRefresh }) {
             <span className="card-icon">🎨</span>
             <div>
               <div className="card-title">نظام ألوان البروفايل</div>
-              <div className="card-subtitle">تخصيص لون اسم كل عضو</div>
+              <div className="card-subtitle">خلّي كل عضو يختار لون اسمه.</div>
             </div>
           </div>
           {info?.settings?.colorChannelName && (
             <div className="badge badge-green" style={{ marginBottom: 14, fontSize: 13 }}>✅ القناة الحالية: #{info.settings.colorChannelName}</div>
           )}
           <p style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 18, lineHeight: 1.8 }}>
-            اختر قناة نصية يُرسل فيها البوت قائمة اختيار الألوان تلقائياً. الأعضاء يختارون لونهم بنقرة واحدة.
+            اختار قناة نصية ينزل بيها البوت قائمة الألوان تلقائياً، والأعضاء يختارون لونهم بضغطة.
           </p>
-          <ChannelSelect channels={channels} value={selectedChannel} onChange={setSelectedChannel} label="القناة المخصصة للألوان" hint="⚠️ البوت يحتاج: View Channel, Send Messages, Embed Links, Manage Messages" />
+          <ChannelSelect channels={channels} value={selectedChannel} onChange={setSelectedChannel} label="قناة الألوان" hint="⚠️ البوت يحتاج: View Channel, Send Messages, Embed Links, Manage Messages" />
           <button className="btn btn-primary" onClick={save} disabled={loading} style={{ width: '100%' }}>
-            {loading ? '⏳ جاري الإرسال...' : '🎨 حفظ وإرسال نظام الألوان'}
+            {loading ? '⏳ دا أرسل...' : '🎨 حفظ ودز قائمة الألوان'}
           </button>
         </div>
 
@@ -156,12 +156,12 @@ function LogsSection({ guildId, info, channels, toast, onRefresh }) {
   const [loading, setLoading] = useState(false)
 
   const save = async () => {
-    if (!selectedChannel) return toast('اختر قناة أولاً', 'error')
+    if (!selectedChannel) return toast('اختار قناة أولاً.', 'error')
     setLoading(true)
     const res = await apiFetch(`/server/${guildId}/log-channel`, { method: 'POST', body: JSON.stringify({ channelId: selectedChannel }) })
     setLoading(false)
-    if (res?.success) { toast(res.message || 'تم تعيين قناة السجلات ✅', 'success'); onRefresh() }
-    else toast(res?.error || 'خطأ', 'error')
+    if (res?.success) { toast(res.message || 'تعيّنت قناة السجلات ✅', 'success'); onRefresh() }
+    else toast(res?.error || 'صار خلل.', 'error')
   }
 
   return (
@@ -176,14 +176,14 @@ function LogsSection({ guildId, info, channels, toast, onRefresh }) {
             <div className="badge badge-green" style={{ marginBottom: 14 }}>✅ الحالية: #{info.settings.logChannelName}</div>
           )}
           <p style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 18, lineHeight: 1.8 }}>
-            تُرسل أحداث السيرفر إلى هذه القناة. تتطلب معرفة منفذ التغييرات الإدارية صلاحية عرض سجل التدقيق.
+            توصل أحداث السيرفر لهالقناة. حتى نعرف من سوّى التغييرات الإدارية، يحتاج البوت صلاحية عرض سجل التدقيق.
           </p>
           {!info?.botStatus?.canViewAuditLog && (
             <div className="info-box warning" role="status" style={{ marginBottom: 16 }}>
-              البوت لا يملك صلاحية <strong>View Audit Log</strong>؛ ستصل الأحداث الأساسية، لكن قد لا يظهر منفذ بعض التغييرات الإدارية أو تفاصيلها.
+              البوت ما عنده صلاحية <strong>View Audit Log</strong>؛ الأحداث الأساسية توصل، بس يمكن ما يبين من سوّى بعض التغييرات أو تفاصيلها.
             </div>
           )}
-          <ChannelSelect channels={channels} value={selectedChannel} onChange={setSelectedChannel} label="القناة المخصصة للسجلات" hint="⚠️ البوت يحتاج: View Channel, Send Messages, Embed Links" />
+          <ChannelSelect channels={channels} value={selectedChannel} onChange={setSelectedChannel} label="قناة السجلات" hint="⚠️ البوت يحتاج: View Channel, Send Messages, Embed Links" />
           <button className="btn btn-primary" onClick={save} disabled={loading} style={{ width: '100%' }}>
             {loading ? '⏳ جاري الحفظ...' : '💾 حفظ قناة السجلات'}
           </button>
@@ -192,7 +192,7 @@ function LogsSection({ guildId, info, channels, toast, onRefresh }) {
         <div className="card">
           <div className="card-header">
             <span className="card-icon">📝</span>
-            <div className="card-title">ما يُسجَّل تلقائياً</div>
+            <div className="card-title">شنو ينحفظ بالسجلات تلقائياً</div>
           </div>
           {[
             { icon: '🚪', label: 'انضمام ومغادرة الأعضاء' },
@@ -211,7 +211,7 @@ function LogsSection({ guildId, info, channels, toast, onRefresh }) {
               <span style={{ fontSize: 18 }}>{lt.icon}</span>
               <span style={{ flex: 1, color: 'var(--text2)' }}>{lt.label}</span>
               <span className={`badge ${available ? 'badge-green' : 'badge-red'}`} style={{ fontSize: 10 }}>
-                {available ? 'مفعّل' : 'صلاحية مطلوبة'}
+                {available ? 'شغّال' : 'يحتاج صلاحية'}
               </span>
             </div>
             )
@@ -239,9 +239,9 @@ function ProtectionSection({ guildId, toast }) {
         setProtection(data.protection)
         setRestrictions(data.restrictions || {})
       }
-      else setLoadError(data?.error || 'تعذر تحميل إعدادات الحماية.')
+      else setLoadError(data?.error || 'ما گدرت أحمّل إعدادات الحماية.')
     } catch (error) {
-      setLoadError(error.message || 'تعذر تحميل إعدادات الحماية.')
+      setLoadError(error.message || 'ما گدرت أحمّل إعدادات الحماية.')
     } finally {
       setLoading(false)
     }
@@ -256,13 +256,13 @@ function ProtectionSection({ guildId, toast }) {
     try {
       const res = await apiFetch(`/server/${guildId}/protection`, { method: 'POST', body: JSON.stringify({ protection }) })
       if (res?.success) {
-        toast('تم حفظ إعدادات الحماية ✅', 'success')
+        toast('انحفظت إعدادات الحماية ✅', 'success')
         await loadProtection()
       } else {
-        toast(res?.error || 'تعذر حفظ إعدادات الحماية.', 'error')
+        toast(res?.error || 'ما گدرت أحفظ إعدادات الحماية.', 'error')
       }
     } catch (error) {
-      toast(error.message || 'تعذر حفظ إعدادات الحماية.', 'error')
+      toast(error.message || 'ما گدرت أحفظ إعدادات الحماية.', 'error')
     } finally {
       setSaving(false)
     }
@@ -272,8 +272,8 @@ function ProtectionSection({ guildId, toast }) {
   if (!protection) {
     return (
       <div className="card" role="alert">
-        <p>{loadError || 'تعذر تحميل إعدادات الحماية.'}</p>
-        <button className="btn btn-primary" onClick={loadProtection} type="button">إعادة المحاولة</button>
+        <p>{loadError || 'ما گدرت أحمّل إعدادات الحماية.'}</p>
+        <button className="btn btn-primary" onClick={loadProtection} type="button">جرّب مرة ثانية</button>
       </div>
     )
   }
@@ -301,7 +301,7 @@ function ProtectionSection({ guildId, toast }) {
           <span className="badge">{protectionCards.length - enabledCount} معطّل</span>
         </div>
         <button className="btn btn-success" onClick={save} disabled={saving}>
-          {saving ? '⏳ حفظ...' : '💾 حفظ جميع الإعدادات'}
+          {saving ? '⏳ دا أحفظ...' : '💾 حفظ كل الإعدادات'}
         </button>
       </div>
 
@@ -318,7 +318,7 @@ function ProtectionSection({ guildId, toast }) {
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 800, fontSize: 14 }}>{pc.name}</div>
                   <div style={{ fontSize: 11, color: 'var(--muted)' }}>{pc.desc}</div>
-                  {restricted && <div role="status" style={{ fontSize: 11, color: 'var(--warning, #f0ad4e)', marginTop: 4 }}>موقوفة من إعدادات مالك البوت</div>}
+                  {restricted && <div role="status" style={{ fontSize: 11, color: 'var(--warning, #f0ad4e)', marginTop: 4 }}>مالك البوت موقفها من الإعدادات.</div>}
                 </div>
                 <label className="toggle">
                   <input type="checkbox" checked={enabled} disabled={restricted} onChange={e => toggle(pc.key, 'enabled', e.target.checked)} />
@@ -374,7 +374,7 @@ function WelcomeSection({ guildId, channels, toast }) {
   }, [guildId])
 
   const save = async () => {
-    if (!ws.welcomeChannel) return toast('يرجى اختيار قناة الترحيب أولاً', 'error')
+    if (!ws.welcomeChannel) return toast('اختار قناة الترحيب أولاً.', 'error')
     setSaving(true)
     const res = await apiFetch(`/server/${guildId}/welcome-settings`, {
       method: 'POST',
@@ -389,12 +389,12 @@ function WelcomeSection({ guildId, channels, toast }) {
       })
     })
     setSaving(false)
-    if (res?.success) toast('تم حفظ إعدادات الترحيب ✅', 'success')
-    else toast(res?.error || 'خطأ في الحفظ', 'error')
+    if (res?.success) toast('انحفظت إعدادات الترحيب ✅', 'success')
+    else toast(res?.error || 'ما گدرت أحفظ الإعدادات.', 'error')
   }
 
   const testWelcome = async () => {
-    if (!ws.welcomeChannel) return toast('اختر قناة الترحيب وحفظ الإعدادات أولاً', 'error')
+    if (!ws.welcomeChannel) return toast('اختار قناة الترحيب واحفظ الإعدادات أولاً.', 'error')
     setTesting(true)
     // حفظ أولاً
     await apiFetch(`/server/${guildId}/welcome-settings`, {
@@ -411,8 +411,8 @@ function WelcomeSection({ guildId, channels, toast }) {
     })
     const res = await apiFetch(`/server/${guildId}/test-welcome`, { method: 'POST' })
     setTesting(false)
-    if (res?.success) toast(res.message || '✅ تم إرسال رسالة ترحيب تجريبية!', 'success')
-    else toast(res?.error || 'حدث خطأ', 'error')
+    if (res?.success) toast(res.message || '✅ وصلت رسالة الترحيب التجريبية!', 'success')
+    else toast(res?.error || 'صار خلل.', 'error')
   }
 
   if (loading || !ws) return <div className="loading-screen"><div className="spinner" /></div>
@@ -420,7 +420,7 @@ function WelcomeSection({ guildId, channels, toast }) {
   return (
     <div className="animate-fade-up">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
-        <div style={{ color: 'var(--muted)', fontSize: 13 }}>إعدادات الترحيب الخاصة بسيرفرك</div>
+        <div style={{ color: 'var(--muted)', fontSize: 13 }}>هذي إعدادات الترحيب بسيرفرك.</div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn btn-ghost btn-sm" onClick={testWelcome} disabled={testing || saving}>
             {testing ? '⏳...' : '🧪 تجربة'}
@@ -440,7 +440,7 @@ function WelcomeSection({ guildId, channels, toast }) {
 
           <ToggleRow
             label="👋 تفعيل رسائل الترحيب"
-            description="إرسال رسالة عند انضمام عضو جديد"
+            description="دز رسالة من ينضم عضو جديد."
             checked={ws.welcomeEnabled}
             onChange={v => setWs({ ...ws, welcomeEnabled: v })}
           />
@@ -452,7 +452,7 @@ function WelcomeSection({ guildId, channels, toast }) {
               value={ws.welcomeChannel || ''}
               onChange={e => setWs({ ...ws, welcomeChannel: e.target.value })}
             >
-              <option value="">— اختر قناة —</option>
+              <option value="">— اختار قناة —</option>
               {channels.map(ch => (
                 <option key={ch.id} value={ch.id}>#{ch.name}{!ch.canSend ? ' ⚠️' : ''}</option>
               ))}
@@ -475,7 +475,7 @@ function WelcomeSection({ guildId, channels, toast }) {
             
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
               <label className="btn btn-primary" style={{ flex: 1, cursor: 'pointer', textAlign: 'center' }}>
-                ☁️ اختر صورة من جهازك
+                ☁️ اختار صورة من جهازك
                 <input type="file" accept="image/png, image/jpeg, image/webp" style={{ display: 'none' }} onChange={e => {
                   const file = e.target.files[0];
                   if (!file) return;
@@ -489,7 +489,7 @@ function WelcomeSection({ guildId, channels, toast }) {
                 }} />
               </label>
             </div>
-            <div className="form-hint" style={{ color: 'var(--muted)', marginTop: 8 }}>أو يمكنك وضع رابط مباشر للصورة هنا:</div>
+            <div className="form-hint" style={{ color: 'var(--muted)', marginTop: 8 }}>أو حط رابط الصورة المباشر هنا:</div>
             <input
               type="text"
               className="form-input"
@@ -575,13 +575,13 @@ function AutoRoleSection({ guildId, toast }) {
       .then(result => {
         if (!active) return
         if (!result?.success) {
-          setLoaded({ guildId, error: result?.error || 'تعذر تحميل إعدادات الرتبة التلقائية' })
+          setLoaded({ guildId, error: result?.error || 'ما گدرت أحمّل إعدادات الرتبة التلقائية.' })
           return
         }
         setLoaded({ guildId, data: result })
       })
       .catch(error => {
-        if (active) setLoaded({ guildId, error: error.message || 'تعذر تحميل إعدادات الرتبة التلقائية' })
+        if (active) setLoaded({ guildId, error: error.message || 'ما گدرت أحمّل إعدادات الرتبة التلقائية.' })
       })
     return () => { active = false }
   }, [guildId, toast])
@@ -602,7 +602,7 @@ function AutoRoleSection({ guildId, toast }) {
       try {
         const result = await apiFetch(`/server/${guildId}/auto-role`)
         if (!result?.success) {
-          if (active) toast(result?.error || 'تعذر تحديث حالة فحص الأعضاء', 'error')
+          if (active) toast(result?.error || 'ما گدرت أحدّث حالة فحص الأعضاء.', 'error')
           return
         }
         if (!active) return
@@ -611,7 +611,7 @@ function AutoRoleSection({ guildId, toast }) {
           : previous)
         timer = setTimeout(poll, 3000)
       } catch (error) {
-        if (active) toast(error.message || 'تعذر تحديث حالة فحص الأعضاء', 'error')
+        if (active) toast(error.message || 'ما گدرت أحدّث حالة فحص الأعضاء.', 'error')
       }
     }
     timer = setTimeout(poll, 3000)
@@ -633,7 +633,7 @@ function AutoRoleSection({ guildId, toast }) {
         body: JSON.stringify(payload),
       })
       if (!result?.success) {
-        toast(result?.error || 'تعذر حفظ إعدادات الرتبة التلقائية', 'error')
+        toast(result?.error || 'ما گدرت أحفظ إعدادات الرتبة التلقائية.', 'error')
         return
       }
       if (settings.enabled) {
@@ -648,9 +648,9 @@ function AutoRoleSection({ guildId, toast }) {
       } else {
         updateSettings({ enabled: false, backfill: result.backfill || settings.backfill })
       }
-      toast(result.message || 'تم حفظ الإعدادات ✅', 'success')
+      toast(result.message || 'انحفظت الإعدادات ✅', 'success')
     } catch (error) {
-      toast(error.message || 'تعذر حفظ إعدادات الرتبة التلقائية', 'error')
+      toast(error.message || 'ما گدرت أحفظ إعدادات الرتبة التلقائية.', 'error')
     } finally {
       setSaving(false)
     }
@@ -661,13 +661,13 @@ function AutoRoleSection({ guildId, toast }) {
     try {
       const result = await apiFetch(`/server/${guildId}/auto-role/backfill`, { method: 'POST' })
       if (!result?.success) {
-        toast(result?.error || 'تعذر بدء فحص الأعضاء', 'error')
+        toast(result?.error || 'ما گدرت أبدي فحص الأعضاء.', 'error')
         return
       }
       updateSettings({ backfill: result.backfill })
-      toast(result.message || 'بدأ فحص أعضاء السيرفر', 'success')
+      toast(result.message || 'بديت أفحص أعضاء السيرفر.', 'success')
     } catch (error) {
-      toast(error.message || 'تعذر بدء فحص الأعضاء', 'error')
+      toast(error.message || 'ما گدرت أبدي فحص الأعضاء.', 'error')
     } finally {
       setSaving(false)
     }
@@ -694,9 +694,9 @@ function AutoRoleSection({ guildId, toast }) {
     not_started: 'لم يبدأ الفحص',
     running: 'جارٍ فحص الأعضاء وإسناد الرتبة',
     completed: 'اكتمل فحص الأعضاء',
-    partial: 'اكتمل الفحص مع تعذّر إسناد الرتبة لبعض الأعضاء',
-    failed: 'تعذّر إكمال فحص الأعضاء',
-    stopped: 'تم إيقاف فحص الأعضاء',
+    partial: 'خلص الفحص، بس ما گدرت أنطي الرتبة لبعض الأعضاء.',
+    failed: 'ما گدرت أكمل فحص الأعضاء.',
+    stopped: 'انوقف فحص الأعضاء.',
   }
   const backfillPercent = backfill.total
     ? Math.min(100, Math.floor((backfill.processed / backfill.total) * 100))
@@ -709,13 +709,13 @@ function AutoRoleSection({ guildId, toast }) {
           <span className="card-icon">🎟️</span>
           <div>
             <div className="card-title">الرتبة التلقائية للأعضاء الجدد</div>
-            <div className="card-subtitle">إنشاء رتبة مخصصة وتوزيعها على الأعضاء الحاليين والجدد</div>
+            <div className="card-subtitle">سوّي رتبة خاصة ووزعها على الأعضاء الحاليين والجدد.</div>
           </div>
         </div>
 
         <ToggleRow
           label="تفعيل توزيع الرتبة التلقائي"
-          description="تُمنح للحسابات البشرية والآلية التي يستطيع البوت إدارتها"
+          description="تنطي الرتبة للحسابات اللي يگدر البوت يديرها."
           checked={Boolean(settings.enabled)}
           onChange={enabled => updateSettings({ enabled })}
         />
@@ -724,12 +724,12 @@ function AutoRoleSection({ guildId, toast }) {
           <>
             {!settings.canManageRoles && (
               <div className="info-box warning" style={{ marginBottom: 12 }}>
-                امنح البوت صلاحية Manage Roles حتى يتمكن من إنشاء الرتبة وإدارتها.
+                انطي البوت صلاحية Manage Roles حتى يگدر يسوي الرتبة ويديرها.
               </div>
             )}
             {settings.roleExists && !settings.roleCanBeManaged && (
               <div className="info-box warning" style={{ marginBottom: 12 }}>
-                رتبة البوت يجب أن تكون أعلى من الرتبة التلقائية. ارفع رتبة البوت في إعدادات السيرفر ثم أعد الحفظ.
+                رتبة البوت لازم تكون أعلى من الرتبة التلقائية. ارفعها بإعدادات السيرفر وبعدين احفظ من جديد.
               </div>
             )}
 
@@ -751,7 +751,7 @@ function AutoRoleSection({ guildId, toast }) {
             <div className="card-header" style={{ padding: '12px 0 8px' }}>
               <div>
                 <div className="card-title">صلاحيات الرتبة</div>
-                <div className="card-subtitle">اختر الصلاحيات التي يحتاجها العضو فقط</div>
+                <div className="card-subtitle">اختار بس الصلاحيات اللي يحتاجها العضو.</div>
               </div>
             </div>
             {groups.map(group => {
@@ -784,10 +784,10 @@ function AutoRoleSection({ guildId, toast }) {
         )}
 
         <div className="info-box warning" style={{ marginTop: 12 }}>
-          لا تتضمن القائمة صلاحية Administrator أو صلاحيات الإشراف. تغيير صلاحيات هذه الرتبة يؤثر أيضاً على الأعضاء الذين يحملونها حالياً.
+          القائمة ما بيها صلاحية Administrator ولا صلاحيات الإشراف. إذا تغيّرت صلاحيات هالرتبة، تتغيّر هم على الأعضاء اللي لابسيها حالياً.
         </div>
         <button className="btn btn-primary" onClick={save} disabled={saving || !canSave} style={{ width: '100%', marginTop: 12 }}>
-          {saving ? '⏳ جارٍ الحفظ...' : settings.enabled ? (settings.roleExists ? '💾 حفظ الرتبة والصلاحيات' : '➕ إنشاء وحفظ الرتبة') : '⏸️ إيقاف التوزيع التلقائي'}
+          {saving ? '⏳ دا أحفظ...' : settings.enabled ? (settings.roleExists ? '💾 حفظ الرتبة والصلاحيات' : '➕ إنشاء الرتبة وحفظها') : '⏸️ إيقاف التوزيع التلقائي'}
         </button>
 
         <div style={{ marginTop: 20, padding: 14, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--card2)' }}>
@@ -795,24 +795,24 @@ function AutoRoleSection({ guildId, toast }) {
             <div>
               <div style={{ fontWeight: 700 }}>📦 توزيع الرتبة على الأعضاء الحاليين</div>
               <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
-                يبدأ تلقائياً عند أول حفظ، ويمكن إعادة الفحص لمعالجة الأعضاء الذين تعذر إسناد الرتبة لهم.
+                يبدي التوزيع من أول حفظ. تگدر تعيد الفحص للأعضاء اللي ما انطتهم الرتبة.
               </div>
               <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>
-                يتم تجاوز من لديه الرتبة مسبقاً أو من تعلو رتبته رتبة البوت.
+                نتجاوز العضو اللي عنده الرتبة من قبل أو رتبته أعلى من رتبة البوت.
               </div>
             </div>
             <span className={`badge ${backfill.status === 'completed' ? 'badge-green' : backfill.status === 'running' ? 'badge-blue' : backfill.status === 'partial' || backfill.status === 'failed' ? 'badge-yellow' : 'badge-purple'}`}>
-              {backfillStatusLabels[backfill.status] || 'حالة الفحص غير معروفة'}
+              {backfillStatusLabels[backfill.status] || 'ما نعرف حالة الفحص.'}
             </span>
           </div>
           <div style={{ marginTop: 12, height: 8, overflow: 'hidden', borderRadius: 99, background: 'var(--bg)' }} role="progressbar" aria-valuenow={backfillPercent} aria-valuemin={0} aria-valuemax={100}>
             <div style={{ width: `${backfillPercent}%`, height: '100%', background: backfill.status === 'partial' || backfill.status === 'failed' ? 'var(--yellow)' : 'var(--accent)', transition: 'width 0.3s ease' }} />
           </div>
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12, color: 'var(--text2)', marginTop: 9 }}>
-            <span>تم فحص: {backfill.processed || 0} / {backfill.total || 0}</span>
-            <span>تم الإسناد: {backfill.assigned || 0}</span>
-            <span>تم التجاوز: {backfill.skipped || 0}</span>
-            <span>تعذّر: {backfill.failed || 0}</span>
+            <span>انفحص: {backfill.processed || 0} / {backfill.total || 0}</span>
+            <span>انطت الرتبة: {backfill.assigned || 0}</span>
+            <span>تجاوزنا: {backfill.skipped || 0}</span>
+            <span>ما ضبطت: {backfill.failed || 0}</span>
           </div>
           {backfill.error && <div className="info-box warning" style={{ marginTop: 10, whiteSpace: 'pre-wrap' }}>{backfill.error}</div>}
           <button
@@ -821,7 +821,7 @@ function AutoRoleSection({ guildId, toast }) {
             disabled={saving || !settings.enabled || !settings.roleExists || !settings.canManageRoles || !settings.roleCanBeManaged || backfill.status === 'running'}
             style={{ marginTop: 12 }}
           >
-            {backfill.status === 'running' ? '⏳ الفحص جارٍ...' : '🔄 إعادة فحص وإسناد الأعضاء الحاليين'}
+            {backfill.status === 'running' ? '⏳ دا نفحص...' : '🔄 افحص الأعضاء الحاليين من جديد'}
           </button>
         </div>
       </div>
@@ -849,7 +849,7 @@ function RolesSection({ guildId, toast }) {
           setCanManageRoles(Boolean(d.canManageRoles))
           setRoleId(d.roles?.find(role => role.canManage)?.id || '')
         } else {
-          toast(d?.error || 'تعذر تحميل الأدوار', 'error')
+          toast(d?.error || 'ما گدرت أحمّل الأدوار.', 'error')
           setRoles([])
           setCanManageRoles(false)
           setRoleId('')
@@ -858,7 +858,7 @@ function RolesSection({ guildId, toast }) {
       })
       .catch(error => {
         if (!active) return
-        toast(error.message || 'تعذر تحميل الأدوار', 'error')
+        toast(error.message || 'ما گدرت أحمّل الأدوار.', 'error')
         setRoles([])
         setCanManageRoles(false)
         setRoleId('')
@@ -869,8 +869,8 @@ function RolesSection({ guildId, toast }) {
 
   const manageRole = async event => {
     event.preventDefault()
-    if (!/^\d{17,20}$/.test(userId.trim())) return toast('أدخل Discord ID صحيحاً للعضو', 'error')
-    if (!roleId) return toast('اختر دوراً قابلاً للإدارة', 'error')
+    if (!/^\d{17,20}$/.test(userId.trim())) return toast('اكتب معرّف Discord صحيح للعضو.', 'error')
+    if (!roleId) return toast('اختار دور يگدر البوت يديره.', 'error')
 
     setSubmitting(true)
     try {
@@ -879,13 +879,13 @@ function RolesSection({ guildId, toast }) {
         body: JSON.stringify({ userId: userId.trim(), roleId, action }),
       })
       if (result?.success) {
-        toast(result.message || 'تم تحديث الدور ✅', 'success')
+        toast(result.message || 'تحدّث الدور ✅', 'success')
         setUserId('')
       } else {
-        toast(result?.error || 'تعذر تحديث الدور', 'error')
+        toast(result?.error || 'ما گدرت أحدّث الدور.', 'error')
       }
     } catch (error) {
-      toast(error.message || 'تعذر تحديث الدور', 'error')
+      toast(error.message || 'ما گدرت أحدّث الدور.', 'error')
     } finally {
       setSubmitting(false)
     }
@@ -900,23 +900,23 @@ function RolesSection({ guildId, toast }) {
           <span className="card-icon">🎭</span>
           <div>
             <div className="card-title">إدارة أدوار الأعضاء</div>
-            <div className="card-subtitle">أضف دوراً لعضو أو أزله باستخدام Discord ID</div>
+            <div className="card-subtitle">ضيف دور لعضو أو شيله باستخدام معرّف Discord.</div>
           </div>
         </div>
         {!canManageRoles && (
           <div className="info-box warning" style={{ marginBottom: 12 }}>
-            يحتاج البوت إلى صلاحية Manage Roles، ويجب أن يكون دوره أعلى من الدور المراد تعديله.
+            البوت يحتاج صلاحية Manage Roles، ولازم رتبته تكون أعلى من الدور اللي تريد تعدّله.
           </div>
         )}
         <form onSubmit={manageRole} style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'end' }}>
           <div className="form-group" style={{ flex: '1 1 180px', marginBottom: 0 }}>
-            <label className="form-label">🆔 Discord ID للعضو</label>
+            <label className="form-label">🆔 معرّف Discord للعضو</label>
             <input className="form-input" inputMode="numeric" placeholder="123456789012345678" value={userId} onChange={event => setUserId(event.target.value)} required />
           </div>
           <div className="form-group" style={{ flex: '1 1 180px', marginBottom: 0 }}>
             <label className="form-label">🏷️ الدور</label>
             <select className="form-select" value={roleId} onChange={event => setRoleId(event.target.value)} required disabled={!canManageRoles}>
-              <option value="">— اختر دوراً —</option>
+              <option value="">— اختار دور —</option>
               {roles.filter(role => role.canManage).map(role => (
                 <option key={role.id} value={role.id}>{role.name}</option>
               ))}
@@ -930,7 +930,7 @@ function RolesSection({ guildId, toast }) {
             </select>
           </div>
           <button className="btn btn-primary" type="submit" disabled={!canManageRoles || submitting} style={{ minHeight: 40 }}>
-            {submitting ? '⏳ جارٍ التنفيذ' : 'تنفيذ'}
+            {submitting ? '⏳ دا أنفّذ...' : 'نفّذ'}
           </button>
         </form>
       </div>
@@ -939,7 +939,7 @@ function RolesSection({ guildId, toast }) {
         <table>
           <thead>
             <tr>
-              <th>الدور</th>
+              <th>الرتبة</th>
               <th>الأعضاء</th>
               <th>اللون</th>
               <th>قابل للإشارة</th>
@@ -1012,7 +1012,7 @@ function LeaderboardSection({ guildId }) {
               </td>
               <td><span style={{ color: 'var(--yellow)', fontWeight: 700 }}>{(m.balance || 0).toLocaleString()} 💰</span></td>
               <td><span style={{ color: 'var(--cyan)', fontWeight: 600 }}>{(m.bank || 0).toLocaleString()}</span></td>
-              <td><span className="badge badge-purple">Lv.{m.level || 0}</span></td>
+              <td><span className="badge badge-purple">المستوى {m.level || 0}</span></td>
             </tr>
           ))}
         </tbody>
@@ -1043,14 +1043,14 @@ export default function ServerOwnerDashboard() {
         apiFetch(`/server/${guildId}/info`),
         apiFetch(`/server/${guildId}/channels`),
       ])
-      if (!iRes?.success) throw new Error(iRes?.error || 'تعذر تحميل معلومات السيرفر.')
-      if (!cRes?.success) throw new Error(cRes?.error || 'تعذر تحميل قنوات السيرفر.')
+      if (!iRes?.success) throw new Error(iRes?.error || 'ما گدرت أحمّل معلومات السيرفر.')
+      if (!cRes?.success) throw new Error(cRes?.error || 'ما گدرت أحمّل قنوات السيرفر.')
       setInfo(iRes)
       setChannels(cRes.channels || [])
       setLastUpdated(new Date())
       setLoadError('')
     } catch (error) {
-      setLoadError(error.message || 'تعذر تحديث بيانات السيرفر.')
+      setLoadError(error.message || 'ما گدرت أحدّث بيانات السيرفر.')
     } finally {
       if (!silent) setRefreshing(false)
     }
@@ -1099,7 +1099,7 @@ export default function ServerOwnerDashboard() {
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <RefreshButton busy={refreshing} lastUpdated={lastUpdated} onClick={() => loadInfo()} />
             <span className={`page-badge ${user?.role === 'bot_owner' ? 'gold' : 'cyan'}`}>
-              {user?.role === 'bot_owner' ? '👑 Bot Owner · إدارة السيرفر' : '🔑 Server Owner'}
+              {user?.role === 'bot_owner' ? '👑 مالك البوت · إدارة السيرفر' : '🔑 مالك السيرفر'}
             </span>
             {user?.role === 'bot_owner' ? (
               <button className="btn btn-outline btn-sm" onClick={() => navigate('/bot-owner')} type="button">
@@ -1115,7 +1115,7 @@ export default function ServerOwnerDashboard() {
         {loadError && (
           <div className="dashboard-load-error" role="alert">
             <span>⚠️ {loadError}</span>
-            <button className="btn btn-outline btn-sm" onClick={() => loadInfo()} type="button">إعادة المحاولة</button>
+            <button className="btn btn-outline btn-sm" onClick={() => loadInfo()} type="button">جرّب مرة ثانية</button>
           </div>
         )}
         {sections[section] || null}

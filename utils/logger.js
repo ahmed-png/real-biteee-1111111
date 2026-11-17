@@ -1,3 +1,4 @@
+const appLogger = require('./app-logger');
 const { EmbedBuilder, AuditLogEvent } = require('discord.js');
 const db = require('./database');
 const config = require('../config');
@@ -80,7 +81,7 @@ const auditActionLabels = {
 
 const missingChannelWarnings = new Set();
 
-// ─── استثناء البوت من السجلات ───────────────────────────────────────────────
+// استثناء البوت من السجلات
 // لا يجب أن يُسجَّل البوت كـ executor لمخالفة في سجلات الحماية
 // هذا يمنع "البوت يرى نفسه مخالفاً" عند تنفيذ أوامر مثل حذف رسالة سبام
 
@@ -105,7 +106,7 @@ function _isBotAction(executor) {
     return false;
 }
 
-// ─── إرسال Log إلى قناة السجلات ───────────────────────────────────────────────
+// إرسال Log إلى قناة السجلات
 async function sendLog(guild, embed) {
     if (!guild) return false;
 
@@ -119,7 +120,7 @@ async function sendLog(guild, embed) {
             logChannel = guild.channels.cache.get(logId) || null;
         }
     } catch (error) {
-        console.error(`[Logger] تعذر قراءة قناة السجلات للسيرفر ${guild.id}:`, error.message);
+        appLogger.error(`[Logger] تعذر قراءة قناة السجلات للسيرفر ${guild.id}:`, error.message);
     }
 
     // 2. Fallback — channel-resolver بالاسم
@@ -127,13 +128,13 @@ async function sendLog(guild, embed) {
         try {
             logChannel = channelResolver.resolve(guild, 'logChannel');
         } catch (error) {
-            console.error(`[Logger] تعذر العثور على قناة السجلات للسيرفر ${guild.id}:`, error.message);
+            appLogger.error(`[Logger] تعذر العثور على قناة السجلات للسيرفر ${guild.id}:`, error.message);
         }
     }
 
     if (!logChannel) {
         if (!missingChannelWarnings.has(guild.id)) {
-            console.warn(`[Logger] لا توجد قناة سجلات مضبوطة للسيرفر ${guild.id}.`);
+            appLogger.warn(`[Logger] لا توجد قناة سجلات مضبوطة للسيرفر ${guild.id}.`);
             missingChannelWarnings.add(guild.id);
         }
         return false;
@@ -144,12 +145,12 @@ async function sendLog(guild, embed) {
         missingChannelWarnings.delete(guild.id);
         return true;
     } catch (error) {
-        console.error(`[Logger] تعذر إرسال سجل السيرفر ${guild.id} إلى #${logChannel.name || logChannel.id}:`, error.message);
+        appLogger.error(`[Logger] تعذر إرسال سجل السيرفر ${guild.id} إلى #${logChannel.name || logChannel.id}:`, error.message);
         return false;
     }
 }
 
-// ─── Helper: جلب المنفذ من Audit Log بدقة ────────────────────────────────────
+// Helper: جلب المنفذ من Audit Log بدقة
 async function getExecutor(guild, type, targetId = null, windowMs = 15000) {
     if (!guild?.members?.me?.permissions?.has('ViewAuditLog')) return null;
 

@@ -57,7 +57,7 @@ export function RefreshButton({ busy, lastUpdated, onClick }) {
       </span>
       <button className="btn btn-outline btn-sm" onClick={onClick} disabled={busy} type="button">
         <span aria-hidden="true">{busy ? '◌' : '↻'}</span>
-        {busy ? 'جاري التحديث' : 'تحديث البيانات'}
+        {busy ? 'دا أحدّث...' : 'حدّث البيانات'}
       </button>
     </div>
   )
@@ -117,7 +117,7 @@ export function Sidebar({ activeSection, onSection, role, user, onLogout, select
         <div className="sidebar-logo"><RadarLogo /></div>
         <div>
           <div className="sidebar-title">لوحة التحكم</div>
-          <div className="sidebar-subtitle">{isBotOwner ? 'Bot Owner' : selectedGuild?.name || 'Server Owner'}</div>
+          <div className="sidebar-subtitle">{isBotOwner ? 'مالك البوت' : selectedGuild?.name || 'مالك السيرفر'}</div>
         </div>
       </div>
 
@@ -159,10 +159,10 @@ export function Sidebar({ activeSection, onSection, role, user, onLogout, select
           <div className="user-info">
             <div className="user-name">{user?.username || 'مستخدم'}</div>
             <div className={`user-role ${isBotOwner ? 'bot-owner' : 'server-owner'}`}>
-              {isBotOwner ? '👑 Bot Owner' : '🔑 Server Owner'}
+              {isBotOwner ? '👑 مالك البوت' : '🔑 مالك السيرفر'}
             </div>
           </div>
-          <button onClick={onLogout} title="تسجيل خروج" aria-label="تسجيل خروج" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: 'var(--muted)' }}>
+          <button onClick={onLogout} title="تسجيل الخروج" aria-label="تسجيل الخروج" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: 'var(--muted)' }}>
             🚪
           </button>
         </div>
@@ -207,7 +207,7 @@ export function ChannelSelect({ channels, value, onChange, label, hint }) {
     <div className="form-group">
       {label && <label className="form-label">{label}</label>}
       <select className="form-select" value={value || ''} onChange={e => onChange(e.target.value)}>
-        <option value="">— اختر قناة —</option>
+        <option value="">— اختار قناة —</option>
         {(channels || []).map(c => (
           <option key={c.id} value={c.id}>
             #{c.name}{!c.canSend ? ' ⚠️' : ''}

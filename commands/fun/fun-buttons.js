@@ -10,23 +10,21 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags } = require('discord.js');
 const config = require('../../config');
 
-// ════════════════════════════════════════════════════════════════════════════
-//  🔮 FORTUNE — حظك اليوم
-// ════════════════════════════════════════════════════════════════════════════
+// FORTUNE — حظك اليوم
 
 const FORTUNES = [
-    { text: '⭐ يوم رائع ينتظرك! الطاقة الإيجابية تحيط بك.', type: 'great', color: '#FFD700' },
-    { text: '💎 فرصة ذهبية ستأتي اليوم — كن منتبهاً!', type: 'great', color: '#FFD700' },
-    { text: '🌟 الحظ في صفك — خذ مبادرة جديدة!', type: 'good', color: '#57F287' },
-    { text: '🎯 ستحقق أهدافك إذا ثابرت اليوم.', type: 'good', color: '#57F287' },
-    { text: '🌈 توقع مفاجأة سارة قريباً جداً!', type: 'good', color: '#57F287' },
-    { text: '⚡ طاقة إيجابية عالية — استغل يومك!', type: 'good', color: '#57F287' },
-    { text: '🎲 الحظ معك في الألعاب — جرب!', type: 'neutral', color: '#FEE75C' },
-    { text: '💰 فرصة ربح مادي قريبة منك.', type: 'neutral', color: '#FEE75C' },
-    { text: '🎊 يوم مميز للقاءات والعلاقات.', type: 'neutral', color: '#FEE75C' },
-    { text: '📚 يوم جيد للتعلم والتطوير.', type: 'neutral', color: '#FEE75C' },
-    { text: '😐 يوم عادي — تصرف بحكمة.', type: 'meh', color: '#95A5A6' },
-    { text: '⚠️ تجنب قرارات كبيرة اليوم.', type: 'bad', color: '#ED4245' },
+    { text: '⭐ يوم حلو ينتظرك! الطاقة الإيجابية حواليك.', type: 'great', color: '#FFD700' },
+    { text: '💎 فرصة ذهبية تجيك اليوم — انتبه لا تفوتها!', type: 'great', color: '#FFD700' },
+    { text: '🌟 الحظ وياك — جرّب شي جديد!', type: 'good', color: '#57F287' },
+    { text: '🎯 توصل لأهدافك إذا تواصل، لا تتكاسل 😄', type: 'good', color: '#57F287' },
+    { text: '🌈 توقع مفاجأة حلوة قريب!', type: 'good', color: '#57F287' },
+    { text: '⚡ طاقتك عالية — استغل يومك!', type: 'good', color: '#57F287' },
+    { text: '🎲 الحظ وياك بالألعاب — يلا جرّب!', type: 'neutral', color: '#FEE75C' },
+    { text: '💰 فرصة ربح قريبة منك.', type: 'neutral', color: '#FEE75C' },
+    { text: '🎊 يوم حلو للّمة والعلاقات.', type: 'neutral', color: '#FEE75C' },
+    { text: '📚 يوم مناسب تتعلم بيه شي جديد.', type: 'neutral', color: '#FEE75C' },
+    { text: '😐 يوم عادي — لا تسوي بيه قرارات مصيرية، خله بسيط.', type: 'meh', color: '#95A5A6' },
+    { text: '⚠️ لا تستعجل بقرارات كبيرة اليوم.', type: 'bad', color: '#ED4245' },
 ];
 
 const LUCKY_COLORS = ['🔴 أحمر', '🔵 أزرق', '🟢 أخضر', '🟡 أصفر', '🟣 بنفسجي', '⚫ أسود', '⚪ أبيض', '🟠 برتقالي'];
@@ -55,14 +53,14 @@ function buildFortuneEmbed(user) {
             { name: '🎨 لونك المحظوظ', value: luckyColor, inline: true },
             { name: '🌀 عنصرك اليوم', value: luckyElement, inline: true },
         )
-        .setFooter({ text: '🔄 يتجدد حظك كل يوم' })
+        .setFooter({ text: '🔄 حظك يتحدّث كل يوم' })
         .setTimestamp();
 }
 
 module.exports.fortune = {
     name: 'fortune',
     aliases: ['حظك', 'حظي', 'توقعات'],
-    description: 'توقع حظك لهذا اليوم',
+    description: 'شوف شنو حظك اليوم',
     usage: 'حظي',
 
     async execute(message) {
@@ -70,11 +68,11 @@ module.exports.fortune = {
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId(`fortune_refresh_${message.author.id}`)
-                .setLabel('🔄 حظ شخص آخر')
+                .setLabel('🔄 جرّب حظ ثاني')
                 .setStyle(ButtonStyle.Secondary),
             new ButtonBuilder()
                 .setCustomId(`fortune_share_${message.author.id}`)
-                .setLabel('📤 مشاركة')
+                .setLabel('📤 شارك حظك')
                 .setStyle(ButtonStyle.Primary),
         );
         await message.reply({ embeds: [embed], components: [row] });
@@ -91,23 +89,21 @@ module.exports.fortune = {
     }
 };
 
-// ════════════════════════════════════════════════════════════════════════════
-//  🤔 WYR — هل تفضل؟
-// ════════════════════════════════════════════════════════════════════════════
+// WYR — هل تفضل؟
 
 const WYR_QUESTIONS = [
-    { a: '💰 تكون غنياً بدون شهرة', b: '🌟 تكون مشهوراً بدون مال' },
-    { a: '⏰ السفر للماضي', b: '🚀 السفر للمستقبل' },
-    { a: '☕ القهوة طول العمر', b: '🍵 الشاي طول العمر' },
-    { a: '🌞 الصيف دائماً', b: '❄️ الشتاء دائماً' },
-    { a: '🦸 قوة خارقة (طيران)', b: '🧠 ذكاء خارق (عبقري)' },
+    { a: '💰 تصير غني بس محد يعرفك', b: '🌟 تصير مشهور بس ما عندك فلوس' },
+    { a: '⏰ تسافر للماضي', b: '🚀 تسافر للمستقبل' },
+    { a: '☕ تشرب قهوة طول عمرك', b: '🍵 تشرب چاي طول عمرك' },
+    { a: '🌞 صيف طول السنة', b: '❄️ شتا طول السنة' },
+    { a: '🦸 قوة خارقة (تطير)', b: '🧠 ذكاء خارق (عبقري)' },
     { a: '🌊 تعيش بالبحر', b: '🏔️ تعيش بالجبال' },
-    { a: '🎮 تلعب ألعاب وتكسب مال', b: '📚 تقرأ كتب وتصبح حكيماً' },
-    { a: '😴 تنام 10 ساعات كل يوم', b: '⚡ تنام 4 ساعات فقط وتنشط' },
-    { a: '🐱 تعيش مع 10 قطط', b: '🐕 تعيش مع 10 كلاب' },
-    { a: '🔇 لا تسمع شيئاً', b: '🙈 لا ترى شيئاً' },
-    { a: '🌍 تسافر العالم وحيداً', b: '🏠 تبقى بالبيت مع أحبائك' },
-    { a: '🍕 تأكل بيتزا كل يوم', b: '🍔 تأكل برغر كل يوم' },
+    { a: '🎮 تلعب وتكسب فلوس', b: '📚 تقرأ كتب وتصير حكيم' },
+    { a: '😴 تنام 10 ساعات كل يوم', b: '⚡ تنام 4 ساعات وتبقى نشيط' },
+    { a: '🐱 تعيش ويا 10 قطط', b: '🐕 تعيش ويا 10 كلاب' },
+    { a: '🔇 ما تسمع شي', b: '🙈 ما تشوف شي' },
+    { a: '🌍 تسافر وحدك بكل العالم', b: '🏠 تبقى بالبيت ويا أحبابك' },
+    { a: '🍕 تاكل بيتزا كل يوم', b: '🍔 تاكل برگر كل يوم' },
 ];
 
 const wyrVotes = new Map(); // msgId → { a: Set, b: Set }
@@ -115,20 +111,20 @@ const wyrVotes = new Map(); // msgId → { a: Set, b: Set }
 module.exports.wyr = {
     name: 'wyr',
     aliases: ['هل_تفضل', 'تفضل', 'ماذا_تفضل'],
-    description: 'لعبة هل تفضل بالتصويت',
+    description: 'لعبة تصويت: شتفضّل؟',
     usage: 'تفضل',
 
     async execute(message) {
         const q = WYR_QUESTIONS[Math.floor(Math.random() * WYR_QUESTIONS.length)];
         const embed = new EmbedBuilder()
             .setColor('#9B59B6')
-            .setTitle('🤔 هل تفضل...؟')
-            .setDescription(`> صوّت لأحد الخيارين!\n\n**1️⃣ ${q.a}**\n\nأم\n\n**2️⃣ ${q.b}**`)
+            .setTitle('🤔 شتفضّل؟')
+            .setDescription(`> صوّت على واحد من الخيارين!\n\n**1️⃣ ${q.a}**\n\nلو\n\n**2️⃣ ${q.b}**`)
             .addFields(
                 { name: '1️⃣ الخيار الأول', value: '`0` أصوات (0%)', inline: true },
                 { name: '2️⃣ الخيار الثاني', value: '`0` أصوات (0%)', inline: true },
             )
-            .setFooter({ text: '⏰ التصويت ينتهي بعد 2 دقيقة' });
+            .setFooter({ text: '⏰ التصويت يخلص بعد دقيقتين' });
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('wyr_vote_a').setLabel(`1️⃣ ${q.a.slice(0, 30)}`).setStyle(ButtonStyle.Primary),
@@ -154,7 +150,7 @@ module.exports.wyr = {
 
             const finalEmbed = new EmbedBuilder()
                 .setColor('#9B59B6')
-                .setTitle('🤔 هل تفضل...؟ — النتائج!')
+                .setTitle('🤔 شتفضّل؟ — النتائج!')
                 .setDescription(`> ${winner}`)
                 .addFields(
                     { name: `1️⃣ ${q.a}`, value: `${'█'.repeat(Math.round(pctA/10))}${'░'.repeat(10-Math.round(pctA/10))} **${pctA}%** (${totalA} صوت)`, inline: false },
@@ -169,7 +165,7 @@ module.exports.wyr = {
     async handleWYRInteraction(interaction) {
         const msgId = interaction.message.id;
         const votes = wyrVotes.get(msgId);
-        if (!votes) return interaction.reply({ content: '❌ انتهى التصويت!', flags: MessageFlags.Ephemeral });
+        if (!votes) return interaction.reply({ content: '❌ التصويت خلص!', flags: MessageFlags.Ephemeral });
 
         const userId = interaction.user.id;
         const isA = interaction.customId === 'wyr_vote_a';
@@ -197,14 +193,12 @@ module.exports.wyr = {
     }
 };
 
-// ════════════════════════════════════════════════════════════════════════════
-//  💘 SHIP — نسبة التوافق
-// ════════════════════════════════════════════════════════════════════════════
+// SHIP — نسبة التوافق
 
 module.exports.ship = {
     name: 'ship',
     aliases: ['توافق', 'سفينة', 'حب'],
-    description: 'نسبة التوافق بين شخصين',
+    description: 'شوف نسبة التوافق بين شخصين',
     usage: 'سفينة @user1 [@user2]',
 
     async execute(message, args) {
@@ -217,7 +211,7 @@ module.exports.ship = {
             const embed = new EmbedBuilder()
                 .setColor('#FF69B4')
                 .setTitle('💘 نسبة التوافق')
-                .setDescription('> 😂 حاولت تشوف توافقك مع نفسك؟ **100%** طبعاً! 🤪');
+                .setDescription('> 😂 دا تختبر توافقك ويا نفسك؟ **100%** أكيد! 🤪');
             return message.reply({ embeds: [embed] });
         }
 
@@ -230,11 +224,11 @@ module.exports.ship = {
         const pct = Math.abs(hash % 101);
 
         const bar = '❤️'.repeat(Math.floor(pct / 10)) + '🤍'.repeat(10 - Math.floor(pct / 10));
-        const desc = pct >= 90 ? '💕 توأم الروح! توافق مثالي!' :
-                     pct >= 75 ? '💖 توافق رائع! علاقة قوية جداً!' :
-                     pct >= 50 ? '💚 توافق جيد! مستمرون يمشي' :
-                     pct >= 25 ? '💛 توافق ضعيف، لكن هناك أمل!' :
-                                 '💔 لا توافق... ربما في حياة أخرى!';
+        const desc = pct >= 90 ? '💕 توأم روح! توافقكم خرافي!' :
+                     pct >= 75 ? '💖 توافق كلش حلو! علاقتكم قوية!' :
+                     pct >= 50 ? '💚 توافق زين! الأمور ماشية.' :
+                     pct >= 25 ? '💛 توافقكم مو ذاك الزود، بس بعد أكو أمل!' :
+                                 '💔 ماكو توافق... يمكن بحياة ثانية!';
 
         const shipName = user1.username.slice(0, Math.ceil(user1.username.length/2)) +
                          user2.username.slice(Math.floor(user2.username.length/2));
@@ -242,18 +236,18 @@ module.exports.ship = {
         const embed = new EmbedBuilder()
             .setColor('#FF69B4')
             .setTitle('💘 نسبة التوافق')
-            .setDescription(`**${user1.username}** 💕 **${user2.username}**\n\n> 🚢 اسم السفينة: **${shipName}**`)
+            .setDescription(`**${user1.username}** 💕 **${user2.username}**\n\n> 🚢 اسم الثنائي: **${shipName}**`)
             .addFields(
                 { name: '❤️ نسبة التوافق', value: `**${pct}%**`, inline: true },
-                { name: '📊 التقييم', value: bar, inline: false },
-                { name: '💬 الوصف', value: desc, inline: false },
+                { name: '📊 النسبة', value: bar, inline: false },
+                { name: '💬 شنو رأينا؟', value: desc, inline: false },
             )
-            .setFooter({ text: 'النتيجة ثابتة لنفس الزوج دائماً!' });
+            .setFooter({ text: 'النتيجة نفسها لنفس الثنائي كل مرة!' });
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId(`ship_again_${message.author.id}`)
-                .setLabel('🔄 اختبر أشخاص آخرين')
+                .setLabel('🔄 جرّب ويا ناس غير')
                 .setStyle(ButtonStyle.Secondary),
         );
 
@@ -263,21 +257,19 @@ module.exports.ship = {
     async handleShipInteraction(interaction) {
         if (interaction.customId.startsWith('ship_again_')) {
             if (interaction.user.id !== interaction.customId.split('_')[2]) {
-                return interaction.reply({ content: '❌ ليس لك!', flags: MessageFlags.Ephemeral });
+                return interaction.reply({ content: '❌ مو إلك!', flags: MessageFlags.Ephemeral });
             }
-            await interaction.reply({ content: '> اكتب `سفينة @شخص1 @شخص2` لاختبار توافق آخر!', flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: '> اكتب `سفينة @شخص1 @شخص2` حتى تختبر توافق ثاني!', flags: MessageFlags.Ephemeral });
         }
     }
 };
 
-// ════════════════════════════════════════════════════════════════════════════
-//  🎲 ROLL — رمي النرد
-// ════════════════════════════════════════════════════════════════════════════
+// ROLL — رمي النرد
 
 module.exports.roll = {
     name: 'roll',
     aliases: ['نرد', 'رمي', 'dice'],
-    description: 'رمي النرد',
+    description: 'ارمِ النرد وشوف شنو يطلعلك',
     usage: 'نرد [وجوه]',
 
     async execute(message, args) {
@@ -285,18 +277,18 @@ module.exports.roll = {
         const result = Math.floor(Math.random() * faces) + 1;
 
         const percent = result / faces;
-        const quality = percent >= 0.9 ? '🔥 نتيجة ممتازة!' : percent >= 0.7 ? '✅ نتيجة جيدة' : percent <= 0.1 ? '😬 حظ سيء!' : '😐 نتيجة عادية';
+        const quality = percent >= 0.9 ? '🔥 يا سلام، نتيجة ممتازة!' : percent >= 0.7 ? '✅ نتيجة زينة' : percent <= 0.1 ? '😬 حظك مو بصفك!' : '😐 نتيجة عادية';
 
         const embed = new EmbedBuilder()
             .setColor(percent >= 0.7 ? '#57F287' : percent <= 0.1 ? '#ED4245' : '#FEE75C')
             .setTitle('🎲 رمية النرد')
-            .setDescription(`> ${message.author} رمى نرداً بـ **${faces}** وجه\n\n# ${result}\n\n> ${quality}`)
-            .addFields({ name: '📊 النسبة', value: `**${Math.round(percent * 100)}%** من الحد الأقصى`, inline: true });
+            .setDescription(`> ${message.author} رمى نرد بيه **${faces}** وجه\n\n# ${result}\n\n> ${quality}`)
+            .addFields({ name: '📊 النسبة', value: `**${Math.round(percent * 100)}%** من أعلى نتيجة`, inline: true });
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId(`roll_again_${faces}_${message.author.id}`)
-                .setLabel('🎲 ارمِ مجدداً')
+                .setLabel('🎲 ارمه مرة ثانية')
                 .setStyle(ButtonStyle.Primary),
         );
 
@@ -310,23 +302,23 @@ module.exports.roll = {
         const ownerId = parts[3];
 
         if (interaction.user.id !== ownerId) {
-            return interaction.reply({ content: '❌ ليس لك!', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: '❌ مو إلك!', flags: MessageFlags.Ephemeral });
         }
 
         const result = Math.floor(Math.random() * faces) + 1;
         const percent = result / faces;
-        const quality = percent >= 0.9 ? '🔥 ممتاز!' : percent >= 0.7 ? '✅ جيد' : percent <= 0.1 ? '😬 سيء!' : '😐 عادي';
+        const quality = percent >= 0.9 ? '🔥 ممتاز!' : percent >= 0.7 ? '✅ زين' : percent <= 0.1 ? '😬 مو زين!' : '😐 عادي';
 
         const embed = new EmbedBuilder()
             .setColor(percent >= 0.7 ? '#57F287' : percent <= 0.1 ? '#ED4245' : '#FEE75C')
             .setTitle('🎲 رمية النرد')
-            .setDescription(`> ${interaction.user} رمى نرداً بـ **${faces}** وجه\n\n# ${result}\n\n> ${quality}`)
+            .setDescription(`> ${interaction.user} رمى نرد بيه **${faces}** وجه\n\n# ${result}\n\n> ${quality}`)
             .addFields({ name: '📊 النسبة', value: `**${Math.round(percent * 100)}%**`, inline: true });
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId(`roll_again_${faces}_${ownerId}`)
-                .setLabel('🎲 ارمِ مجدداً')
+                .setLabel('🎲 ارمه مرة ثانية')
                 .setStyle(ButtonStyle.Primary),
         );
 
@@ -334,33 +326,31 @@ module.exports.roll = {
     }
 };
 
-// ════════════════════════════════════════════════════════════════════════════
-//  🔮 8BALL — الكرة السحرية
-// ════════════════════════════════════════════════════════════════════════════
+// 8BALL — الكرة السحرية
 
 const BALL_ANSWERS = [
-    { text: '✅ نعم بالتأكيد!', color: '#57F287', type: 'pos' },
-    { text: '✅ الأمور تبدو جيدة!', color: '#57F287', type: 'pos' },
-    { text: '✅ بدون شك!', color: '#57F287', type: 'pos' },
-    { text: '✅ يمكنك الاعتماد عليه', color: '#57F287', type: 'pos' },
-    { text: '✅ نعم — بالتأكيد!', color: '#57F287', type: 'pos' },
-    { text: '🤔 الآن لا أستطيع التنبؤ', color: '#FEE75C', type: 'neu' },
-    { text: '🤔 اسأل مرة أخرى لاحقاً', color: '#FEE75C', type: 'neu' },
-    { text: '🤔 من الأفضل ألا أخبرك الآن', color: '#FEE75C', type: 'neu' },
-    { text: '❌ لا تعتمد عليه', color: '#ED4245', type: 'neg' },
-    { text: '❌ توقعاتي تقول لا', color: '#ED4245', type: 'neg' },
-    { text: '❌ مصادري تقول لا', color: '#ED4245', type: 'neg' },
-    { text: '❌ غير محتمل أبداً', color: '#ED4245', type: 'neg' },
+    { text: '✅ إي، أكيد!', color: '#57F287', type: 'pos' },
+    { text: '✅ الأمور تبشّر بالخير.', color: '#57F287', type: 'pos' },
+    { text: '✅ بلا شك.', color: '#57F287', type: 'pos' },
+    { text: '✅ تگدر تعتمد عليه.', color: '#57F287', type: 'pos' },
+    { text: '✅ إي، أكيد إي.', color: '#57F287', type: 'pos' },
+    { text: '🤔 هسه ما أگدر أتوقع.', color: '#FEE75C', type: 'neu' },
+    { text: '🤔 اسألني بعدين.', color: '#FEE75C', type: 'neu' },
+    { text: '🤔 خلّيها على الله هالمرة.', color: '#FEE75C', type: 'neu' },
+    { text: '❌ لا تعتمد عليه.', color: '#ED4245', type: 'neg' },
+    { text: '❌ توقعي يقول لا.', color: '#ED4245', type: 'neg' },
+    { text: '❌ حتى مصادري تكول لا.', color: '#ED4245', type: 'neg' },
+    { text: '❌ احتمالها ضعيف كلش.', color: '#ED4245', type: 'neg' },
 ];
 
 module.exports.ball = {
     name: 'fun', aliases: ['تنبؤ', 'كرة_الحظ', ],
-    description: 'اسأل الكرة السحرية',
+    description: 'اسأل الكرة السحرية وخليها تجاوبك',
     usage: '8ball [سؤال]',
 
     async execute(message, args) {
         if (!args || args.length === 0) {
-            return message.reply('❌ يجب أن تسأل سؤالاً!\nمثال: `8ball هل سأفوز اليوم؟`');
+            return message.reply('اكتبلي سؤال أول.\nمثال: `8ball راح أفوز اليوم؟`');
         }
 
         const question = args.join(' ');
@@ -370,16 +360,16 @@ module.exports.ball = {
             .setColor(answer.color)
             .setTitle('🔮 الكرة السحرية')
             .addFields(
-                { name: '❓ السؤال', value: `> ${question}`, inline: false },
+                { name: '❓ سؤالك', value: `> ${question}`, inline: false },
                 { name: '💬 الجواب', value: `> **${answer.text}**`, inline: false },
             )
-            .setFooter({ text: `سأل: ${message.author.username}`, iconURL: message.author.displayAvatarURL() })
+            .setFooter({ text: `سألك: ${message.author.username}`, iconURL: message.author.displayAvatarURL() })
             .setTimestamp();
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId(`ball_again_${message.author.id}_${Buffer.from(question).toString('base64').slice(0, 50)}`)
-                .setLabel('🔮 سؤال آخر')
+                .setLabel('🔮 اسأل سؤال ثاني')
                 .setStyle(ButtonStyle.Secondary),
         );
 
@@ -392,7 +382,7 @@ module.exports.ball = {
         const ownerId = parts[2];
 
         if (interaction.user.id !== ownerId) {
-            return interaction.reply({ content: '❌ ليس لك!', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: '❌ مو إلك!', flags: MessageFlags.Ephemeral });
         }
 
         const answer = BALL_ANSWERS[Math.floor(Math.random() * BALL_ANSWERS.length)];
@@ -402,10 +392,10 @@ module.exports.ball = {
             .setColor(answer.color)
             .setTitle('🔮 الكرة السحرية')
             .addFields(
-                { name: '❓ السؤال', value: `> ${oldQuestion}`, inline: false },
+                { name: '❓ سؤالك', value: `> ${oldQuestion}`, inline: false },
                 { name: '💬 الجواب', value: `> **${answer.text}**`, inline: false },
             )
-            .setFooter({ text: `سأل: ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
+            .setFooter({ text: `سألك: ${interaction.user.username}`, iconURL: interaction.user.displayAvatarURL() })
             .setTimestamp();
 
         await interaction.update({ embeds: [embed] });

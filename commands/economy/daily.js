@@ -1,4 +1,5 @@
 'use strict';
+const appLogger = require('../../utils/app-logger');
 
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const db = require('../../utils/database');
@@ -7,13 +8,13 @@ const config = require('../../config');
 module.exports = {
     name: 'daily',
     aliases: ['يومي', 'راتب_يومي', 'هدية_يومية', 'd', 'gift'],
-    description: 'الحصول على المكافأة اليومية',
+    description: 'خذ مكافأتك اليومية',
     usage: 'يومي',
 
-    // ✅ Slash Command Definition
+    // Slash Command Definition
     slash: {
         name: 'daily',
-        description: 'احصل على مكافأتك اليومية من الاقتصاد',
+        description: 'خذ مكافأتك اليومية من الاقتصاد',
     },
 
     async execute(message) {
@@ -25,7 +26,7 @@ module.exports = {
             const COOLDOWN = 24 * 60 * 60 * 1000; // 24 ساعة
             const STREAK_RESET_AFTER = 48 * 60 * 60 * 1000; // 48 ساعة — ما بعدها يُعاد الـ streak
 
-            // ── كولداون ─────────────────────────────────────────────────
+            // كولداون
             if (userData.lastDaily && (now - userData.lastDaily) < COOLDOWN) {
                 const timeLeft = COOLDOWN - (now - userData.lastDaily);
                 const hours = Math.floor(timeLeft / 3_600_000);
@@ -34,26 +35,26 @@ module.exports = {
 
                 const waitEmbed = new EmbedBuilder()
                     .setColor('#ED4245')
-                    .setTitle('⏰ مكافأتك اليومية غير جاهزة بعد')
+                    .setTitle('مكافأتك اليومية بعدها ما جاهزة')
                     .setDescription(
                         [
-                            `> يمكنك الحصول عليها خلال:`,
-                            `> ## ⌛ ${hours}س ${minutes}د ${seconds}ث`,
+                            `> تگدر تاخذها بعد:`,
+                            `> ## ${hours}س ${minutes}د ${seconds}ث`,
                         ].join('\n')
                     )
                     .addFields(
-                        { name: '🔥 Streak الحالي', value: `**${userData.dailyStreak || 0}** يوم`, inline: true },
-                        { name: '📊 شريط الأسبوع', value: _buildStreakBar(userData.dailyStreak || 0), inline: true }
+                        { name: '🔥 أيام التتابع', value: `**${userData.dailyStreak || 0}** يوم`, inline: true },
+                        { name: '📊 تقدم الأسبوع', value: _buildStreakBar(userData.dailyStreak || 0), inline: true }
                     )
-                    .setFooter({ text: 'عُد يومياً للحفاظ على Streak!' });
+                    .setFooter({ text: 'ارجع كل يوم حتى تحافظ على التتابع.' });
 
                 const row = _buildNavRow();
                 return message.reply({ embeds: [waitEmbed], components: [row] });
             }
 
-            // ── حساب الـ streak الصحيح ────────────────────────────────
-            // إذا انقطع أكثر من 48 ساعة → يبدأ من جديد
-            // إذا كان بين 24-48 ساعة → يزيد
+            // حساب الـ streak الصحيح
+            // إذا انقطع أكثر من 48 ساعة  يبدأ من جديد
+            // إذا كان بين 24-48 ساعة  يزيد
             let streak = userData.dailyStreak || 0;
             if (userData.lastDaily) {
                 const gap = now - userData.lastDaily;
@@ -66,7 +67,7 @@ module.exports = {
                 streak = 1; // أول مرة
             }
 
-            // ── حساب المبلغ ──────────────────────────────────────────
+            // حساب المبلغ
             let dailyAmount = config.dailyAmount || 500;
             const bonus = Math.min(streak * (config.streakBonus || 50), config.maxStreakBonus || 500);
             dailyAmount = Math.min(dailyAmount + bonus, config.maxDailyAmount || 10_000);
@@ -86,33 +87,31 @@ module.exports = {
             const maxWallet = db.LIMITS.MAX_WALLET;
             if (currentBal >= maxWallet) {
                 return message.reply(
-                    `❌ محفظتك ممتلئة! (**${currentBal.toLocaleString()} ${config.currency}**)\n` +
-                    `> 💡 استخدم \`إيداع\` لوضع المال في البنك أولاً.`
+                    `محفظتك امتلت (**${currentBal.toLocaleString()} ${config.currency}**).\n` +
+                        `> تگدر تودع فلوسك بالبنك بأمر \`إيداع\`.`
                 );
             }
 
-            // ── حفظ البيانات (addMoney يطبق الحد تلقائياً) ───────────────
+            // حفظ البيانات (addMoney يطبق الحد تلقائياً)
             const actualAdded = db.addMoney(userId, dailyAmount);
             db.updateFields(userId, {
                 lastDaily: now,
                 dailyStreak: streak,
             });
-            db.addTransaction(userId, 'daily', actualAdded, `Daily (Streak: ${streak})`);
+            db.addTransaction(userId, 'daily', actualAdded, `مكافأة يومية (التتابع: ${streak})`);
 
-            // ── Milestone ─────────────────────────────────────────────
-            const milestones = { 7: '🥈 أسبوع كامل!', 14: '🥇 أسبوعان!', 30: '💎 شهر كامل!', 100: '👑 100 يوم!' };
+            // Milestone
+            const milestones = { 7: 'أسبوع كامل!', 14: 'أسبوعين!', 30: 'شهر كامل!', 100: '100 يوم!' };
             const milestone = milestones[streak];
-            const streakEmoji = streak >= 30 ? '👑' : streak >= 14 ? '🔥🔥' : streak >= 7 ? '🔥' : '✨';
-
-            // ── بناء الـ Embed ─────────────────────────────────────────
+            // بناء الـ Embed
             const newBalance = currentBal + actualAdded;
             const embed = new EmbedBuilder()
                 .setColor('#FFD700')
-                .setTitle('🎁 مكافأتك اليومية')
+                .setTitle('مكافأتك اليومية')
                 .setThumbnail(message.author.displayAvatarURL())
                 .setDescription(
                     [
-                        `> ${message.author} — تم إضافة مكافأتك!`,
+                        `> ${message.author} — نزلتلك مكافأتك!`,
                         '',
                         `# +${dailyAmount.toLocaleString()} ${config.currency}`,
                         '',
@@ -122,22 +121,22 @@ module.exports = {
                         .join('\n')
                 )
                 .addFields(
-                    { name: `${streakEmoji} Daily Streak`, value: `**${streak}** يوم`, inline: true },
-                    { name: '💰 رصيدك الجديد', value: `**${newBalance.toLocaleString()}** ${config.currency}`, inline: true },
-                    { name: '📊 شريط الأسبوع', value: _buildStreakBar(streak), inline: false }
+                    { name: 'أيام التتابع', value: `**${streak}** يوم`, inline: true },
+                    { name: 'رصيدك هسة', value: `**${newBalance.toLocaleString()}** ${config.currency}`, inline: true },
+                    { name: 'تقدم الأسبوع', value: _buildStreakBar(streak), inline: false }
                 );
 
-            if (bonus > 0) embed.addFields({ name: '🎯 مكافأة Streak', value: `+${bonus.toLocaleString()} ${config.currency}`, inline: true });
-            if (hasDailyBoost) embed.addFields({ name: '⚡ بوست اليومي', value: 'x2 مفعّل!', inline: true });
+            if (bonus > 0) embed.addFields({ name: 'مكافأة التتابع', value: `+${bonus.toLocaleString()} ${config.currency}`, inline: true });
+            if (hasDailyBoost) embed.addFields({ name: 'مضاعفة اليومي', value: 'مفعّلة x2', inline: true });
 
             embed
-                .setFooter({ text: 'عُد غداً للحفاظ على Streak — الانقطاع فوق 48 ساعة يُعيده للصفر!' })
+                .setFooter({ text: 'ارجع باچر حتى تحافظ على التتابع؛ إذا غبت أكثر من 48 ساعة يرجع للصفر.' })
                 .setTimestamp();
 
             const row = _buildNavRow();
             await message.reply({ embeds: [embed], components: [row] });
 
-            // ── التحليلات والإنجازات ──────────────────────────────────
+            // التحليلات والإنجازات
             try {
                 const analytics = require('../../utils/analytics');
                 analytics?.trackEconomy?.('earn', dailyAmount, userId);
@@ -149,39 +148,39 @@ module.exports = {
             } catch { /* اختياري */ }
 
         } catch (err) {
-            console.error('[daily] خطأ:', err);
-            message.reply('❌ حدث خطأ غير متوقع في أمر المكافأة اليومية.').catch(() => {});
+            appLogger.error('[daily] خطأ:', err);
+            message.reply('صار خلل بالمكافأة اليومية، جرّب بعد شوي.').catch(() => {});
         }
     },
 
-    // ── معالج الأزرار ─────────────────────────────────────────────────
+    // معالج الأزرار
     async handleDailyInteraction(interaction) {
         const { MessageFlags } = require('discord.js');
         const id = interaction.customId;
 
         if (id === 'daily_work') {
-            return interaction.reply({ content: '> 💼 اكتب `عمل` للحصول على راتبك!', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: '> اكتب `عمل` حتى تاخذ أجرتك.', flags: MessageFlags.Ephemeral });
         }
         if (id === 'daily_balance') {
             const userData = db.getUserData(interaction.user.id);
             return interaction.reply({
                 content: [
-                    `> 💰 رصيدك: **${(userData.balance || 0).toLocaleString()} ${config.currency}**`,
-                    `> 🏦 البنك: **${(userData.bank || 0).toLocaleString()} ${config.currency}**`,
+                    `> رصيدك: **${(userData.balance || 0).toLocaleString()} ${config.currency}**`,
+                    `> بالبنك: **${(userData.bank || 0).toLocaleString()} ${config.currency}**`,
                 ].join('\n'),
                 flags: MessageFlags.Ephemeral,
             });
         }
         if (id === 'daily_shop') {
-            return interaction.reply({ content: '> 🛒 اكتب `متجر` لعرض المتجر!', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: '> اكتب `متجر` حتى تشوف الأغراض.', flags: MessageFlags.Ephemeral });
         }
         if (id === 'daily_casino') {
-            return interaction.reply({ content: '> 🎰 اكتب `كازينو` لفتح الكازينو!', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: '> اكتب `كازينو` حتى تفتح الكازينو.', flags: MessageFlags.Ephemeral });
         }
     },
 };
 
-// ─── شريط الـ Streak ──────────────────────────────────────────────────────────
+// شريط الـ Streak
 function _buildStreakBar(streak) {
     const days = Math.min(streak, 7);
     const filled = '🟨'.repeat(days);
@@ -189,7 +188,7 @@ function _buildStreakBar(streak) {
     return `${filled}${empty}`;
 }
 
-// ─── أزرار التنقل السريع ──────────────────────────────────────────────────────
+// أزرار التنقل السريع
 function _buildNavRow() {
     return new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('daily_work').setLabel('💼 اعمل الآن').setStyle(ButtonStyle.Success),

@@ -1,16 +1,12 @@
-# React + Vite
+# واجهة لوحة التحكم
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+واجهة React وVite للوحة تحكم البوت. تُبنى الملفات إلى `dist/` ويقدّمها خادم البوت.
 
-Currently, two official plugins are available:
+من مجلد المشروع الرئيسي:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm run build:dashboard
+npm run lint:dashboard
+```
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+للتطوير المرئي شغّل `npm run dev` من هذا المجلد. خادم Vite الحالي ما يمرر طلبات API إلى خادم البوت؛ لاختبار الواجهة مع API شغّل البوت واستخدم النسخة المبنية.

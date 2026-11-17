@@ -189,13 +189,20 @@ const triviaQuestions = {
 };
 
 const activeTrivia = new Map();
+const TOPIC_LABELS = {
+    islam: 'إسلامية',
+    history: 'تاريخ',
+    geography: 'جغرافيا',
+    sports: 'رياضة',
+    technology: 'تقنية',
+};
 
 async function startTriviaGame(source, topic, difficulty) {
     const channel = source.channel;
     const user = source.user || source.author;
 
     if (activeTrivia.has(channel.id)) {
-        const msg = { content: '❌ هناك سؤال نشط بالفعل!', ephemeral: true };
+        const msg = { content: '❌ أكو سؤال شغّال أصلاً!', ephemeral: true };
         if (source.isRepliable && !source.replied) await source.reply(msg);
         else await channel.send(msg.content);
         return;
@@ -211,12 +218,12 @@ async function startTriviaGame(source, topic, difficulty) {
     const reward = rewards[difficulty] || 250;
 
     const embed = PremiumEmbedBuilder.game(
-        `${ICONS.GAME} Trivia - ${topic.toUpperCase()}`,
+        `${ICONS.GAME} مسابقة ${TOPIC_LABELS[topic] || topic}`,
         `**السؤال:**\n${question.q}`,
         [
-            { name: '⏰ الوقت', value: '30 ثانية للإجابة', inline: true },
+            { name: '⏰ الوقت', value: '30 ثانية تجاوب', inline: true },
             { name: `${ICONS.MONEY} الجائزة`, value: `${reward} ${config.currency}`, inline: true },
-            { name: '📊 الصعوبة', value: difficulty === 'easy' ? '🟢 سهل' : difficulty === 'medium' ? '🟡 متوسط' : '🔴 صعب', inline: true }
+            { name: '📊 المستوى', value: difficulty === 'easy' ? '🟢 سهل' : difficulty === 'medium' ? '🟡 متوسط' : '🔴 صعب', inline: true }
         ]
     );
 
@@ -259,11 +266,11 @@ async function startTriviaGame(source, topic, difficulty) {
             levels.addXP(m.author.id, reward / 10, m);
 
             const successEmbed = PremiumEmbedBuilder.success(
-                'إجابة صحيحة! 🎉',
-                `**${m.author}** أجاب بشكل صحيح!`,
+                'جواب صحيح! 🎉',
+                `**${m.author}** جاوب صح!`,
                 [
-                    { name: `${ICONS.CHECK} الإجابة`, value: question.a[0], inline: true },
-                    { name: '⏱️ الوقت', value: `${timeTaken}s`, inline: true },
+                    { name: `${ICONS.CHECK} الجواب`, value: question.a[0], inline: true },
+                    { name: '⏱️ الوقت', value: `${timeTaken} ثانية`, inline: true },
                     { name: `${ICONS.MONEY} الجائزة`, value: `+${reward} ${config.currency}`, inline: true }
                 ]
             );
@@ -275,9 +282,9 @@ async function startTriviaGame(source, topic, difficulty) {
     collector.on('end', (collected, reason) => {
         if (reason === 'time' && activeTrivia.has(channel.id)) {
             const failEmbed = PremiumEmbedBuilder.error(
-                'انتهى الوقت! ⏰',
-                `لم يجب أحد بشكل صحيح.`,
-                `الإجابة الصحيحة: **${question.a[0]}**`
+                'خلص الوقت! ⏰',
+                `محد جاوب صح.`,
+                `الجواب الصح: **${question.a[0]}**`
             );
             channel.send({ embeds: [failEmbed] });
             activeTrivia.delete(channel.id);
@@ -288,12 +295,12 @@ async function startTriviaGame(source, topic, difficulty) {
 module.exports = {
     name: 'trivia',
     aliases: ['سؤال', 'مسابقة'],
-    description: 'مسابقة Trivia متنوعة',
+    description: 'مسابقة أسئلة متنوعة',
     usage: 'trivia [الموضوع]',
 
     async execute(message, args) {
         if (activeTrivia.has(message.channel.id)) {
-            return message.reply('❌ هناك سؤال نشط بالفعل!');
+            return message.reply('❌ أكو سؤال شغّال أصلاً!');
         }
 
         const topics = Object.keys(triviaQuestions);
@@ -308,8 +315,8 @@ module.exports = {
                 );
 
             const embed = PremiumEmbedBuilder.game(
-                `Trivia - مسابقة ${selectedTopic.toUpperCase()}`,
-                'اختر مستوى الصعوبة لبدء اللعبة 🎮',
+                `مسابقة ${TOPIC_LABELS[selectedTopic] || selectedTopic}`,
+                'اختار المستوى ونبدي اللعب 🎮',
                 []
             );
 
@@ -319,24 +326,24 @@ module.exports = {
 
         const selectMenu = new StringSelectMenuBuilder()
             .setCustomId('trivia_topic_select')
-            .setPlaceholder('اختر موضوع المسابقة')
+            .setPlaceholder('اختار موضوع المسابقة')
             .addOptions(
-                { label: 'إسلامية (Islam)', value: 'islam', description: 'أسئلة دينية (شيعية)', emoji: '🕌' },
-                { label: 'تاريخ (History)', value: 'history', description: 'أحداث تاريخية هامة', emoji: '📜' },
-                { label: 'جغرافيا (Geography)', value: 'geography', description: 'دول، عواصم، تضاريس', emoji: '🌍' },
-                { label: 'رياضة (Sports)', value: 'sports', description: 'كرة قدم، كؤوس عالم، لاعبين', emoji: '⚽' },
-                { label: 'تقنية (Tech)', value: 'technology', description: 'حواسيب، برمجيات، شركات', emoji: '💻' }
+                { label: 'إسلامية', value: 'islam', description: 'أسئلة دينية (شيعية)', emoji: '🕌' },
+                { label: 'تاريخ', value: 'history', description: 'أحداث تاريخية مهمة', emoji: '📜' },
+                { label: 'جغرافيا', value: 'geography', description: 'دول وعواصم ومناطق', emoji: '🌍' },
+                { label: 'رياضة', value: 'sports', description: 'كرة قدم وكؤوس ولاعبين', emoji: '⚽' },
+                { label: 'تقنية', value: 'technology', description: 'حواسيب وبرامج وشركات', emoji: '💻' }
             );
 
         const row = new ActionRowBuilder().addComponents(selectMenu);
 
         const embed = PremiumEmbedBuilder.game(
-            'Trivia - مسابقة معلومات',
-            'اختر موضوع المسابقة من القائمة بالأسفل 👇',
+            'مسابقة معلومات',
+            'اختار موضوع من القائمة جوّه 👇',
             [
                 {
-                    name: '💡 طريقة اللعب',
-                    value: '1. اختر الموضوع\n2. اختر درجة الصعوبة\n3. أجب عن السؤال في الوقت المحدد!'
+                    name: '💡 شلون تلعب',
+                    value: '1. اختار الموضوع\n2. اختار المستوى\n3. جاوب قبل ما يخلص الوقت!'
                 }
             ]
         );
@@ -357,7 +364,7 @@ module.exports = {
                 );
 
             await interaction.update({
-                content: `✅ تم اختيار الموضوع: **${selectedTopic}**\nالآن اختر مستوى الصعوبة:`,
+                content: `✅ اخترت موضوع **${TOPIC_LABELS[selectedTopic] || selectedTopic}**\nهسه اختار المستوى:`,
                 components: [row],
                 embeds: []
             });

@@ -39,8 +39,8 @@ test('adapt applies the server name and icon only through the current guild memb
         { nick: 'سيرفر الأصدقاء', avatar: undefined },
         { nick: undefined, avatar: 'https://cdn.discordapp.com/icons/test/icon.png' }
     ]);
-    assert.match(replies[0], /تم تغيير اسم/);
-    assert.match(replies[0], /تم تغيير صورة/);
+    assert.match(replies[0], /تغيّر اسم/);
+    assert.match(replies[0], /تغيّرت صورة/);
 });
 
 test('unauthorized users and direct messages do not modify any guild', async () => {
@@ -58,7 +58,7 @@ test('missing icon and too-long names do not overwrite existing profile settings
     await command.execute(message);
     assert.equal(calls.length, 0);
     assert.match(replies[0], /أطول من 32/);
-    assert.match(replies[0], /لا يملك صورة/);
+    assert.match(replies[0], /ما عنده صورة/);
 });
 
 test('reports partial nickname failure without preventing the avatar update', async (t) => {
@@ -66,8 +66,8 @@ test('reports partial nickname failure without preventing the avatar update', as
     const { message, calls, replies } = createMessage({ failures: { nick: true } });
     await command.execute(message);
     assert.equal(calls.length, 2);
-    assert.match(replies[0], /تعذر تغيير الاسم/);
-    assert.match(replies[0], /تم تغيير صورة/);
+    assert.match(replies[0], /ما كدرت أغيّر الاسم/);
+    assert.match(replies[0], /تغيّرت صورة/);
 });
 
 test('reports avatar failure without claiming full success', async (t) => {
@@ -75,8 +75,8 @@ test('reports avatar failure without claiming full success', async (t) => {
     const { message, calls, replies } = createMessage({ failures: { avatar: true } });
     await command.execute(message);
     assert.equal(calls.length, 2);
-    assert.match(replies[0], /تم تغيير اسم/);
-    assert.match(replies[0], /تعذر تغيير الصورة/);
+    assert.match(replies[0], /تغيّر اسم/);
+    assert.match(replies[0], /ما كدرت أغيّر الصورة/);
 });
 
 test('accepts a name at the Discord nickname limit', async () => {
@@ -104,6 +104,6 @@ test('middleware routes تكيف both with and without the prefix', async (t) =>
         };
         assert.equal(await commandsMiddleware(message), false);
         assert.equal(calls.length, 2);
-        assert.match(replies[0], /تم تغيير صورة/);
+        assert.match(replies[0], /تغيّرت صورة/);
     }
 });
